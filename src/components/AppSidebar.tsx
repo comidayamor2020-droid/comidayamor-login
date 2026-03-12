@@ -1,16 +1,24 @@
-import { LayoutDashboard, FileText, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, LogOut, Package, Factory, Store, ClipboardList } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_ROUTES, type AppRole } from "@/lib/roles";
 
-const navItems = [
+const ALL_NAV_ITEMS = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "DRE", url: "/dre", icon: FileText },
+  { title: "Compras", url: "/compras", icon: Package },
+  { title: "Produção", url: "/producao", icon: Factory },
+  { title: "Portal B2B", url: "/b2b", icon: Store },
+  { title: "Meus Pedidos", url: "/b2b/pedidos", icon: ClipboardList },
 ];
 
 export function AppSidebar() {
   const { profile, user, signOut } = useAuth();
 
   const displayName = profile?.name ?? user?.email ?? "Usuário";
+  const role = (profile?.role ?? "b2b_cliente") as AppRole;
+  const allowedRoutes = ROLE_ROUTES[role] ?? [];
+  const navItems = ALL_NAV_ITEMS.filter((item) => allowedRoutes.includes(item.url));
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-60 flex-col border-r border-border bg-sidebar">
