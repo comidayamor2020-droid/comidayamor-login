@@ -697,6 +697,7 @@ export type Database = {
       users: {
         Row: {
           auth_user_id: string | null
+          company_id: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -706,6 +707,7 @@ export type Database = {
         }
         Insert: {
           auth_user_id?: string | null
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -715,6 +717,7 @@ export type Database = {
         }
         Update: {
           auth_user_id?: string | null
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -722,7 +725,15 @@ export type Database = {
           name?: string
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "b2b_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendas: {
         Row: {
