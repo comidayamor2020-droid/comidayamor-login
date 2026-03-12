@@ -23,7 +23,8 @@ export default function Login() {
   }
 
   if (session) {
-    return <Navigate to="/" replace />;
+    const role = profile?.role ?? "admin";
+    return <Navigate to={getDefaultRoute(role)} replace />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
