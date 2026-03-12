@@ -8,6 +8,7 @@ interface UserProfile {
   email: string | null;
   role: string;
   is_active: boolean;
+  company_id: string | null;
 }
 
 interface AuthContextType {
