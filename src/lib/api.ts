@@ -1,4 +1,4 @@
-export const API_ENDPOINT = "https://example.com/webhook/dre-financeiro";
+export const API_ENDPOINT = "https://comidayamor.app.n8n.cloud/webhook/fluxo-projetado";
 
 export interface DreData {
   receita_total: number;
