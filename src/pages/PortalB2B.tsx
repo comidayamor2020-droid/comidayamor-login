@@ -109,22 +109,24 @@ export default function PortalB2B() {
                 const belowMin = inCart && inCart.quantity < minQty;
 
                 return (
-                  <div key={p.id} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-                    {p.imagem_url ? (
-                      <img src={p.imagem_url} alt={p.nome} className="h-14 w-14 flex-shrink-0 rounded-lg object-cover" />
-                    ) : (
-                      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
-                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  <div key={p.id} className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      {p.imagem_url ? (
+                        <img src={p.imagem_url} alt={p.nome} className="h-14 w-14 flex-shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 font-medium text-foreground">{p.nome}</p>
+                        {p.categoria && <p className="truncate text-xs text-muted-foreground">{p.categoria}</p>}
+                        <p className="mt-1 text-sm font-semibold text-foreground">{formatBRL(price)}</p>
+                        {minQty > 1 && <p className="text-xs text-muted-foreground">Mín: {minQty} un.</p>}
+                        {belowMin && <p className="text-xs text-destructive">Quantidade abaixo do mínimo ({minQty})</p>}
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground">{p.nome}</p>
-                      {p.categoria && <p className="text-xs text-muted-foreground">{p.categoria}</p>}
-                      <p className="mt-1 text-sm font-semibold text-foreground">{formatBRL(price)}</p>
-                      {minQty > 1 && <p className="text-xs text-muted-foreground">Mín: {minQty} un.</p>}
-                      {belowMin && <p className="text-xs text-destructive">Quantidade abaixo do mínimo ({minQty})</p>}
                     </div>
-                    <div className="flex flex-shrink-0 items-center gap-1">
+                    <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-3">
                       {inCart ? (
                         <>
                           <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(p.id, -1)}>

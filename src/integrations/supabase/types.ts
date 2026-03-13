@@ -735,6 +735,7 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean
+          last_login_at: string | null
           name: string
           role: string
         }
@@ -745,6 +746,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          last_login_at?: string | null
           name: string
           role: string
         }
@@ -755,6 +757,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          last_login_at?: string | null
           name?: string
           role?: string
         }
