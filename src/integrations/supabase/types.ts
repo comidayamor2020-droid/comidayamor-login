@@ -60,6 +60,7 @@ export type Database = {
           id: string
           instagram: string | null
           notes: string | null
+          pedido_minimo_valor: number | null
           phone: string | null
           score: number | null
           state: string | null
@@ -77,6 +78,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           notes?: string | null
+          pedido_minimo_valor?: number | null
           phone?: string | null
           score?: number | null
           state?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           notes?: string | null
+          pedido_minimo_valor?: number | null
           phone?: string | null
           score?: number | null
           state?: string | null
