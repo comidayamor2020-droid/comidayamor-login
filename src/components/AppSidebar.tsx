@@ -16,12 +16,25 @@ const ALL_NAV_ITEMS = [
 ];
 
 export function AppSidebar() {
-  const { profile, user, signOut } = useAuth();
+  const { profile, user, signOut, loading } = useAuth();
 
   const displayName = profile?.name ?? user?.email ?? "Usuário";
-  const role = (profile?.role ?? "b2b_cliente") as AppRole;
-  const allowedRoutes = ROLE_ROUTES[role] ?? [];
+  const role = (profile?.role as AppRole) ?? null;
+  const allowedRoutes = role ? (ROLE_ROUTES[role] ?? []) : [];
   const navItems = ALL_NAV_ITEMS.filter((item) => allowedRoutes.includes(item.url));
+
+  if (loading || !profile) {
+    return (
+      <aside className="fixed left-0 top-0 z-30 flex h-screen w-60 flex-col border-r border-border bg-sidebar">
+        <div className="flex h-14 items-center gap-2 border-b border-border px-5">
+          <span className="text-lg font-semibold tracking-tight text-foreground">Comida y Amor</span>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-60 flex-col border-r border-border bg-sidebar">

@@ -10,9 +10,9 @@ interface RoleRouteProps {
 export function RoleRoute({ path, children }: RoleRouteProps) {
   const { profile, loading } = useAuth();
 
-  if (loading) return null;
+  if (loading || !profile) return null;
 
-  const role = profile?.role ?? "b2b_cliente";
+  const role = profile.role;
 
   if (!canAccess(role, path)) {
     return <Navigate to={getDefaultRoute(role)} replace />;
