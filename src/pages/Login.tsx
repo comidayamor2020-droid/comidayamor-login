@@ -32,10 +32,16 @@ export default function Login() {
     setError("");
     setSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError("E-mail ou senha inválidos. Tente novamente.");
+    } else if (data.user) {
+      // Track last login
+      await supabase
+        .from("users")
+        .update({ last_login_at: new Date().toISOString() })
+        .eq("auth_user_id", data.user.id);
     }
     setSubmitting(false);
   };
