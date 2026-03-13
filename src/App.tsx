@@ -9,6 +9,8 @@ import { RoleRoute } from "@/components/RoleRoute";
 import Dashboard from "./pages/Dashboard";
 import DRE from "./pages/DRE";
 import Produtos from "./pages/Produtos";
+import ClientesB2B from "./pages/ClientesB2B";
+import Usuarios from "./pages/Usuarios";
 import Compras from "./pages/Compras";
 import Producao from "./pages/Producao";
 import PortalB2B from "./pages/PortalB2B";
@@ -30,6 +32,8 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><RoleRoute path="/"><Dashboard /></RoleRoute></ProtectedRoute>} />
             <Route path="/dre" element={<ProtectedRoute><RoleRoute path="/dre"><DRE /></RoleRoute></ProtectedRoute>} />
             <Route path="/produtos" element={<ProtectedRoute><RoleRoute path="/produtos"><Produtos /></RoleRoute></ProtectedRoute>} />
+            <Route path="/clientes-b2b" element={<ProtectedRoute><RoleRoute path="/clientes-b2b"><ClientesB2B /></RoleRoute></ProtectedRoute>} />
+            <Route path="/usuarios" element={<ProtectedRoute><RoleRoute path="/usuarios"><Usuarios /></RoleRoute></ProtectedRoute>} />
             <Route path="/compras" element={<ProtectedRoute><RoleRoute path="/compras"><Compras /></RoleRoute></ProtectedRoute>} />
             <Route path="/producao" element={<ProtectedRoute><RoleRoute path="/producao"><Producao /></RoleRoute></ProtectedRoute>} />
             <Route path="/b2b" element={<ProtectedRoute><RoleRoute path="/b2b"><PortalB2B /></RoleRoute></ProtectedRoute>} />
