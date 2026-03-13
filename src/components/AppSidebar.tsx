@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, LogOut, Package, Factory, Store, ClipboardList } from "lucide-react";
+import { LayoutDashboard, FileText, LogOut, Package, Factory, Store, ClipboardList, ShoppingBag } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_ROUTES, type AppRole } from "@/lib/roles";
@@ -6,6 +6,7 @@ import { ROLE_ROUTES, type AppRole } from "@/lib/roles";
 const ALL_NAV_ITEMS = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "DRE", url: "/dre", icon: FileText },
+  { title: "Produtos", url: "/produtos", icon: ShoppingBag },
   { title: "Compras", url: "/compras", icon: Package },
   { title: "Produção", url: "/producao", icon: Factory },
   { title: "Portal B2B", url: "/b2b", icon: Store },

@@ -1,7 +1,7 @@
 export type AppRole = "admin" | "compras" | "producao" | "b2b_cliente";
 
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
-  admin: ["/", "/dre", "/compras", "/producao", "/b2b", "/b2b/pedidos"],
+  admin: ["/", "/dre", "/produtos", "/compras", "/producao", "/b2b", "/b2b/pedidos"],
   compras: ["/compras"],
   producao: ["/producao"],
   b2b_cliente: ["/b2b", "/b2b/pedidos"],

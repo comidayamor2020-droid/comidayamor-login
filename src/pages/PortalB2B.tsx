@@ -6,7 +6,7 @@ import { formatBRL } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingCart, Plus, Minus, Trash2, Send } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Send, ImageIcon } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 export default function PortalB2B() {
@@ -18,8 +18,9 @@ export default function PortalB2B() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
 
-  const addToCart = (product: { id: string; nome: string; preco_venda: number | null; custo_estimado: number | null }) => {
+  const addToCart = (product: { id: string; nome: string; preco_venda: number | null; custo_estimado: number | null; pedido_minimo: number }) => {
     const price = product.preco_venda ?? product.custo_estimado ?? 0;
+    const minQty = product.pedido_minimo || 1;
     setCart((prev) => {
       const existing = prev.find((i) => i.product_id === product.id);
       if (existing) {
@@ -27,7 +28,7 @@ export default function PortalB2B() {
           i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      return [...prev, { product_id: product.id, nome: product.nome, unit_price: price, quantity: 1 }];
+      return [...prev, { product_id: product.id, nome: product.nome, unit_price: price, quantity: minQty }];
     });
   };
 
@@ -45,6 +46,13 @@ export default function PortalB2B() {
 
   const total = cart.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
 
+  const getMinQty = (productId: string) => {
+    const p = products?.find((x) => x.id === productId);
+    return p?.pedido_minimo || 1;
+  };
+
+  const cartHasMinErrors = cart.some((item) => item.quantity < getMinQty(item.product_id));
+
   const handleSubmit = async () => {
     if (!company) {
       toast.error("Sua conta não está vinculada a uma empresa. Entre em contato com o administrador.");
@@ -52,6 +60,10 @@ export default function PortalB2B() {
     }
     if (cart.length === 0) {
       toast.error("Adicione pelo menos um produto ao pedido.");
+      return;
+    }
+    if (cartHasMinErrors) {
+      toast.error("Corrija as quantidades mínimas antes de enviar.");
       return;
     }
 
@@ -70,9 +82,7 @@ export default function PortalB2B() {
     <DashboardLayout>
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Portal B2B</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Selecione os produtos e crie seu pedido
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Selecione os produtos e crie seu pedido</p>
       </div>
 
       {!loadingCompany && !company && (
@@ -82,7 +92,6 @@ export default function PortalB2B() {
       )}
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Product list */}
         <div className="lg:col-span-2">
           <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">Produtos</h2>
           {loadingProducts ? (
@@ -96,19 +105,26 @@ export default function PortalB2B() {
               {products.map((p) => {
                 const price = p.preco_venda ?? p.custo_estimado ?? 0;
                 const inCart = cart.find((i) => i.product_id === p.id);
+                const minQty = p.pedido_minimo || 1;
+                const belowMin = inCart && inCart.quantity < minQty;
+
                 return (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm"
-                  >
+                  <div key={p.id} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+                    {p.imagem_url ? (
+                      <img src={p.imagem_url} alt={p.nome} className="h-14 w-14 flex-shrink-0 rounded-lg object-cover" />
+                    ) : (
+                      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-foreground">{p.nome}</p>
-                      {p.categoria && (
-                        <p className="text-xs text-muted-foreground">{p.categoria}</p>
-                      )}
+                      {p.categoria && <p className="text-xs text-muted-foreground">{p.categoria}</p>}
                       <p className="mt-1 text-sm font-semibold text-foreground">{formatBRL(price)}</p>
+                      {minQty > 1 && <p className="text-xs text-muted-foreground">Mín: {minQty} un.</p>}
+                      {belowMin && <p className="text-xs text-destructive">Quantidade abaixo do mínimo ({minQty})</p>}
                     </div>
-                    <div className="ml-3 flex items-center gap-1">
+                    <div className="flex flex-shrink-0 items-center gap-1">
                       {inCart ? (
                         <>
                           <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(p.id, -1)}>
@@ -132,7 +148,6 @@ export default function PortalB2B() {
           )}
         </div>
 
-        {/* Cart summary */}
         <div>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-muted-foreground">
             <ShoppingCart className="h-4 w-4" /> Resumo do Pedido
@@ -142,22 +157,27 @@ export default function PortalB2B() {
               <p className="py-4 text-center text-sm text-muted-foreground">Nenhum item adicionado.</p>
             ) : (
               <div className="space-y-3">
-                {cart.map((item) => (
-                  <div key={item.product_id} className="flex items-center justify-between text-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground">{item.nome}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.quantity}x {formatBRL(item.unit_price)}
-                      </p>
+                {cart.map((item) => {
+                  const minQty = getMinQty(item.product_id);
+                  const belowMin = item.quantity < minQty;
+                  return (
+                    <div key={item.product_id} className="text-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-foreground">{item.nome}</p>
+                          <p className="text-xs text-muted-foreground">{item.quantity}x {formatBRL(item.unit_price)}</p>
+                        </div>
+                        <div className="ml-2 flex items-center gap-2">
+                          <span className="font-medium text-foreground">{formatBRL(item.unit_price * item.quantity)}</span>
+                          <button onClick={() => removeFromCart(item.product_id)} className="text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {belowMin && <p className="text-xs text-destructive">Mínimo: {minQty} un.</p>}
                     </div>
-                    <div className="ml-2 flex items-center gap-2">
-                      <span className="font-medium text-foreground">{formatBRL(item.unit_price * item.quantity)}</span>
-                      <button onClick={() => removeFromCart(item.product_id)} className="text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 <div className="border-t border-border pt-3">
                   <div className="flex items-center justify-between font-semibold text-foreground">
@@ -177,7 +197,7 @@ export default function PortalB2B() {
                 <Button
                   className="mt-3 w-full"
                   onClick={handleSubmit}
-                  disabled={createOrder.isPending || !company}
+                  disabled={createOrder.isPending || !company || cartHasMinErrors}
                 >
                   <Send className="mr-2 h-4 w-4" />
                   {createOrder.isPending ? "Enviando..." : "Enviar Pedido"}

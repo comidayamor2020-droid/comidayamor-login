@@ -150,34 +150,61 @@ export type Database = {
       }
       b2b_orders: {
         Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
           company_id: string
           created_at: string | null
+          delivered_at: string | null
           delivery_date: string | null
+          estimated_delivery_date: string | null
+          estimated_delivery_end: string | null
+          estimated_delivery_start: string | null
           id: string
+          last_status_email_sent_at: string | null
           notes: string | null
           order_date: string | null
+          production_started_at: string | null
+          ready_at: string | null
           status: string
           total_amount: number
           user_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
           company_id: string
           created_at?: string | null
+          delivered_at?: string | null
           delivery_date?: string | null
+          estimated_delivery_date?: string | null
+          estimated_delivery_end?: string | null
+          estimated_delivery_start?: string | null
           id?: string
+          last_status_email_sent_at?: string | null
           notes?: string | null
           order_date?: string | null
+          production_started_at?: string | null
+          ready_at?: string | null
           status?: string
           total_amount?: number
           user_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
           company_id?: string
           created_at?: string | null
+          delivered_at?: string | null
           delivery_date?: string | null
+          estimated_delivery_date?: string | null
+          estimated_delivery_end?: string | null
+          estimated_delivery_start?: string | null
           id?: string
+          last_status_email_sent_at?: string | null
           notes?: string | null
           order_date?: string | null
+          production_started_at?: string | null
+          ready_at?: string | null
           status?: string
           total_amount?: number
           user_id?: string | null
@@ -671,7 +698,9 @@ export type Database = {
           custo_estimado: number | null
           data_criacao: string | null
           id: string
+          imagem_url: string | null
           nome: string
+          pedido_minimo: number
           preco_venda: number | null
         }
         Insert: {
@@ -680,7 +709,9 @@ export type Database = {
           custo_estimado?: number | null
           data_criacao?: string | null
           id?: string
+          imagem_url?: string | null
           nome: string
+          pedido_minimo?: number
           preco_venda?: number | null
         }
         Update: {
@@ -689,7 +720,9 @@ export type Database = {
           custo_estimado?: number | null
           data_criacao?: string | null
           id?: string
+          imagem_url?: string | null
           nome?: string
+          pedido_minimo?: number
           preco_venda?: number | null
         }
         Relationships: []

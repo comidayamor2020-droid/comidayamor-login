@@ -3,27 +3,28 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useMyOrders, useOrderItems } from "@/hooks/use-b2b";
 import { formatBRL } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
+import { ChevronDown, ChevronUp, ClipboardList, Truck } from "lucide-react";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   draft: { label: "Rascunho", variant: "secondary" },
   submitted: { label: "Enviado", variant: "default" },
+  enviado: { label: "Enviado", variant: "default" },
   approved: { label: "Aprovado", variant: "default" },
+  pedido_aceito: { label: "Pedido Aceito", variant: "outline" },
   in_production: { label: "Em Produção", variant: "outline" },
+  em_producao: { label: "Em Produção", variant: "outline" },
+  pedido_pronto: { label: "Pedido Pronto", variant: "default" },
   delivered: { label: "Entregue", variant: "secondary" },
+  entregue: { label: "Entregue", variant: "secondary" },
   cancelled: { label: "Cancelado", variant: "destructive" },
+  cancelado: { label: "Cancelado", variant: "destructive" },
 };
 
 function OrderItemsDetail({ orderId }: { orderId: string }) {
   const { data: items, isLoading } = useOrderItems(orderId);
 
-  if (isLoading) {
-    return <div className="px-5 py-3 text-sm text-muted-foreground">Carregando itens...</div>;
-  }
-
-  if (!items?.length) {
-    return <div className="px-5 py-3 text-sm text-muted-foreground">Nenhum item encontrado.</div>;
-  }
+  if (isLoading) return <div className="px-5 py-3 text-sm text-muted-foreground">Carregando itens...</div>;
+  if (!items?.length) return <div className="px-5 py-3 text-sm text-muted-foreground">Nenhum item encontrado.</div>;
 
   return (
     <div className="border-t border-border bg-muted/20 px-5 py-3">
@@ -39,9 +40,7 @@ function OrderItemsDetail({ orderId }: { orderId: string }) {
         <tbody>
           {items.map((item) => (
             <tr key={item.id} className="border-t border-border/50">
-              <td className="py-2 text-foreground">
-                {(item as any).produtos?.nome ?? "Produto"}
-              </td>
+              <td className="py-2 text-foreground">{(item as any).produtos?.nome ?? "Produto"}</td>
               <td className="py-2 text-right tabular-nums text-foreground">{item.quantity}</td>
               <td className="py-2 text-right tabular-nums text-foreground">{formatBRL(item.unit_price)}</td>
               <td className="py-2 text-right tabular-nums font-medium text-foreground">{formatBRL(item.total_price)}</td>
@@ -87,30 +86,34 @@ export default function MeusPedidos() {
                   className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-muted/30"
                 >
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-sm font-medium text-foreground">
-                      Pedido #{order.id.slice(0, 8)}
-                    </span>
+                    <span className="text-sm font-medium text-foreground">Pedido #{order.id.slice(0, 8)}</span>
                     <Badge variant={status.variant}>{status.label}</Badge>
                     <span className="text-xs text-muted-foreground">
-                      {order.order_date
-                        ? new Date(order.order_date + "T00:00:00").toLocaleDateString("pt-BR")
-                        : "—"}
+                      {order.order_date ? new Date(order.order_date + "T00:00:00").toLocaleDateString("pt-BR") : "—"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-foreground">{formatBRL(order.total_amount)}</span>
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </button>
 
                 {order.notes && (
                   <div className="border-t border-border/50 px-5 py-2">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Obs:</span> {order.notes}
+                    <p className="text-xs text-muted-foreground"><span className="font-medium">Obs:</span> {order.notes}</p>
+                  </div>
+                )}
+
+                {order.estimated_delivery_date && (
+                  <div className="border-t border-border/50 px-5 py-2">
+                    <p className="flex items-center gap-1.5 text-sm text-foreground">
+                      <Truck className="h-4 w-4 text-muted-foreground" />
+                      Data prevista: {new Date(order.estimated_delivery_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                      {order.estimated_delivery_start && order.estimated_delivery_end && (
+                        <span className="ml-1 text-muted-foreground">
+                          — Janela: {order.estimated_delivery_start.slice(0, 5)} às {order.estimated_delivery_end.slice(0, 5)}
+                        </span>
+                      )}
                     </p>
                   </div>
                 )}
