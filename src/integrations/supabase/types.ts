@@ -812,7 +812,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_user_is_active: { Args: never; Returns: boolean }
+      current_user_role: { Args: never; Returns: string }
+      get_current_user_is_active: { Args: never; Returns: boolean }
+      get_current_user_role: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
