@@ -58,6 +58,13 @@ export default function ProducoesProgamadas() {
       toast.error("Preencha nome e prazo");
       return;
     }
+    // Validate items
+    for (const item of form.itens) {
+      if (!item.produto_id || item.quantidade_total <= 0) {
+        toast.error("Cada item precisa de produto e quantidade > 0");
+        return;
+      }
+    }
     try {
       await createScheduled.mutateAsync(form);
       toast.success("Programação criada!");
@@ -70,8 +77,9 @@ export default function ProducoesProgamadas() {
         observacao: "",
         itens: [],
       });
-    } catch {
-      toast.error("Erro ao criar");
+    } catch (err: any) {
+      console.error("Erro ao criar programação:", err);
+      toast.error(err?.message ?? "Erro ao criar programação");
     }
   };
 
@@ -181,8 +189,10 @@ export default function ProducoesProgamadas() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="evento">Evento</SelectItem>
-                    <SelectItem value="encomenda">Encomenda</SelectItem>
-                    <SelectItem value="reposicao">Reposição</SelectItem>
+                    <SelectItem value="encomenda_interna">Encomenda Interna</SelectItem>
+                    <SelectItem value="acao_promocional">Ação Promocional</SelectItem>
+                    <SelectItem value="sazonal">Sazonal</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
