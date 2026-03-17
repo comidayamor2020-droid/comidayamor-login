@@ -189,8 +189,10 @@ export default function ProducoesProgamadas() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="evento">Evento</SelectItem>
-                    <SelectItem value="encomenda">Encomenda</SelectItem>
-                    <SelectItem value="reposicao">Reposição</SelectItem>
+                    <SelectItem value="encomenda_interna">Encomenda Interna</SelectItem>
+                    <SelectItem value="acao_promocional">Ação Promocional</SelectItem>
+                    <SelectItem value="sazonal">Sazonal</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
