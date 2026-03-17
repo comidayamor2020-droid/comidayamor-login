@@ -96,7 +96,9 @@ export default function ClientesB2B() {
       state: c.state ?? "",
       status: c.status ?? "lead",
       score: c.score?.toString() ?? "",
+      tipo_pedido_minimo: c.tipo_pedido_minimo ?? "sem_minimo",
       pedido_minimo_valor: c.pedido_minimo_valor?.toString() ?? "0",
+      pedido_minimo_itens: c.pedido_minimo_itens?.toString() ?? "0",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
