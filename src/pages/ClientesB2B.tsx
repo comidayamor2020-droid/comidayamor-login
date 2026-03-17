@@ -214,8 +214,16 @@ export default function ClientesB2B() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {[c.city, c.state].filter(Boolean).join(" / ") || "—"}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatBRL(c.pedido_minimo_valor ?? 0)}
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    {(c.tipo_pedido_minimo ?? "sem_minimo") === "sem_minimo" ? (
+                      "Sem mínimo"
+                    ) : (c.tipo_pedido_minimo === "valor") ? (
+                      formatBRL(c.pedido_minimo_valor ?? 0)
+                    ) : (c.tipo_pedido_minimo === "itens") ? (
+                      `${c.pedido_minimo_itens ?? 0} itens`
+                    ) : (
+                      <>{formatBRL(c.pedido_minimo_valor ?? 0)} / {c.pedido_minimo_itens ?? 0} itens</>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={statusColor(c.status)}>{STATUS_LABELS[c.status ?? "lead"] ?? c.status}</Badge>
