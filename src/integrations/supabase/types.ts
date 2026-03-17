@@ -556,6 +556,346 @@ export type Database = {
         }
         Relationships: []
       }
+      op_config_produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          estoque_ideal_dom: number
+          estoque_ideal_qua: number
+          estoque_ideal_qui: number
+          estoque_ideal_sab: number
+          estoque_ideal_seg: number
+          estoque_ideal_sex: number
+          estoque_ideal_ter: number
+          estoque_minimo: number
+          id: string
+          produto_id: string
+          unidade: string | null
+          updated_at: string
+          validade_dias: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          estoque_ideal_dom?: number
+          estoque_ideal_qua?: number
+          estoque_ideal_qui?: number
+          estoque_ideal_sab?: number
+          estoque_ideal_seg?: number
+          estoque_ideal_sex?: number
+          estoque_ideal_ter?: number
+          estoque_minimo?: number
+          id?: string
+          produto_id: string
+          unidade?: string | null
+          updated_at?: string
+          validade_dias?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          estoque_ideal_dom?: number
+          estoque_ideal_qua?: number
+          estoque_ideal_qui?: number
+          estoque_ideal_sab?: number
+          estoque_ideal_seg?: number
+          estoque_ideal_sex?: number
+          estoque_ideal_ter?: number
+          estoque_minimo?: number
+          id?: string
+          produto_id?: string
+          unidade?: string | null
+          updated_at?: string
+          validade_dias?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_config_produtos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_contagens_loja: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          data_contagem: string
+          diferenca: number | null
+          estoque_contado: number
+          estoque_esperado: number
+          id: string
+          observacao: string | null
+          produto_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          data_contagem?: string
+          diferenca?: number | null
+          estoque_contado?: number
+          estoque_esperado?: number
+          id?: string
+          observacao?: string | null
+          produto_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          data_contagem?: string
+          diferenca?: number | null
+          estoque_contado?: number
+          estoque_esperado?: number
+          id?: string
+          observacao?: string | null
+          produto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_contagens_loja_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_estoque_produtos: {
+        Row: {
+          estoque_atual: number
+          id: string
+          produto_id: string
+          updated_at: string
+        }
+        Insert: {
+          estoque_atual?: number
+          id?: string
+          produto_id: string
+          updated_at?: string
+        }
+        Update: {
+          estoque_atual?: number
+          id?: string
+          produto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_estoque_produtos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_lotes_producao: {
+        Row: {
+          concluido_em: string | null
+          created_at: string
+          criado_por: string | null
+          data_producao: string
+          id: string
+          observacao: string | null
+          produto_id: string
+          quantidade: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          concluido_em?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_producao?: string
+          id?: string
+          observacao?: string | null
+          produto_id: string
+          quantidade: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          concluido_em?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_producao?: string
+          id?: string
+          observacao?: string | null
+          produto_id?: string
+          quantidade?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_lotes_producao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_producoes_programadas: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          data_criacao: string
+          id: string
+          nome_programacao: string
+          observacao: string | null
+          prazo_conclusao: string
+          prioridade: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          data_criacao?: string
+          id?: string
+          nome_programacao: string
+          observacao?: string | null
+          prazo_conclusao: string
+          prioridade?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          data_criacao?: string
+          id?: string
+          nome_programacao?: string
+          observacao?: string | null
+          prazo_conclusao?: string
+          prioridade?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      op_producoes_programadas_itens: {
+        Row: {
+          created_at: string
+          id: string
+          observacao: string | null
+          produto_id: string
+          programacao_id: string
+          quantidade_pendente: number | null
+          quantidade_produzida: number
+          quantidade_total: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          produto_id: string
+          programacao_id: string
+          quantidade_pendente?: number | null
+          quantidade_produzida?: number
+          quantidade_total: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          produto_id?: string
+          programacao_id?: string
+          quantidade_pendente?: number | null
+          quantidade_produzida?: number
+          quantidade_total?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_producoes_programadas_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "op_producoes_programadas_itens_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "op_producoes_programadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      op_solicitacoes_ocorrencia: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          created_at: string
+          data_solicitacao: string
+          id: string
+          motivo: string
+          observacao: string | null
+          produto_id: string
+          quantidade_aprovada: number | null
+          quantidade_solicitada: number
+          solicitado_por: string | null
+          status: string
+          tipo_ocorrencia: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          data_solicitacao?: string
+          id?: string
+          motivo: string
+          observacao?: string | null
+          produto_id: string
+          quantidade_aprovada?: number | null
+          quantidade_solicitada: number
+          solicitado_por?: string | null
+          status?: string
+          tipo_ocorrencia: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          data_solicitacao?: string
+          id?: string
+          motivo?: string
+          observacao?: string | null
+          produto_id?: string
+          quantidade_aprovada?: number | null
+          quantidade_solicitada?: number
+          solicitado_por?: string | null
+          status?: string
+          tipo_ocorrencia?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_solicitacoes_ocorrencia_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       producao: {
         Row: {
           data_criacao: string | null
