@@ -336,11 +336,15 @@ export function useUpdateScheduledItem() {
     }) => {
       const pendente = input.quantidade_total - input.quantidade_produzida;
       const status = input.status ?? (pendente <= 0 ? "concluido" : "em produção");
+      // Do NOT send quantidade_pendente - it may be generated
       const { error } = await supabase
         .from("op_producoes_programadas_itens")
-        .update({ quantidade_produzida: input.quantidade_produzida, quantidade_pendente: pendente, status })
+        .update({ quantidade_produzida: input.quantidade_produzida, status })
         .eq("id", input.id);
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao atualizar item:", error);
+        throw new Error(error.message);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-scheduled"] });
