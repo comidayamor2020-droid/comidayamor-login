@@ -28,6 +28,13 @@ const statusColor = (s: string | null) => {
   return "secondary" as const;
 };
 
+const TIPO_MINIMO_LABELS: Record<string, string> = {
+  sem_minimo: "Sem mínimo",
+  valor: "Valor",
+  itens: "Qtd. itens",
+  valor_e_itens: "Valor + Itens",
+};
+
 const EMPTY_FORM = {
   company_name: "",
   trade_name: "",
@@ -41,7 +48,9 @@ const EMPTY_FORM = {
   state: "",
   status: "lead",
   score: "",
+  tipo_pedido_minimo: "sem_minimo",
   pedido_minimo_valor: "0",
+  pedido_minimo_itens: "0",
   notes: "",
 };
 
