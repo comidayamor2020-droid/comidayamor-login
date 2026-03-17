@@ -48,8 +48,9 @@ export default function EstoqueLoja() {
       });
       toast.success("Contagem registrada!");
       setCountValues((v) => ({ ...v, [produtoId]: "" }));
-    } catch {
-      toast.error("Erro ao registrar contagem");
+    } catch (err: any) {
+      console.error("Erro ao registrar contagem:", err);
+      toast.error(err?.message ?? "Erro ao registrar contagem");
     }
   };
 
