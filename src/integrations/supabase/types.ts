@@ -60,11 +60,13 @@ export type Database = {
           id: string
           instagram: string | null
           notes: string | null
+          pedido_minimo_itens: number | null
           pedido_minimo_valor: number | null
           phone: string | null
           score: number | null
           state: string | null
           status: string | null
+          tipo_pedido_minimo: string | null
           trade_name: string | null
           whatsapp: string | null
         }
@@ -78,11 +80,13 @@ export type Database = {
           id?: string
           instagram?: string | null
           notes?: string | null
+          pedido_minimo_itens?: number | null
           pedido_minimo_valor?: number | null
           phone?: string | null
           score?: number | null
           state?: string | null
           status?: string | null
+          tipo_pedido_minimo?: string | null
           trade_name?: string | null
           whatsapp?: string | null
         }
@@ -96,11 +100,13 @@ export type Database = {
           id?: string
           instagram?: string | null
           notes?: string | null
+          pedido_minimo_itens?: number | null
           pedido_minimo_valor?: number | null
           phone?: string | null
           score?: number | null
           state?: string | null
           status?: string | null
+          tipo_pedido_minimo?: string | null
           trade_name?: string | null
           whatsapp?: string | null
         }
