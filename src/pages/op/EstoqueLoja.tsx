@@ -3,11 +3,14 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOpProducts, useTodayCounts, useSubmitCount, useRequestOccurrence } from "@/hooks/use-operational";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 
 export default function EstoqueLoja() {
   const { data: products, isLoading: l1 } = useOpProducts();
@@ -50,6 +53,11 @@ export default function EstoqueLoja() {
     }
   };
 
+  const openOccurrence = (produtoId: string, nome: string, tipo: "perda" | "degustacao") => {
+    setOccDialog({ produtoId, nome });
+    setOccForm({ tipo, quantidade: "", motivo: "", observacao: "" });
+  };
+
   const handleOccurrence = async () => {
     if (!occDialog) return;
     const q = Number(occForm.quantidade);
@@ -67,7 +75,6 @@ export default function EstoqueLoja() {
       });
       toast.success("Solicitação enviada para aprovação!");
       setOccDialog(null);
-      setOccForm({ tipo: "perda", quantidade: "", motivo: "", observacao: "" });
     } catch {
       toast.error("Erro ao enviar solicitação");
     }
@@ -77,39 +84,39 @@ export default function EstoqueLoja() {
     <DashboardLayout>
       <div className="space-y-4">
         <h1 className="text-xl font-semibold text-foreground">Estoque da Loja</h1>
+        <p className="text-sm text-muted-foreground">
+          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+        </p>
 
         <div className="space-y-3">
           {(products ?? []).map((p) => {
             const esperado = p.estoque_atual;
             const existingCount = countsMap.get(p.id);
+            const hasDivergence = existingCount && existingCount.diferenca !== 0 && existingCount.diferenca !== null;
 
             return (
-              <Card key={p.id}>
+              <Card key={p.id} className={hasDivergence ? "border-destructive/50" : ""}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-medium text-foreground">{p.nome}</p>
-                      <p className="text-xs text-muted-foreground">Esperado: {esperado}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Esperado: <strong>{esperado}</strong>
+                      </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setOccDialog({ produtoId: p.id, nome: p.nome })}
-                    >
-                      Solicitar
-                    </Button>
+                    {hasDivergence && <AlertTriangle className="h-4 w-4 text-destructive" />}
                   </div>
 
                   {existingCount ? (
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      <span>
-                        Contado: <strong>{existingCount.estoque_contado}</strong>
-                      </span>
-                      <span
-                        className={`font-medium ${existingCount.diferenca === 0 ? "text-emerald-600" : "text-destructive"}`}
-                      >
-                        Dif: {existingCount.diferenca ?? 0}
-                      </span>
+                    <div className="mt-2">
+                      <div className="flex items-center gap-3 text-sm">
+                        <span>
+                          Contado: <strong>{existingCount.estoque_contado}</strong>
+                        </span>
+                        <Badge variant={existingCount.diferenca === 0 ? "secondary" : "destructive"}>
+                          Dif: {existingCount.diferenca ?? 0}
+                        </Badge>
+                      </div>
                     </div>
                   ) : (
                     <div className="mt-2 flex gap-2">
@@ -125,6 +132,25 @@ export default function EstoqueLoja() {
                       </Button>
                     </div>
                   )}
+
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => openOccurrence(p.id, p.nome, "perda")}
+                    >
+                      Perda
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => openOccurrence(p.id, p.nome, "degustacao")}
+                    >
+                      Degustação
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -135,34 +161,48 @@ export default function EstoqueLoja() {
       <Dialog open={!!occDialog} onOpenChange={() => setOccDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Solicitar — {occDialog?.nome}</DialogTitle>
+            <DialogTitle>
+              {occForm.tipo === "perda" ? "Solicitar Perda" : "Solicitar Degustação"} — {occDialog?.nome}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Select value={occForm.tipo} onValueChange={(v) => setOccForm((f) => ({ ...f, tipo: v }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="perda">Perda</SelectItem>
-                <SelectItem value="degustacao">Degustação</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              placeholder="Quantidade"
-              value={occForm.quantidade}
-              onChange={(e) => setOccForm((f) => ({ ...f, quantidade: e.target.value }))}
-            />
-            <Input
-              placeholder="Motivo"
-              value={occForm.motivo}
-              onChange={(e) => setOccForm((f) => ({ ...f, motivo: e.target.value }))}
-            />
-            <Textarea
-              placeholder="Observação (opcional)"
-              value={occForm.observacao}
-              onChange={(e) => setOccForm((f) => ({ ...f, observacao: e.target.value }))}
-            />
+            <div>
+              <Label className="text-xs">Tipo</Label>
+              <Select value={occForm.tipo} onValueChange={(v) => setOccForm((f) => ({ ...f, tipo: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="perda">Perda</SelectItem>
+                  <SelectItem value="degustacao">Degustação</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Quantidade</Label>
+              <Input
+                type="number"
+                placeholder="Quantidade"
+                value={occForm.quantidade}
+                onChange={(e) => setOccForm((f) => ({ ...f, quantidade: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Motivo *</Label>
+              <Input
+                placeholder="Motivo"
+                value={occForm.motivo}
+                onChange={(e) => setOccForm((f) => ({ ...f, motivo: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Observação</Label>
+              <Textarea
+                placeholder="Observação (opcional)"
+                value={occForm.observacao}
+                onChange={(e) => setOccForm((f) => ({ ...f, observacao: e.target.value }))}
+              />
+            </div>
             <Button onClick={handleOccurrence} disabled={requestOccurrence.isPending} className="w-full">
               Enviar Solicitação
             </Button>

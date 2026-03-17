@@ -28,7 +28,6 @@ const ProducaoDia = lazy(() => import("./pages/op/ProducaoDia"));
 const EstoqueLoja = lazy(() => import("./pages/op/EstoqueLoja"));
 const ConciliacaoOp = lazy(() => import("./pages/op/Conciliacao"));
 const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
-const ProdutosOp = lazy(() => import("./pages/op/ProdutosOp"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 
 const queryClient = new QueryClient();
@@ -100,7 +99,6 @@ const App = () => (
               <Route path="/op/estoque-loja" element={<R path="/op/estoque-loja"><EstoqueLoja /></R>} />
               <Route path="/op/conciliacao" element={<R path="/op/conciliacao"><ConciliacaoOp /></R>} />
               <Route path="/op/aprovacoes" element={<R path="/op/aprovacoes"><AprovacoesOp /></R>} />
-              <Route path="/op/produtos" element={<R path="/op/produtos"><ProdutosOp /></R>} />
               <Route path="/op/programadas" element={<R path="/op/programadas"><ProducoesProgamadas /></R>} />
 
               <Route path="*" element={<NotFound />} />

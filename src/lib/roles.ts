@@ -3,14 +3,14 @@ export type AppRole = "admin" | "gestao" | "gerente_operacional" | "loja" | "pro
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
   admin: [
     "/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
-    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/produtos", "/op/programadas",
+    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
   ],
   gestao: [
     "/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
-    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/produtos", "/op/programadas",
+    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
   ],
   gerente_operacional: [
-    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/produtos", "/op/programadas",
+    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
   ],
   loja: ["/op/estoque-loja"],
   producao: ["/op/producao-dia"],
