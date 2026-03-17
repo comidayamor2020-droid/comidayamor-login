@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+/* Financial / existing pages */
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DRE = lazy(() => import("./pages/DRE"));
 const Produtos = lazy(() => import("./pages/Produtos"));
@@ -20,6 +21,15 @@ const Compras = lazy(() => import("./pages/Compras"));
 const Producao = lazy(() => import("./pages/Producao"));
 const PortalB2B = lazy(() => import("./pages/PortalB2B"));
 const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
+
+/* Operational pages */
+const ResumoOperacional = lazy(() => import("./pages/op/ResumoOperacional"));
+const ProducaoDia = lazy(() => import("./pages/op/ProducaoDia"));
+const EstoqueLoja = lazy(() => import("./pages/op/EstoqueLoja"));
+const ConciliacaoOp = lazy(() => import("./pages/op/Conciliacao"));
+const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
+const ProdutosOp = lazy(() => import("./pages/op/ProdutosOp"));
+const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 
 const queryClient = new QueryClient();
 
@@ -37,7 +47,10 @@ function SafePage({ children }: { children: React.ReactNode }) {
           <div className="text-center">
             <p className="text-lg font-semibold text-foreground">Erro ao carregar página</p>
             <p className="mt-1 text-sm text-muted-foreground">Tente recarregar.</p>
-            <button onClick={() => window.location.reload()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground">
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+            >
               Recarregar
             </button>
           </div>
@@ -46,6 +59,16 @@ function SafePage({ children }: { children: React.ReactNode }) {
     >
       <Suspense fallback={<PageLoader />}>{children}</Suspense>
     </ErrorBoundary>
+  );
+}
+
+function R({ path, children }: { path: string; children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <RoleRoute path={path}>
+        <SafePage>{children}</SafePage>
+      </RoleRoute>
+    </ProtectedRoute>
   );
 }
 
@@ -59,15 +82,27 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<ProtectedRoute><RoleRoute path="/"><SafePage><Dashboard /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/dre" element={<ProtectedRoute><RoleRoute path="/dre"><SafePage><DRE /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/produtos" element={<ProtectedRoute><RoleRoute path="/produtos"><SafePage><Produtos /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/clientes-b2b" element={<ProtectedRoute><RoleRoute path="/clientes-b2b"><SafePage><ClientesB2B /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/usuarios" element={<ProtectedRoute><RoleRoute path="/usuarios"><SafePage><Usuarios /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/compras" element={<ProtectedRoute><RoleRoute path="/compras"><SafePage><Compras /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/producao" element={<ProtectedRoute><RoleRoute path="/producao"><SafePage><Producao /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/b2b" element={<ProtectedRoute><RoleRoute path="/b2b"><SafePage><PortalB2B /></SafePage></RoleRoute></ProtectedRoute>} />
-              <Route path="/b2b/pedidos" element={<ProtectedRoute><RoleRoute path="/b2b/pedidos"><SafePage><MeusPedidos /></SafePage></RoleRoute></ProtectedRoute>} />
+
+              {/* Financial */}
+              <Route path="/" element={<R path="/"><Dashboard /></R>} />
+              <Route path="/dre" element={<R path="/dre"><DRE /></R>} />
+              <Route path="/produtos" element={<R path="/produtos"><Produtos /></R>} />
+              <Route path="/clientes-b2b" element={<R path="/clientes-b2b"><ClientesB2B /></R>} />
+              <Route path="/usuarios" element={<R path="/usuarios"><Usuarios /></R>} />
+              <Route path="/compras" element={<R path="/compras"><Compras /></R>} />
+              <Route path="/producao" element={<R path="/producao"><Producao /></R>} />
+              <Route path="/b2b" element={<R path="/b2b"><PortalB2B /></R>} />
+              <Route path="/b2b/pedidos" element={<R path="/b2b/pedidos"><MeusPedidos /></R>} />
+
+              {/* Operational */}
+              <Route path="/op" element={<R path="/op"><ResumoOperacional /></R>} />
+              <Route path="/op/producao-dia" element={<R path="/op/producao-dia"><ProducaoDia /></R>} />
+              <Route path="/op/estoque-loja" element={<R path="/op/estoque-loja"><EstoqueLoja /></R>} />
+              <Route path="/op/conciliacao" element={<R path="/op/conciliacao"><ConciliacaoOp /></R>} />
+              <Route path="/op/aprovacoes" element={<R path="/op/aprovacoes"><AprovacoesOp /></R>} />
+              <Route path="/op/produtos" element={<R path="/op/produtos"><ProdutosOp /></R>} />
+              <Route path="/op/programadas" element={<R path="/op/programadas"><ProducoesProgamadas /></R>} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

@@ -1,16 +1,30 @@
-export type AppRole = "admin" | "compras" | "producao" | "b2b_cliente";
+export type AppRole = "admin" | "gestao" | "gerente_operacional" | "loja" | "producao" | "compras" | "b2b_cliente";
 
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
-  admin: ["/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos"],
+  admin: [
+    "/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
+    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/produtos", "/op/programadas",
+  ],
+  gestao: [
+    "/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
+    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/produtos", "/op/programadas",
+  ],
+  gerente_operacional: [
+    "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/produtos", "/op/programadas",
+  ],
+  loja: ["/op/estoque-loja"],
+  producao: ["/op/producao-dia"],
   compras: ["/compras"],
-  producao: ["/producao"],
   b2b_cliente: ["/b2b", "/b2b/pedidos"],
 };
 
 export const ROLE_DEFAULT_ROUTE: Record<AppRole, string> = {
   admin: "/",
+  gestao: "/",
+  gerente_operacional: "/op",
+  loja: "/op/estoque-loja",
+  producao: "/op/producao-dia",
   compras: "/compras",
-  producao: "/producao",
   b2b_cliente: "/b2b",
 };
 
