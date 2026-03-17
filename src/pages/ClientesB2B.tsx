@@ -353,7 +353,6 @@ export default function ClientesB2B() {
                 <Input type="number" min="0" value={form.pedido_minimo_itens} onChange={(e) => set("pedido_minimo_itens", e.target.value)} />
               </div>
             )}
-            </div>
             <div className="space-y-2">
               <Label>Observações</Label>
               <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
