@@ -28,6 +28,13 @@ const statusColor = (s: string | null) => {
   return "secondary" as const;
 };
 
+const TIPO_MINIMO_LABELS: Record<string, string> = {
+  sem_minimo: "Sem mínimo",
+  valor: "Valor",
+  itens: "Qtd. itens",
+  valor_e_itens: "Valor + Itens",
+};
+
 const EMPTY_FORM = {
   company_name: "",
   trade_name: "",
@@ -41,7 +48,9 @@ const EMPTY_FORM = {
   state: "",
   status: "lead",
   score: "",
+  tipo_pedido_minimo: "sem_minimo",
   pedido_minimo_valor: "0",
+  pedido_minimo_itens: "0",
   notes: "",
 };
 
@@ -87,7 +96,9 @@ export default function ClientesB2B() {
       state: c.state ?? "",
       status: c.status ?? "lead",
       score: c.score?.toString() ?? "",
+      tipo_pedido_minimo: c.tipo_pedido_minimo ?? "sem_minimo",
       pedido_minimo_valor: c.pedido_minimo_valor?.toString() ?? "0",
+      pedido_minimo_itens: c.pedido_minimo_itens?.toString() ?? "0",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
@@ -115,7 +126,9 @@ export default function ClientesB2B() {
       state: form.state || null,
       status: form.status || "lead",
       score: form.score ? parseFloat(form.score) : 0,
+      tipo_pedido_minimo: form.tipo_pedido_minimo || "sem_minimo",
       pedido_minimo_valor: form.pedido_minimo_valor ? parseFloat(form.pedido_minimo_valor) : 0,
+      pedido_minimo_itens: form.pedido_minimo_itens ? parseInt(form.pedido_minimo_itens) : 0,
       notes: form.notes || null,
     };
 
@@ -201,8 +214,16 @@ export default function ClientesB2B() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {[c.city, c.state].filter(Boolean).join(" / ") || "—"}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatBRL(c.pedido_minimo_valor ?? 0)}
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    {(c.tipo_pedido_minimo ?? "sem_minimo") === "sem_minimo" ? (
+                      "Sem mínimo"
+                    ) : (c.tipo_pedido_minimo === "valor") ? (
+                      formatBRL(c.pedido_minimo_valor ?? 0)
+                    ) : (c.tipo_pedido_minimo === "itens") ? (
+                      `${c.pedido_minimo_itens ?? 0} itens`
+                    ) : (
+                      <>{formatBRL(c.pedido_minimo_valor ?? 0)} / {c.pedido_minimo_itens ?? 0} itens</>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={statusColor(c.status)}>{STATUS_LABELS[c.status ?? "lead"] ?? c.status}</Badge>
@@ -306,11 +327,32 @@ export default function ClientesB2B() {
                 <Label>Score</Label>
                 <Input type="number" value={form.score} onChange={(e) => set("score", e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo Pedido Mínimo</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={form.tipo_pedido_minimo}
+                onChange={(e) => set("tipo_pedido_minimo", e.target.value)}
+              >
+                <option value="sem_minimo">Sem mínimo</option>
+                <option value="valor">Mínimo por valor</option>
+                <option value="itens">Mínimo por quantidade de itens</option>
+                <option value="valor_e_itens">Mínimo por valor e quantidade de itens</option>
+              </select>
+            </div>
+            {(form.tipo_pedido_minimo === "valor" || form.tipo_pedido_minimo === "valor_e_itens") && (
               <div className="space-y-2">
                 <Label>Pedido Mínimo (R$)</Label>
                 <Input type="number" min="0" value={form.pedido_minimo_valor} onChange={(e) => set("pedido_minimo_valor", e.target.value)} />
               </div>
-            </div>
+            )}
+            {(form.tipo_pedido_minimo === "itens" || form.tipo_pedido_minimo === "valor_e_itens") && (
+              <div className="space-y-2">
+                <Label>Quantidade Mínima de Itens</Label>
+                <Input type="number" min="0" value={form.pedido_minimo_itens} onChange={(e) => set("pedido_minimo_itens", e.target.value)} />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Observações</Label>
               <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />

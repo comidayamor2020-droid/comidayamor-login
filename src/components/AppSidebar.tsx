@@ -144,6 +144,25 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
   );
 }
 
+const STORAGE_KEY = "sidebar-groups-state";
+
+function loadGroupStates(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveGroupState(label: string, open: boolean) {
+  try {
+    const states = loadGroupStates();
+    states[label] = open;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+  } catch { /* noop */ }
+}
+
 function CollapsibleGroup({
   label,
   items,
@@ -153,12 +172,23 @@ function CollapsibleGroup({
   items: NavItem[];
   onClose?: () => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => {
+    const saved = loadGroupStates();
+    return saved[label] !== undefined ? saved[label] : true;
+  });
+
+  const toggle = () => {
+    setOpen((v) => {
+      const next = !v;
+      saveGroupState(label, next);
+      return next;
+    });
+  };
 
   return (
     <div className="mt-1">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         className="flex w-full items-center justify-between px-5 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
       >
         <span>{label}</span>
