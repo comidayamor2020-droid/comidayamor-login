@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Pencil, ImageIcon } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -32,6 +33,16 @@ const EMPTY_FORM: ProductForm = {
   ativo: true,
 };
 
+const DAYS = [
+  { key: "estoque_ideal_seg", label: "Seg" },
+  { key: "estoque_ideal_ter", label: "Ter" },
+  { key: "estoque_ideal_qua", label: "Qua" },
+  { key: "estoque_ideal_qui", label: "Qui" },
+  { key: "estoque_ideal_sex", label: "Sex" },
+  { key: "estoque_ideal_sab", label: "Sáb" },
+  { key: "estoque_ideal_dom", label: "Dom" },
+] as const;
+
 function useAllProducts() {
   return useQuery({
     queryKey: ["admin-produtos"],
@@ -46,13 +57,31 @@ function useAllProducts() {
   });
 }
 
+function useOpConfigs() {
+  return useQuery({
+    queryKey: ["op-configs-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("op_config_produtos").select("*");
+      if (error) throw error;
+      return new Map((data ?? []).map((c) => [c.produto_id, c]));
+    },
+  });
+}
+
 export default function Produtos() {
   const queryClient = useQueryClient();
   const { data: products, isLoading } = useAllProducts();
+  const { data: opConfigs } = useOpConfigs();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Op config state
+  const [opDialogOpen, setOpDialogOpen] = useState(false);
+  const [opEditingId, setOpEditingId] = useState<string | null>(null);
+  const [opEditingName, setOpEditingName] = useState("");
+  const [opForm, setOpForm] = useState<Record<string, unknown>>({});
 
   const upsert = useMutation({
     mutationFn: async () => {
@@ -110,6 +139,26 @@ export default function Produtos() {
     },
   });
 
+  const saveOpConfig = useMutation({
+    mutationFn: async () => {
+      if (!opEditingId) return;
+      const { error } = await supabase
+        .from("op_config_produtos")
+        .upsert(
+          { produto_id: opEditingId, ...opForm, updated_at: new Date().toISOString() } as never,
+          { onConflict: "produto_id" },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["op-configs-all"] });
+      queryClient.invalidateQueries({ queryKey: ["op-products"] });
+      toast.success("Configuração operacional salva!");
+      setOpDialogOpen(false);
+    },
+    onError: () => toast.error("Erro ao salvar configuração operacional"),
+  });
+
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
@@ -132,12 +181,32 @@ export default function Produtos() {
     setDialogOpen(true);
   };
 
+  const openOpConfig = (p: any) => {
+    const c = opConfigs?.get(p.id);
+    setOpEditingId(p.id);
+    setOpEditingName(p.nome);
+    setOpForm({
+      ativo: c?.ativo ?? true,
+      unidade: c?.unidade ?? "un",
+      validade_dias: c?.validade_dias ?? 0,
+      estoque_minimo: c?.estoque_minimo ?? 0,
+      estoque_ideal_seg: c?.estoque_ideal_seg ?? 0,
+      estoque_ideal_ter: c?.estoque_ideal_ter ?? 0,
+      estoque_ideal_qua: c?.estoque_ideal_qua ?? 0,
+      estoque_ideal_qui: c?.estoque_ideal_qui ?? 0,
+      estoque_ideal_sex: c?.estoque_ideal_sex ?? 0,
+      estoque_ideal_sab: c?.estoque_ideal_sab ?? 0,
+      estoque_ideal_dom: c?.estoque_ideal_dom ?? 0,
+    });
+    setOpDialogOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Produtos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Gerencie os produtos do catálogo B2B</p>
+          <p className="mt-1 text-sm text-muted-foreground">Gerencie os produtos do catálogo</p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> Novo Produto
@@ -196,9 +265,14 @@ export default function Produtos() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(p)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(p)} title="Editar produto">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => openOpConfig(p)} title="Config. Operacional">
+                        Op
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -207,6 +281,7 @@ export default function Produtos() {
         </div>
       )}
 
+      {/* Product edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -252,6 +327,70 @@ export default function Produtos() {
             </div>
             <Button className="w-full" onClick={() => upsert.mutate()} disabled={upsert.isPending}>
               {upsert.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Operational config dialog */}
+      <Dialog open={opDialogOpen} onOpenChange={setOpDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Config. Operacional — {opEditingName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={opForm.ativo as boolean}
+                onCheckedChange={(v) => setOpForm((f) => ({ ...f, ativo: v }))}
+              />
+              <Label>Ativo no operacional</Label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Unidade</Label>
+                <Input
+                  value={String(opForm.unidade ?? "")}
+                  onChange={(e) => setOpForm((f) => ({ ...f, unidade: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Validade (dias)</Label>
+                <Input
+                  type="number"
+                  value={String(opForm.validade_dias ?? 0)}
+                  onChange={(e) => setOpForm((f) => ({ ...f, validade_dias: Number(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Estoque Mínimo</Label>
+                <Input
+                  type="number"
+                  value={String(opForm.estoque_minimo ?? 0)}
+                  onChange={(e) => setOpForm((f) => ({ ...f, estoque_minimo: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium">Estoque Ideal por Dia</Label>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {DAYS.map((d) => (
+                  <div key={d.key}>
+                    <Label className="text-xs text-muted-foreground">{d.label}</Label>
+                    <Input
+                      type="number"
+                      value={String(opForm[d.key] ?? 0)}
+                      onChange={(e) => setOpForm((f) => ({ ...f, [d.key]: Number(e.target.value) }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button onClick={() => saveOpConfig.mutate()} disabled={saveOpConfig.isPending} className="w-full">
+              Salvar Configuração
             </Button>
           </div>
         </DialogContent>

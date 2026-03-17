@@ -3,13 +3,15 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useOpProducts, useTodayLotes, useRegisterLote, getIdealField } from "@/hooks/use-operational";
+import { Badge } from "@/components/ui/badge";
+import { useOpProducts, useTodayLotes, useRegisterLote, useScheduledProductions, getIdealField } from "@/hooks/use-operational";
 import { toast } from "sonner";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Calendar } from "lucide-react";
 
 export default function ProducaoDia() {
   const { data: products, isLoading: l1 } = useOpProducts();
   const { data: lotes, isLoading: l2 } = useTodayLotes();
+  const { data: scheduled } = useScheduledProductions();
   const registerLote = useRegisterLote();
   const [producing, setProducing] = useState<string | null>(null);
   const [qty, setQty] = useState("");
@@ -26,10 +28,25 @@ export default function ProducaoDia() {
     );
   }
 
+  // Map produced today per product
   const lotesMap = new Map<string, number>();
   for (const l of lotes ?? []) {
     if (l.status === "concluido") {
       lotesMap.set(l.produto_id, (lotesMap.get(l.produto_id) ?? 0) + Number(l.quantidade));
+    }
+  }
+
+  // Map pending scheduled items per product
+  const scheduledMap = new Map<string, { nome: string; pendente: number }[]>();
+  for (const s of scheduled ?? []) {
+    if (s.status === "planejado" || s.status === "em produção") {
+      for (const item of s.itens) {
+        if ((item.quantidade_pendente ?? 0) > 0) {
+          const list = scheduledMap.get(item.produto_id) ?? [];
+          list.push({ nome: s.nome_programacao, pendente: Number(item.quantidade_pendente ?? 0) });
+          scheduledMap.set(item.produto_id, list);
+        }
+      }
     }
   }
 
@@ -63,6 +80,7 @@ export default function ProducaoDia() {
             const atual = p.estoque_atual;
             const produzidoHoje = lotesMap.get(p.id) ?? 0;
             const sugerido = Math.max(0, ideal - atual);
+            const pendingScheduled = scheduledMap.get(p.id);
 
             return (
               <Card key={p.id}>
@@ -97,13 +115,26 @@ export default function ProducaoDia() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">Sugerido</p>
-                      <p className="font-semibold text-primary">{sugerido}</p>
+                      <p className={`font-semibold ${sugerido > 0 ? "text-primary" : ""}`}>{sugerido}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Produzido</p>
                       <p className="font-semibold text-emerald-600">{produzidoHoje}</p>
                     </div>
                   </div>
+
+                  {/* Pending scheduled productions */}
+                  {pendingScheduled && pendingScheduled.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {pendingScheduled.map((s, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs">
+                          <Calendar className="h-3 w-3 text-amber-500" />
+                          <span className="text-muted-foreground">{s.nome}:</span>
+                          <Badge variant="outline" className="text-xs">{s.pendente} pend.</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {producing === p.id && (
                     <div className="mt-3 flex gap-2">
