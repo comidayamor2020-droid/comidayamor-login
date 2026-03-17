@@ -5,8 +5,6 @@ export function useDreData() {
   return useQuery<DreData>({
     queryKey: ["dre-data"],
     queryFn: async () => {
-      console.log("API_ENDPOINT:", API_ENDPOINT);
-
       const res = await fetch(API_ENDPOINT, {
         method: "GET",
         headers: {
@@ -14,20 +12,17 @@ export function useDreData() {
         },
       });
 
-      console.log("STATUS API:", res.status);
-      console.log("OK API:", res.ok);
-
       const responseText = await res.text();
-      console.log("RESPOSTA BRUTA API:", responseText);
 
       if (!res.ok) {
         throw new Error(`Falha ao carregar dados: ${res.status} - ${responseText}`);
       }
 
-      const json = JSON.parse(responseText);
-      console.log("DADOS API:", json);
+      if (!responseText || !responseText.trim()) {
+        throw new Error("A API respondeu 200, mas com corpo vazio.");
+      }
 
-      return json;
+      return JSON.parse(responseText);
     },
     retry: 1,
     placeholderData: PLACEHOLDER_DATA,

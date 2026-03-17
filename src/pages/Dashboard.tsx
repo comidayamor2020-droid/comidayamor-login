@@ -1,8 +1,6 @@
-import { useEffect } from "react";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { useDreData } from "@/hooks/use-dre-data";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { supabase } from "@/integrations/supabase/client";
 
 interface MetricCardProps {
   title: string;
@@ -26,20 +24,6 @@ function MetricCard({ title, value, description, variant }: MetricCardProps) {
 
 export default function Dashboard() {
   const { data, isError } = useDreData();
-
-  useEffect(() => {
-    async function testarVendas() {
-      const { data, error } = await supabase
-        .from("vendas")
-        .select("id, valor_bruto, valor_liquido, data_venda")
-        .limit(5);
-
-      console.log("DATA VENDAS:", data);
-      console.log("ERROR VENDAS:", error);
-    }
-
-    testarVendas();
-  }, []);
 
   const metrics: MetricCardProps[] = data
     ? [
