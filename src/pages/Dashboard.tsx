@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { useDreData } from "@/hooks/use-dre-data";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MetricCardProps {
   title: string;
@@ -11,20 +13,12 @@ interface MetricCardProps {
 
 function MetricCard({ title, value, description, variant }: MetricCardProps) {
   const colorClass =
-    variant === "cost"
-      ? "text-destructive"
-      : variant === "profit"
-      ? "text-success"
-      : "text-foreground";
+    variant === "cost" ? "text-destructive" : variant === "profit" ? "text-success" : "text-foreground";
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {title}
-      </p>
-      <p className={`mt-2 text-2xl font-semibold tracking-tight ${colorClass}`}>
-        {value}
-      </p>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className={`mt-2 text-2xl font-semibold tracking-tight ${colorClass}`}>{value}</p>
       <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
     </div>
   );
@@ -32,6 +26,20 @@ function MetricCard({ title, value, description, variant }: MetricCardProps) {
 
 export default function Dashboard() {
   const { data, isError } = useDreData();
+
+  useEffect(() => {
+    async function testarVendas() {
+      const { data, error } = await supabase
+        .from("vendas")
+        .select("id, valor_bruto, valor_liquido, data_venda")
+        .limit(5);
+
+      console.log("DATA VENDAS:", data);
+      console.log("ERROR VENDAS:", error);
+    }
+
+    testarVendas();
+  }, []);
 
   const metrics: MetricCardProps[] = data
     ? [
@@ -77,12 +85,8 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Resumo financeiro do período
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Resumo financeiro do período</p>
       </div>
 
       {isError && (
