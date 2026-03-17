@@ -327,10 +327,32 @@ export default function ClientesB2B() {
                 <Label>Score</Label>
                 <Input type="number" value={form.score} onChange={(e) => set("score", e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo Pedido Mínimo</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={form.tipo_pedido_minimo}
+                onChange={(e) => set("tipo_pedido_minimo", e.target.value)}
+              >
+                <option value="sem_minimo">Sem mínimo</option>
+                <option value="valor">Mínimo por valor</option>
+                <option value="itens">Mínimo por quantidade de itens</option>
+                <option value="valor_e_itens">Mínimo por valor e quantidade de itens</option>
+              </select>
+            </div>
+            {(form.tipo_pedido_minimo === "valor" || form.tipo_pedido_minimo === "valor_e_itens") && (
               <div className="space-y-2">
                 <Label>Pedido Mínimo (R$)</Label>
                 <Input type="number" min="0" value={form.pedido_minimo_valor} onChange={(e) => set("pedido_minimo_valor", e.target.value)} />
               </div>
+            )}
+            {(form.tipo_pedido_minimo === "itens" || form.tipo_pedido_minimo === "valor_e_itens") && (
+              <div className="space-y-2">
+                <Label>Quantidade Mínima de Itens</Label>
+                <Input type="number" min="0" value={form.pedido_minimo_itens} onChange={(e) => set("pedido_minimo_itens", e.target.value)} />
+              </div>
+            )}
             </div>
             <div className="space-y-2">
               <Label>Observações</Label>
