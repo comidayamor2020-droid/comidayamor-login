@@ -89,6 +89,8 @@ export function useScheduledProductions() {
         supabase.from("op_producoes_programadas").select("*").order("prazo_conclusao"),
         supabase.from("op_producoes_programadas_itens").select("*"),
       ]);
+      if (r1.error) console.error("Erro ao carregar programações:", r1.error);
+      if (r2.error) console.error("Erro ao carregar itens programados:", r2.error);
       const itensMap = new Map<string, NonNullable<typeof r2.data>>();
       for (const item of r2.data ?? []) {
         const list = itensMap.get(item.programacao_id) ?? [];

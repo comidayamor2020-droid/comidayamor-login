@@ -54,19 +54,33 @@ export default function ProducoesProgamadas() {
   const productMap = new Map((products ?? []).map((p) => [p.id, p.nome]));
 
   const handleCreate = async () => {
-    if (!form.nome_programacao || !form.prazo_conclusao) {
-      toast.error("Preencha nome e prazo");
+    if (!form.nome_programacao) {
+      toast.error("Nome da programação é obrigatório");
       return;
     }
-    // Validate items
+    if (!form.prazo_conclusao) {
+      toast.error("Prazo de conclusão é obrigatório");
+      return;
+    }
+    if (form.itens.length === 0) {
+      toast.error("Adicione pelo menos um item");
+      return;
+    }
     for (const item of form.itens) {
-      if (!item.produto_id || item.quantidade_total <= 0) {
-        toast.error("Cada item precisa de produto e quantidade > 0");
+      if (!item.produto_id) {
+        toast.error("Cada item precisa de um produto válido");
+        return;
+      }
+      if (!item.quantidade_total || item.quantidade_total <= 0) {
+        toast.error("A quantidade de cada item deve ser maior que 0");
         return;
       }
     }
     try {
-      await createScheduled.mutateAsync(form);
+      await createScheduled.mutateAsync({
+        ...form,
+        prazo_conclusao: form.prazo_conclusao, // already YYYY-MM-DD from date input
+      });
       toast.success("Programação criada!");
       setShowCreate(false);
       setForm({
