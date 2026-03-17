@@ -89,6 +89,8 @@ export function useScheduledProductions() {
         supabase.from("op_producoes_programadas").select("*").order("prazo_conclusao"),
         supabase.from("op_producoes_programadas_itens").select("*"),
       ]);
+      if (r1.error) console.error("Erro ao carregar programações:", r1.error);
+      if (r2.error) console.error("Erro ao carregar itens programados:", r2.error);
       const itensMap = new Map<string, NonNullable<typeof r2.data>>();
       for (const item of r2.data ?? []) {
         const list = itensMap.get(item.programacao_id) ?? [];
@@ -283,6 +285,7 @@ export function useCreateScheduled() {
       observacao?: string;
       itens: { produto_id: string; quantidade_total: number }[];
     }) => {
+      // Step 1: insert header
       const { data: prog, error: e1 } = await supabase
         .from("op_producoes_programadas")
         .insert({
@@ -295,7 +298,11 @@ export function useCreateScheduled() {
         })
         .select()
         .single();
-      if (e1) throw e1;
+      if (e1) {
+        console.error("Erro ao criar cabeçalho da programação:", e1);
+        throw new Error(e1.message);
+      }
+      // Step 2: insert items (WITHOUT quantidade_pendente - it's generated)
       if (input.itens.length > 0) {
         const { error: e2 } = await supabase
           .from("op_producoes_programadas_itens")
@@ -305,10 +312,12 @@ export function useCreateScheduled() {
               produto_id: i.produto_id,
               quantidade_total: i.quantidade_total,
               quantidade_produzida: 0,
-              quantidade_pendente: i.quantidade_total,
             })),
           );
-        if (e2) throw e2;
+        if (e2) {
+          console.error("Erro ao criar itens da programação:", e2);
+          throw new Error(e2.message);
+        }
       }
       return prog;
     },
@@ -329,11 +338,15 @@ export function useUpdateScheduledItem() {
     }) => {
       const pendente = input.quantidade_total - input.quantidade_produzida;
       const status = input.status ?? (pendente <= 0 ? "concluido" : "em produção");
+      // Do NOT send quantidade_pendente - it may be generated
       const { error } = await supabase
         .from("op_producoes_programadas_itens")
-        .update({ quantidade_produzida: input.quantidade_produzida, quantidade_pendente: pendente, status })
+        .update({ quantidade_produzida: input.quantidade_produzida, status })
         .eq("id", input.id);
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao atualizar item:", error);
+        throw new Error(error.message);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-scheduled"] });
