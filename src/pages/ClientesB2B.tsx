@@ -126,7 +126,9 @@ export default function ClientesB2B() {
       state: form.state || null,
       status: form.status || "lead",
       score: form.score ? parseFloat(form.score) : 0,
+      tipo_pedido_minimo: form.tipo_pedido_minimo || "sem_minimo",
       pedido_minimo_valor: form.pedido_minimo_valor ? parseFloat(form.pedido_minimo_valor) : 0,
+      pedido_minimo_itens: form.pedido_minimo_itens ? parseInt(form.pedido_minimo_itens) : 0,
       notes: form.notes || null,
     };
 
