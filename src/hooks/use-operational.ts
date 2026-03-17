@@ -177,12 +177,10 @@ export function useSubmitCount() {
       estoque_contado: number;
       observacao?: string;
     }) => {
-      const diferenca = input.estoque_contado - input.estoque_esperado;
       const { error } = await supabase.from("op_contagens_loja").insert({
         produto_id: input.produto_id,
         estoque_esperado: input.estoque_esperado,
         estoque_contado: input.estoque_contado,
-        diferenca,
         observacao: input.observacao ?? null,
         criado_por: profile?.id ?? null,
       });
