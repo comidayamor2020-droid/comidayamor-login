@@ -384,37 +384,6 @@ export function useProduceScheduledItem() {
     },
   });
 }
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      quantidade_produzida: number;
-      quantidade_total: number;
-      status?: string;
-    }) => {
-      const pendente = input.quantidade_total - input.quantidade_produzida;
-      const status = input.status ?? (pendente <= 0 ? "concluido" : "em produção");
-      // Do NOT send quantidade_pendente - it's generated
-      const { error } = await supabase
-        .from("op_producoes_programadas_itens")
-        .update({ quantidade_produzida: input.quantidade_produzida, status })
-        .eq("id", input.id);
-      if (error) {
-        console.error("Erro ao atualizar item:", error);
-        throw new Error(error.message);
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["op-scheduled"] });
-    },
-  });
-}
-
-/** Produce for a scheduled item — does NOT update store stock */
-export function useProduceScheduledItem() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
       item_id: string;
       quantidade_adicional: number;
       quantidade_produzida_atual: number;
