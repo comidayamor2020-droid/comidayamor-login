@@ -384,7 +384,6 @@ export function useProduceScheduledItem() {
     },
   });
 }
-      quantidade_adicional: number;
       quantidade_produzida_atual: number;
       quantidade_total: number;
     }) => {
