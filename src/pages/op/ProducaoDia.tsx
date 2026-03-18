@@ -48,7 +48,6 @@ export default function ProducaoDia() {
   const [producing, setProducing] = useState<string | null>(null);
   const [qty, setQty] = useState("");
 
-  // Edit dialog state
   const [editItem, setEditItem] = useState<EditingItem | null>(null);
   const [editQty, setEditQty] = useState("");
   const [editStatus, setEditStatus] = useState("");
@@ -100,7 +99,6 @@ export default function ProducaoDia() {
       toast.error(`Quantidade produzida não pode ultrapassar o total (${editItem.quantidade_total})`);
       return;
     }
-    // Auto-resolve status based on quantity
     let status = editStatus;
     if (produzida >= editItem.quantidade_total) {
       status = "concluido";
@@ -127,7 +125,6 @@ export default function ProducaoDia() {
 
   const productMap = new Map((products ?? []).map((p) => [p.id, p]));
 
-  // Split scheduled into open vs done
   const allScheduled = scheduled ?? [];
   const openScheduled = allScheduled.filter(
     (s) => s.status !== "concluido" && s.status !== "cancelado"
@@ -136,88 +133,104 @@ export default function ProducaoDia() {
     (s) => s.status === "concluido"
   );
 
-  const renderProgCard = (prog: (typeof allScheduled)[number], showEditAction: boolean) => (
-    <Card key={prog.id}>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="font-medium text-foreground">{prog.nome_programacao}</p>
-            <div className="flex gap-2 mt-1 flex-wrap">
-              <Badge variant="outline" className="text-xs">{prog.tipo}</Badge>
-              <Badge
-                variant={prog.prioridade === "urgente" ? "destructive" : "secondary"}
-                className="text-xs"
-              >
-                {prog.prioridade}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                <Calendar className="mr-1 h-3 w-3" />
-                {new Date(prog.prazo_conclusao + "T00:00:00").toLocaleDateString("pt-BR")}
-              </Badge>
+  const renderProgCard = (prog: (typeof allScheduled)[number], showEditAction: boolean) => {
+    const isProgDone = prog.status === "concluido";
+    return (
+      <Card key={prog.id} className={isProgDone ? "border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/10" : ""}>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-medium text-foreground">{prog.nome_programacao}</p>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                <Badge variant="outline" className="text-xs">{prog.tipo}</Badge>
+                <Badge
+                  variant={prog.prioridade === "urgente" ? "destructive" : "secondary"}
+                  className="text-xs"
+                >
+                  {prog.prioridade}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  <Calendar className="mr-1 h-3 w-3" />
+                  {new Date(prog.prazo_conclusao + "T00:00:00").toLocaleDateString("pt-BR")}
+                </Badge>
+              </div>
             </div>
+            {isProgDone ? (
+              <Badge className="text-xs bg-emerald-600 text-white border-emerald-600">
+                <CheckCircle2 className="mr-1 h-3 w-3" /> concluido
+              </Badge>
+            ) : (
+              <Badge variant={prog.status === "planejado" ? "secondary" : "default"} className="text-xs">
+                {prog.status}
+              </Badge>
+            )}
           </div>
-          <Badge variant={prog.status === "planejado" ? "secondary" : "default"} className="text-xs">
-            {prog.status}
-          </Badge>
-        </div>
 
-        {prog.itens.length > 0 && (
-          <div className="border rounded-md overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="text-left p-2 font-medium text-muted-foreground">Produto</th>
-                  <th className="text-center p-2 font-medium text-muted-foreground">Total</th>
-                  <th className="text-center p-2 font-medium text-muted-foreground">Produzido</th>
-                  <th className="text-center p-2 font-medium text-muted-foreground">Pendente</th>
-                  <th className="text-center p-2 font-medium text-muted-foreground">Status</th>
-                  {showEditAction && (
-                    <th className="text-right p-2 font-medium text-muted-foreground">Ação</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {prog.itens.map((item) => {
-                  const prod = productMap.get(item.produto_id);
-                  const pendente = Math.max(0, item.quantidade_pendente ?? (item.quantidade_total - item.quantidade_produzida));
-                  return (
-                    <tr key={item.id} className="border-t border-border">
-                      <td className="p-2 text-foreground">{prod?.nome ?? "—"}</td>
-                      <td className="p-2 text-center">{item.quantidade_total}</td>
-                      <td className="p-2 text-center text-emerald-600">{item.quantidade_produzida}</td>
-                      <td className="p-2 text-center font-semibold text-primary">{pendente}</td>
-                      <td className="p-2 text-center">
-                        <Badge variant="outline" className="text-xs">{item.status}</Badge>
-                      </td>
-                      {showEditAction && item.status !== "concluido" && item.status !== "cancelado" && (
-                        <td className="p-2 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => openEdit(item)}
-                          >
-                            <Pencil className="mr-1 h-3 w-3" /> Editar
-                          </Button>
+          {prog.itens.length > 0 && (
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Produto</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Total</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Produzido</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Pendente</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Status</th>
+                    {showEditAction && (
+                      <th className="text-right p-2 font-medium text-muted-foreground">Ação</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {prog.itens.map((item) => {
+                    const prod = productMap.get(item.produto_id);
+                    const pendente = Math.max(0, item.quantidade_pendente ?? (item.quantidade_total - item.quantidade_produzida));
+                    const isItemDone = item.status === "concluido";
+                    return (
+                      <tr key={item.id} className={`border-t border-border ${isItemDone ? "bg-emerald-50/50 dark:bg-emerald-950/10" : ""}`}>
+                        <td className="p-2 text-foreground">{prod?.nome ?? "—"}</td>
+                        <td className="p-2 text-center">{item.quantidade_total}</td>
+                        <td className={`p-2 text-center ${isItemDone ? "text-emerald-600 font-semibold" : "text-emerald-600"}`}>{item.quantidade_produzida}</td>
+                        <td className="p-2 text-center font-semibold text-primary">{pendente}</td>
+                        <td className="p-2 text-center">
+                          {isItemDone ? (
+                            <Badge className="text-xs bg-emerald-600 text-white border-emerald-600">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> concluido
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">{item.status}</Badge>
+                          )}
                         </td>
-                      )}
-                      {showEditAction && (item.status === "concluido" || item.status === "cancelado") && (
-                        <td className="p-2 text-right">
-                          <Badge variant="outline" className="text-xs">
-                            <CheckCircle2 className="mr-1 h-3 w-3" /> {item.status}
-                          </Badge>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+                        {showEditAction && item.status !== "concluido" && item.status !== "cancelado" && (
+                          <td className="p-2 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => openEdit(item)}
+                            >
+                              <Pencil className="mr-1 h-3 w-3" /> Editar
+                            </Button>
+                          </td>
+                        )}
+                        {showEditAction && (item.status === "concluido" || item.status === "cancelado") && (
+                          <td className="p-2 text-right">
+                            <Badge variant="outline" className="text-xs">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> {item.status}
+                            </Badge>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -245,25 +258,44 @@ export default function ProducaoDia() {
                 const atual = p.estoque_atual;
                 const produzidoHoje = lotesMap.get(p.id) ?? 0;
                 const sugerido = Math.max(0, ideal - atual);
+                const atingiuObjetivo = ideal > 0 && produzidoHoje >= sugerido && sugerido > 0;
+                // Also mark green if ideal is met and nothing was needed
+                const objetivoCumprido = ideal > 0 && atual >= ideal;
+                const isGreen = atingiuObjetivo || objetivoCumprido;
                 return (
-                  <Card key={p.id}>
+                  <Card key={p.id} className={isGreen ? "border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/10" : ""}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium text-foreground">{p.nome}</p>
                           <p className="text-xs text-muted-foreground">{p.categoria}</p>
                         </div>
-                        {producing !== p.id && (
-                          <Button size="sm" variant="outline" onClick={() => { setProducing(p.id); setQty(String(sugerido || "")); }}>
-                            <Plus className="mr-1 h-3 w-3" /> Produzir
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isGreen && (
+                            <Badge className="text-xs bg-emerald-600 text-white border-emerald-600">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> Objetivo atingido
+                            </Badge>
+                          )}
+                          {!isGreen && producing !== p.id && (
+                            <Button size="sm" variant="outline" onClick={() => { setProducing(p.id); setQty(String(sugerido || "")); }}>
+                              <Plus className="mr-1 h-3 w-3" /> Produzir
+                            </Button>
+                          )}
+                          {isGreen && producing !== p.id && (
+                            <Button size="sm" variant="outline" onClick={() => { setProducing(p.id); setQty(""); }}>
+                              <Plus className="mr-1 h-3 w-3" /> Produzir
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
                         <div><p className="text-muted-foreground">Estoque</p><p className="font-semibold">{atual}</p></div>
                         <div><p className="text-muted-foreground">Ideal</p><p className="font-semibold">{ideal}</p></div>
-                        <div><p className="text-muted-foreground">Sugerido</p><p className={`font-semibold ${sugerido > 0 ? "text-primary" : ""}`}>{sugerido}</p></div>
-                        <div><p className="text-muted-foreground">Produzido</p><p className="font-semibold text-emerald-600">{produzidoHoje}</p></div>
+                        <div><p className="text-muted-foreground">Sugerido</p><p className={`font-semibold ${sugerido > 0 && !isGreen ? "text-primary" : ""}`}>{sugerido}</p></div>
+                        <div>
+                          <p className="text-muted-foreground">Produzido</p>
+                          <p className={`font-semibold ${isGreen ? "text-emerald-600" : ""}`}>{produzidoHoje}</p>
+                        </div>
                       </div>
                       {producing === p.id && (
                         <div className="mt-3 flex gap-2">
