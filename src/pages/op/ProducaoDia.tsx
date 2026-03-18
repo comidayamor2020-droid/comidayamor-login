@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useOpProducts, useTodayLotes, useRegisterLote, useScheduledProductions, getIdealField } from "@/hooks/use-operational";
+import {
+  useOpProducts,
+  useTodayLotes,
+  useRegisterLote,
+  useScheduledProductions,
+  useProduceScheduledItem,
+  getIdealField,
+} from "@/hooks/use-operational";
 import { toast } from "sonner";
 import { Plus, Check, Calendar, Package, ClipboardList } from "lucide-react";
 
@@ -14,8 +21,13 @@ export default function ProducaoDia() {
   const { data: lotes, isLoading: l2 } = useTodayLotes();
   const { data: scheduled } = useScheduledProductions();
   const registerLote = useRegisterLote();
+  const produceScheduled = useProduceScheduledItem();
+
   const [producing, setProducing] = useState<string | null>(null);
   const [qty, setQty] = useState("");
+  // For scheduled item production
+  const [producingItem, setProducingItem] = useState<string | null>(null);
+  const [itemQty, setItemQty] = useState("");
 
   const idealField = getIdealField();
 
@@ -29,7 +41,7 @@ export default function ProducaoDia() {
     );
   }
 
-  // Map produced today per product
+  // Map produced today per product (store stock only)
   const lotesMap = new Map<string, number>();
   for (const l of lotes ?? []) {
     if (l.status === "concluido") {
@@ -37,6 +49,7 @@ export default function ProducaoDia() {
     }
   }
 
+  // Register store stock production
   const handleRegister = async (produtoId: string) => {
     const q = Number(qty);
     if (!q || q <= 0) {
@@ -53,11 +66,36 @@ export default function ProducaoDia() {
     }
   };
 
-  // Scheduled items grouped by programacao
+  // Register scheduled item production (NO stock impact)
+  const handleProduceItem = async (item: {
+    id: string;
+    quantidade_produzida: number;
+    quantidade_total: number;
+  }) => {
+    const q = Number(itemQty);
+    if (!q || q <= 0) {
+      toast.error("Informe uma quantidade válida");
+      return;
+    }
+    try {
+      await produceScheduled.mutateAsync({
+        item_id: item.id,
+        quantidade_adicional: q,
+        quantidade_produzida_atual: item.quantidade_produzida,
+        quantidade_total: item.quantidade_total,
+      });
+      toast.success("Produção programada registrada!");
+      setProducingItem(null);
+      setItemQty("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao registrar produção";
+      toast.error(msg);
+    }
+  };
+
   const pendingScheduled = (scheduled ?? []).filter(
     (s) => s.status === "planejado" || s.status === "em produção"
   );
-
   const productMap = new Map((products ?? []).map((p) => [p.id, p]));
 
   return (
@@ -76,7 +114,6 @@ export default function ProducaoDia() {
             <TabsTrigger value="programados" className="flex-1 gap-1">
               <ClipboardList className="h-4 w-4" /> Pedidos Programados
             </TabsTrigger>
-            {/* Future: <TabsTrigger value="b2b">Produção B2B</TabsTrigger> */}
           </TabsList>
 
           {/* ── Aba Estoque Diário ── */}
@@ -193,21 +230,62 @@ export default function ProducaoDia() {
                               <th className="text-center p-2 font-medium text-muted-foreground">Total</th>
                               <th className="text-center p-2 font-medium text-muted-foreground">Produzido</th>
                               <th className="text-center p-2 font-medium text-muted-foreground">Pendente</th>
-                              <th className="text-center p-2 font-medium text-muted-foreground">Status</th>
+                              <th className="text-right p-2 font-medium text-muted-foreground">Ação</th>
                             </tr>
                           </thead>
                           <tbody>
                             {prog.itens.map((item) => {
                               const prod = productMap.get(item.produto_id);
                               const pendente = item.quantidade_pendente ?? (item.quantidade_total - item.quantidade_produzida);
+                              const isDone = item.status === "concluido";
                               return (
                                 <tr key={item.id} className="border-t border-border">
                                   <td className="p-2 text-foreground">{prod?.nome ?? "—"}</td>
                                   <td className="p-2 text-center">{item.quantidade_total}</td>
                                   <td className="p-2 text-center text-emerald-600">{item.quantidade_produzida}</td>
                                   <td className="p-2 text-center font-semibold text-primary">{pendente}</td>
-                                  <td className="p-2 text-center">
-                                    <Badge variant="outline" className="text-xs">{item.status}</Badge>
+                                  <td className="p-2 text-right">
+                                    {isDone ? (
+                                      <Badge variant="outline" className="text-xs">Concluído</Badge>
+                                    ) : producingItem === item.id ? (
+                                      <div className="flex items-center gap-1 justify-end">
+                                        <Input
+                                          type="number"
+                                          value={itemQty}
+                                          onChange={(e) => setItemQty(e.target.value)}
+                                          className="w-16 h-7 text-xs"
+                                          placeholder="Qtd"
+                                        />
+                                        <Button
+                                          size="sm"
+                                          className="h-7 px-2 text-xs"
+                                          disabled={produceScheduled.isPending}
+                                          onClick={() => handleProduceItem(item)}
+                                        >
+                                          <Check className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-7 px-2 text-xs"
+                                          onClick={() => setProducingItem(null)}
+                                        >
+                                          ✕
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={() => {
+                                          setProducingItem(item.id);
+                                          setItemQty(String(pendente > 0 ? pendente : ""));
+                                        }}
+                                      >
+                                        <Plus className="mr-1 h-3 w-3" /> Produzir
+                                      </Button>
+                                    )}
                                   </td>
                                 </tr>
                               );
@@ -222,8 +300,7 @@ export default function ProducaoDia() {
             </div>
           </TabsContent>
 
-          {/* Future: B2B tab content */}
-          {/* <TabsContent value="b2b">...</TabsContent> */}
+          {/* Future: B2B tab */}
         </Tabs>
       </div>
     </DashboardLayout>
