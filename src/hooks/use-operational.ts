@@ -327,7 +327,63 @@ export function useCreateScheduled() {
   });
 }
 
+function resolveItemStatus(produzida: number, total: number): string {
+  if (produzida >= total) return "concluido";
+  if (produzida > 0) return "em_producao";
+  return "planejado";
+}
+
 export function useUpdateScheduledItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      quantidade_produzida: number;
+      quantidade_total: number;
+      status?: string;
+    }) => {
+      const status = input.status ?? resolveItemStatus(input.quantidade_produzida, input.quantidade_total);
+      const { error } = await supabase
+        .from("op_producoes_programadas_itens")
+        .update({ quantidade_produzida: input.quantidade_produzida, status })
+        .eq("id", input.id);
+      if (error) {
+        console.error("Erro ao atualizar item:", error);
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-scheduled"] });
+    },
+  });
+}
+
+/** Produce for a scheduled item — does NOT update store stock */
+export function useProduceScheduledItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      item_id: string;
+      quantidade_adicional: number;
+      quantidade_produzida_atual: number;
+      quantidade_total: number;
+    }) => {
+      const novaProduzida = input.quantidade_produzida_atual + input.quantidade_adicional;
+      const status = resolveItemStatus(novaProduzida, input.quantidade_total);
+      const { error } = await supabase
+        .from("op_producoes_programadas_itens")
+        .update({ quantidade_produzida: novaProduzida, status })
+        .eq("id", input.item_id);
+      if (error) {
+        console.error("Erro ao registrar produção programada:", error);
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-scheduled"] });
+    },
+  });
+}
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
