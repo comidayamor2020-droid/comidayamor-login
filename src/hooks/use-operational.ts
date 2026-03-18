@@ -327,6 +327,12 @@ export function useCreateScheduled() {
   });
 }
 
+function resolveItemStatus(produzida: number, total: number): string {
+  if (produzida >= total) return "concluido";
+  if (produzida > 0) return "em_producao";
+  return "planejado";
+}
+
 export function useUpdateScheduledItem() {
   const qc = useQueryClient();
   return useMutation({
@@ -336,9 +342,7 @@ export function useUpdateScheduledItem() {
       quantidade_total: number;
       status?: string;
     }) => {
-      const pendente = input.quantidade_total - input.quantidade_produzida;
-      const status = input.status ?? (pendente <= 0 ? "concluido" : "em produção");
-      // Do NOT send quantidade_pendente - it's generated
+      const status = input.status ?? resolveItemStatus(input.quantidade_produzida, input.quantidade_total);
       const { error } = await supabase
         .from("op_producoes_programadas_itens")
         .update({ quantidade_produzida: input.quantidade_produzida, status })
@@ -365,8 +369,7 @@ export function useProduceScheduledItem() {
       quantidade_total: number;
     }) => {
       const novaProduzida = input.quantidade_produzida_atual + input.quantidade_adicional;
-      const pendente = input.quantidade_total - novaProduzida;
-      const status = pendente <= 0 ? "concluido" : "em produção";
+      const status = resolveItemStatus(novaProduzida, input.quantidade_total);
       const { error } = await supabase
         .from("op_producoes_programadas_itens")
         .update({ quantidade_produzida: novaProduzida, status })
@@ -375,7 +378,6 @@ export function useProduceScheduledItem() {
         console.error("Erro ao registrar produção programada:", error);
         throw new Error(error.message);
       }
-      // NOTE: No updateStock call — scheduled production does NOT affect store inventory
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-scheduled"] });
