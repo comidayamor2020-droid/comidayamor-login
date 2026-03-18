@@ -110,12 +110,13 @@ export default function ProducoesProgamadas() {
     setForm((f) => ({ ...f, itens: f.itens.filter((_, i) => i !== idx) }));
   };
 
-  const handleUpdateProgress = async (item: { id: string; quantidade_produzida: number; quantidade_total: number }, newProduced: number) => {
+  const handleUpdateProgress = async (item: { id: string; quantidade_produzida: number; quantidade_total: number; programacao_id: string }, newProduced: number) => {
     try {
       await updateItem.mutateAsync({
         id: item.id,
         quantidade_produzida: newProduced,
         quantidade_total: item.quantidade_total,
+        programacao_id: item.programacao_id,
       });
       toast.success("Progresso atualizado!");
     } catch {

@@ -36,6 +36,7 @@ type EditingItem = {
   quantidade_total: number;
   quantidade_produzida: number;
   status: string;
+  programacao_id: string;
 };
 
 export default function ProducaoDia() {
@@ -113,6 +114,7 @@ export default function ProducaoDia() {
         quantidade_produzida: produzida,
         quantidade_total: editItem.quantidade_total,
         status,
+        programacao_id: editItem.programacao_id,
       });
       toast.success("Item atualizado!");
       setEditItem(null);

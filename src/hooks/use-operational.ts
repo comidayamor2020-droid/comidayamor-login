@@ -341,6 +341,7 @@ export function useUpdateScheduledItem() {
       quantidade_produzida: number;
       quantidade_total: number;
       status?: string;
+      programacao_id: string;
     }) => {
       const status = input.status ?? resolveItemStatus(input.quantidade_produzida, input.quantidade_total);
       const { error } = await supabase
@@ -351,6 +352,32 @@ export function useUpdateScheduledItem() {
         console.error("Erro ao atualizar item:", error);
         throw new Error(error.message);
       }
+
+      // Recalculate parent programação status
+      const { data: allItems, error: fetchErr } = await supabase
+        .from("op_producoes_programadas_itens")
+        .select("status")
+        .eq("programacao_id", input.programacao_id);
+      if (fetchErr) {
+        console.error("Erro ao buscar itens da programação:", fetchErr);
+        return;
+      }
+      const items = allItems ?? [];
+      const allDone = items.length > 0 && items.every((i) => i.status === "concluido");
+      const hasInProgress = items.some((i) => i.status === "em_producao");
+      let progStatus: string;
+      if (allDone) {
+        progStatus = "concluido";
+      } else if (hasInProgress || items.some((i) => i.status === "concluido")) {
+        progStatus = "em_producao";
+      } else {
+        progStatus = "planejado";
+      }
+      const { error: progErr } = await supabase
+        .from("op_producoes_programadas")
+        .update({ status: progStatus })
+        .eq("id", input.programacao_id);
+      if (progErr) console.error("Erro ao atualizar status da programação:", progErr);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-scheduled"] });
