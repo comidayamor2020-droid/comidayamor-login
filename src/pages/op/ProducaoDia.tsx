@@ -36,6 +36,7 @@ type EditingItem = {
   quantidade_total: number;
   quantidade_produzida: number;
   status: string;
+  programacao_id: string;
 };
 
 export default function ProducaoDia() {
