@@ -62,6 +62,14 @@ export interface ContaPagar {
   forma_pagamento: string | null;
 }
 
+export interface FluxoResumo {
+  entradasPeriodo: number;
+  saidasPeriodo: number;
+  saldoFinal: number;
+  mediaDiariaSaidas: number;
+  projecao7d: number;
+}
+
 export interface CashFlowAnalysis {
   /** Estimated available cash (received - paid) */
   caixaDisponivel: number;
@@ -80,6 +88,7 @@ export interface CashFlowAnalysis {
   folgaOuDeficit: number;
   /** Alert level */
   alertLevel: "normal" | "atencao" | "alerta" | "critico";
+  fluxo: FluxoResumo;
 }
 
 export interface CouncilContextData {
@@ -149,11 +158,29 @@ function useContasPagas() {
   });
 }
 
+function useFluxoEntradas() {
+  return useQuery({
+    queryKey: ["council-fluxo-entradas"],
+    queryFn: async () => {
+      const from30 = new Date();
+      from30.setDate(from30.getDate() - 30);
+      const { data, error } = await supabase
+        .from("fluxo_caixa_entradas")
+        .select("valor, data")
+        .gte("data", from30.toISOString().split("T")[0]);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
 function computeCashFlow(
   contasPagar: { descricao: string; valor: number | null; data_vencimento: string | null; status: string | null; categoria: string | null; fornecedor: string | null; forma_pagamento: string | null }[],
   contasReceber: { valor: number | null; status: string | null }[],
   contasPagas: { valor: number | null }[],
   caixaManualValor: number | null,
+  entradasFluxo: { valor: number | null }[],
 ): CashFlowAnalysis {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -227,6 +254,13 @@ function computeCashFlow(
     alertLevel = "alerta";
   }
 
+  // Fluxo resumo
+  const entradasPeriodo = entradasFluxo.reduce((s, e) => s + (Number(e.valor) || 0), 0);
+  const saidasPeriodo = contasPagas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const saldoFinal = caixaDisponivel + entradasPeriodo - saidasPeriodo;
+  const mediaDiariaSaidas = saidasPeriodo / 30;
+  const projecao7d = caixaDisponivel - mediaDiariaSaidas * 7;
+
   return {
     caixaDisponivel,
     contasVencidas,
@@ -238,6 +272,7 @@ function computeCashFlow(
     totalCompromissos,
     folgaOuDeficit,
     alertLevel,
+    fluxo: { entradasPeriodo, saidasPeriodo, saldoFinal, mediaDiariaSaidas, projecao7d },
   };
 }
 
@@ -252,6 +287,7 @@ const EMPTY_CASH_FLOW: CashFlowAnalysis = {
   totalCompromissos: 0,
   folgaOuDeficit: 0,
   alertLevel: "normal",
+  fluxo: { entradasPeriodo: 0, saidasPeriodo: 0, saldoFinal: 0, mediaDiariaSaidas: 0, projecao7d: 0 },
 };
 
 export function useCouncilContext(): CouncilContextData {
@@ -264,8 +300,9 @@ export function useCouncilContext(): CouncilContextData {
   const { data: contasReceber, isLoading: l7 } = useContasReceber();
   const { data: contasPagas, isLoading: l8 } = useContasPagas();
   const { data: caixaManual, isLoading: l9 } = useCaixaDisponivel();
+  const { data: fluxoEntradas, isLoading: l10 } = useFluxoEntradas();
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9;
+  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9 || l10;
 
   if (loading) {
     return {
@@ -412,7 +449,7 @@ export function useCouncilContext(): CouncilContextData {
     signals >= 4 ? "alta" : signals >= 3 ? "media" : signals >= 2 ? "baixa" : "insuficiente";
 
   // Cash flow analysis
-  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? [], caixaManual?.valor ?? null);
+  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? [], caixaManual?.valor ?? null, fluxoEntradas ?? []);
 
   return {
     loading: false,

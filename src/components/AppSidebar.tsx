@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, LogOut, Package, Factory, Store,
   ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
   BarChart3, Zap, ArrowLeftRight, CheckCircle, Calendar, X,
-  ChevronDown, Users,
+  ChevronDown, Users, TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { title: "DRE", url: "/dre", icon: FileText },
       { title: "Contas a Pagar", url: "/contas-pagar", icon: ClipboardList },
+      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: TrendingUp },
       { title: "Compras", url: "/compras", icon: Package },
       { title: "Produção", url: "/producao", icon: Factory },
     ],
