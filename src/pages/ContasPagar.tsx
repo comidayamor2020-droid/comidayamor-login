@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { CLASSIFICACOES_SAIDA, SUBCATEGORIAS } from "@/lib/dre-constants";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -80,6 +81,8 @@ interface FormState {
   data_pagamento: string;
   valor_pago: string;
   obs_pagamento: string;
+  classificacao_dre: string;
+  subcategoria_dre: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -87,8 +90,8 @@ const EMPTY_FORM: FormState = {
   forma_pagamento: "", categoria: "", fornecedor: "", observacoes: "",
   centro_custo: "", parcelado: false, qtd_parcelas: "2", chave_pix: "",
   numero_boleto: "", data_pagamento: "", valor_pago: "", obs_pagamento: "",
+  classificacao_dre: "", subcategoria_dre: "",
 };
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -129,6 +132,8 @@ export default function ContasPagar() {
 
       if (!form.descricao.trim()) throw new Error("Nome da conta é obrigatório");
       if (!form.data_vencimento) throw new Error("Data de vencimento é obrigatória");
+      if (!form.classificacao_dre) throw new Error("Classificação DRE é obrigatória");
+      if (!form.subcategoria_dre) throw new Error("Subcategoria DRE é obrigatória");
 
       const basePayload = {
         descricao: form.descricao.trim(),
@@ -140,6 +145,8 @@ export default function ContasPagar() {
         centro_custo: form.centro_custo || null,
         data_pagamento: form.status === "Pago" && form.data_pagamento ? form.data_pagamento : null,
         observacoes: buildObs(),
+        classificacao_dre: form.classificacao_dre,
+        subcategoria_dre: form.subcategoria_dre,
       };
 
       if (editingId) {
@@ -200,6 +207,8 @@ export default function ContasPagar() {
       observacoes: c.observacoes ?? "",
       centro_custo: c.centro_custo ?? "",
       data_pagamento: c.data_pagamento ?? "",
+      classificacao_dre: (c as any).classificacao_dre ?? "",
+      subcategoria_dre: (c as any).subcategoria_dre ?? "",
     });
     setDialogOpen(true);
   }
@@ -394,6 +403,27 @@ export default function ContasPagar() {
               </div>
             </div>
 
+            {/* Classificação DRE */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Classificação DRE *</Label>
+                <Select value={form.classificacao_dre} onValueChange={(v) => { set("classificacao_dre", v); set("subcategoria_dre", ""); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    {CLASSIFICACOES_SAIDA.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Subcategoria DRE *</Label>
+                <Select value={form.subcategoria_dre} onValueChange={(v) => set("subcategoria_dre", v)} disabled={!form.classificacao_dre}>
+                  <SelectTrigger><SelectValue placeholder={form.classificacao_dre ? "Selecionar" : "Escolha a classificação"} /></SelectTrigger>
+                  <SelectContent>
+                    {(SUBCATEGORIAS[form.classificacao_dre] ?? []).map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {/* Forma de pagamento */}
             <div className="space-y-1.5">
               <Label>Forma de pagamento</Label>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { CLASSIFICACOES_ENTRADA, SUBCATEGORIAS } from "@/lib/dre-constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,8 @@ interface EntradaForm {
   categoria: string;
   valor: string;
   observacao: string;
+  classificacao_dre: string;
+  subcategoria_dre: string;
 }
 
 const EMPTY_FORM: EntradaForm = {
@@ -36,6 +39,8 @@ const EMPTY_FORM: EntradaForm = {
   categoria: "vendas",
   valor: "",
   observacao: "",
+  classificacao_dre: "receita_operacional",
+  subcategoria_dre: "",
 };
 
 export default function FluxoCaixa() {
@@ -113,6 +118,10 @@ export default function FluxoCaixa() {
       toast.error("Preencha descrição e valor.");
       return;
     }
+    if (!form.classificacao_dre || !form.subcategoria_dre) {
+      toast.error("Preencha classificação e subcategoria DRE.");
+      return;
+    }
     createEntrada.mutate(
       {
         data: form.data,
@@ -121,6 +130,8 @@ export default function FluxoCaixa() {
         valor,
         observacao: form.observacao || undefined,
         criado_por: profile?.id,
+        classificacao_dre: form.classificacao_dre,
+        subcategoria_dre: form.subcategoria_dre,
       },
       {
         onSuccess: () => {
@@ -269,6 +280,27 @@ export default function FluxoCaixa() {
                   {CATEGORIAS_ENTRADA.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            {/* Classificação DRE */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Classificação DRE *</Label>
+                <Select value={form.classificacao_dre} onValueChange={(v) => { set("classificacao_dre", v); set("subcategoria_dre", ""); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CLASSIFICACOES_ENTRADA.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Subcategoria DRE *</Label>
+                <Select value={form.subcategoria_dre} onValueChange={(v) => set("subcategoria_dre", v)} disabled={!form.classificacao_dre}>
+                  <SelectTrigger><SelectValue placeholder={form.classificacao_dre ? "Selecionar" : "Escolha a classificação"} /></SelectTrigger>
+                  <SelectContent>
+                    {(SUBCATEGORIAS[form.classificacao_dre] ?? []).map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Observação</Label>

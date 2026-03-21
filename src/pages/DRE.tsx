@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { useDreData, type DreSection } from "@/hooks/use-dre-data";
+import { getSubcategoriaLabel } from "@/lib/dre-constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ChevronDown, ChevronRight, Calendar } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -135,6 +136,7 @@ export default function DRE() {
 function SectionBlock({ section, receitaTotal, positive, negative }: { section: DreSection; receitaTotal: number; positive?: boolean; negative?: boolean }) {
   const [open, setOpen] = useState(false);
   const prefix = negative ? "(-) " : "";
+  const sectionKey = section.key;
 
   if (section.total === 0 && section.items.length === 0) {
     return (
@@ -165,7 +167,7 @@ function SectionBlock({ section, receitaTotal, positive, negative }: { section: 
       </tr>
       {open && section.items.map((item) => (
         <tr key={item.subcategoria} className="border-b border-border/50 bg-muted/10">
-          <td className="pl-12 pr-5 py-2 text-muted-foreground text-xs">{item.subcategoria}</td>
+          <td className="pl-12 pr-5 py-2 text-muted-foreground text-xs">{getSubcategoriaLabel(sectionKey, item.subcategoria)}</td>
           <td className={`px-5 py-2 text-right tabular-nums text-xs ${negative ? "text-destructive/80" : "text-foreground/80"}`}>
             {negative ? `- ${formatBRL(item.valor)}` : formatBRL(item.valor)}
           </td>
