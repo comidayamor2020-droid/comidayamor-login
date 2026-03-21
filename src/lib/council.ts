@@ -513,6 +513,13 @@ function generateQuickResponse(ctx: CouncilContextData, question: string): Counc
     if (cf.totalVencidas > 0) lines.push(`🔴 **${cf.contasVencidas.length} conta(s) vencida(s)** — ${fmtBRL(cf.totalVencidas)}`);
   }
 
+  // DRE summary in quick mode
+  if (ctx.dre && ctx.dre.receitaTotal > 0) {
+    const ebitdaPct = pctOf(ctx.dre.ebitda, ctx.dre.receitaTotal);
+    const dreEmoji = ctx.dre.lucroLiquido < 0 ? "🔴" : ebitdaPct < 10 ? "🟡" : "🟢";
+    lines.push(`\n${dreEmoji} **DRE:** Receita ${fmtBRL(ctx.dre.receitaTotal)} | EBITDA ${ebitdaPct.toFixed(1)}% | Lucro ${fmtBRL(ctx.dre.lucroLiquido)}`);
+  }
+
   if (ctx.belowMinimum.length > 0) lines.push(`\n🔴 **${ctx.belowMinimum.length}** produto(s) abaixo do mínimo.`);
   if (ctx.divergences.length > 0) lines.push(`⚠️ **${ctx.divergences.length}** divergência(s).`);
   if (ctx.pendingApprovals > 0) lines.push(`🔔 **${ctx.pendingApprovals}** aprovação(ões) pendente(s).`);
