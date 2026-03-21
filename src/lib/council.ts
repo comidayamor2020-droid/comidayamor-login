@@ -899,9 +899,16 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
       lines.push("");
     }
 
+    // DRE synthesis
+    if (ctx.dre) {
+      const dreSynth = generateCEODreSynthesis(ctx.dre);
+      if (dreSynth) lines.push(dreSynth);
+    }
+
     // Convergences
     const conv: string[] = [];
     if (cf.alertLevel !== "normal") conv.push("necessidade de controle de caixa");
+    if (ctx.dre && ctx.dre.lucroLiquido < 0) conv.push("reversão do prejuízo como prioridade");
     if (ctx.belowMinimum.length > 0) conv.push("risco de ruptura como prioridade");
     if (ctx.lossRate > 5) conv.push("necessidade de reduzir perdas");
     if (ctx.divergences.length > 0) conv.push("investigar divergências");
