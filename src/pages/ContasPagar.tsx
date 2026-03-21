@@ -207,6 +207,8 @@ export default function ContasPagar() {
       observacoes: c.observacoes ?? "",
       centro_custo: c.centro_custo ?? "",
       data_pagamento: c.data_pagamento ?? "",
+      classificacao_dre: (c as any).classificacao_dre ?? "",
+      subcategoria_dre: (c as any).subcategoria_dre ?? "",
     });
     setDialogOpen(true);
   }
