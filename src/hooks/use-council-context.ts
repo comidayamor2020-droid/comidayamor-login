@@ -259,8 +259,9 @@ export function useCouncilContext(): CouncilContextData {
   const { data: contasPagar, isLoading: l6 } = useContasPagar();
   const { data: contasReceber, isLoading: l7 } = useContasReceber();
   const { data: contasPagas, isLoading: l8 } = useContasPagas();
+  const { data: caixaManual, isLoading: l9 } = useCaixaDisponivel();
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8;
+  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9;
 
   if (loading) {
     return {
