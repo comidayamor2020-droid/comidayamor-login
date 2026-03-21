@@ -111,6 +111,7 @@ export interface CouncilContextData {
   productionEfficiency: number;
   dataCompleteness: "alta" | "media" | "baixa" | "insuficiente";
   cashFlow: CashFlowAnalysis;
+  dre: DreResult | null;
 }
 
 // ─── Supabase queries for financial data ────────
