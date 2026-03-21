@@ -39,13 +39,13 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile } = await anonClient
       .from("users")
-      .select("role")
+      .select("role, is_active")
       .eq("auth_user_id", caller.id)
       .single();
 
-    if (callerProfile?.role !== "admin") {
+    if (callerProfile?.role !== "admin" || !callerProfile?.is_active) {
       return new Response(
-        JSON.stringify({ error: "Apenas administradores podem criar usuários" }),
+        JSON.stringify({ error: "Apenas administradores ativos podem criar usuários" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -56,6 +56,23 @@ Deno.serve(async (req) => {
     if (!email || !password || !name || !role) {
       return new Response(
         JSON.stringify({ error: "Campos obrigatórios: email, senha, nome, perfil" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const ALLOWED_ROLES = ["admin", "gestao", "financeiro", "compras", "vendas", "producao", "gerente_operacional", "loja", "b2b_cliente", "cliente_b2c"];
+    const ALLOWED_GROUPS = ["cya", "b2b", "b2c"];
+
+    if (!ALLOWED_ROLES.includes(role)) {
+      return new Response(
+        JSON.stringify({ error: `Perfil inválido: ${role}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (user_group && !ALLOWED_GROUPS.includes(user_group)) {
+      return new Response(
+        JSON.stringify({ error: `Grupo inválido: ${user_group}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
