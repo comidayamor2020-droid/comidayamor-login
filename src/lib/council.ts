@@ -575,7 +575,21 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
 
       if (ctx.belowMinimum.length > 0) lines.push(`\nPrioridade operacional: regularizar ${ctx.belowMinimum.length} produto(s) críticos.`);
       lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
+
+      // Action block for follow-up too
+      lines.push("\n---");
+      lines.push("\n**🎯 Decisão sugerida:** " + (cf.alertLevel === "critico" ? "Contenção financeira imediata." : cf.alertLevel === "alerta" ? "Frear gastos e cobrar recebíveis." : ctx.belowMinimum.length > 0 ? "Regularizar estoque crítico." : "Manter ritmo. Monitorar indicadores."));
+      
+      const actions: string[] = [];
+      if (cf.totalVencidas > 0) actions.push(`Resolver ${cf.contasVencidas.length} conta(s) vencida(s)`);
+      if (ctx.belowMinimum.length > 0) actions.push(`Produzir ${ctx.belowMinimum.length} item(ns) críticos`);
+      if (ctx.pendingApprovals > 0) actions.push(`Processar ${ctx.pendingApprovals} aprovação(ões)`);
+      if (cf.totalProx2Dias > 0) actions.push(`Pagar ${fmtBRL(cf.totalProx2Dias)} vencendo em 2 dias`);
+      if (actions.length === 0) actions.push("Revisar indicadores", "Validar estoque", "Confirmar produção");
+      lines.push("\n**⏰ Próximas 24h:** " + actions.slice(0, 3).join(" · "));
+
       content = lines.join("\n");
+
       stance = cf.alertLevel === "critico" ? "alerta" : "sintetiza";
       break;
     }
@@ -895,7 +909,7 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
     });
   }
 
-  // 6. CEO Auxiliar closes — synthesis
+  // 6. CEO Auxiliar closes — synthesis + action block
   {
     const lines = ["**Síntese do debate:**\n"];
 
@@ -927,35 +941,66 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
     else if (ctx.overProduced.length > 0) div.push("CMO quer promoção, Grok questiona a causa raiz");
     if (div.length > 0) lines.push(`⚔️ **Divergências:** ${div.join("; ")}.`);
 
-    // Main suggestion
+    lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
+
+    // ── ACTION BLOCK ──
+    lines.push("\n---");
+    lines.push("\n## 📋 Orientação Executiva\n");
+
+    // Decision
     if (cf.alertLevel === "critico") {
-      lines.push("\n💡 **Sugestão principal:** Entrar em modo de contenção financeira. Congelar gastos, renegociar vencimentos, buscar entradas rápidas.");
+      lines.push("**🎯 Decisão sugerida:** Entrar em modo de contenção financeira imediata. Nenhum gasto novo sem aprovação.");
     } else if (cf.alertLevel === "alerta") {
-      lines.push("\n💡 **Sugestão principal:** Controlar gastos esta semana e priorizar cobranças de recebíveis.");
-    } else if (severity.level === "critico" || severity.level === "alerta") {
-      const topAction = ctx.belowMinimum.length > 0
-        ? `regularizar estoque dos ${ctx.belowMinimum.length} produto(s) críticos`
-        : ctx.divergences.length > 0
-          ? `investigar ${ctx.divergences.length} divergência(s)`
-          : "resolver pendências operacionais";
-      lines.push(`\n💡 **Sugestão principal:** ${topAction}.`);
+      lines.push("**🎯 Decisão sugerida:** Frear gastos discricionários e priorizar cobranças pendentes.");
+    } else if (ctx.dre && ctx.dre.lucroLiquido < 0) {
+      lines.push("**🎯 Decisão sugerida:** Foco em reverter o prejuízo — revisar custos fixos e precificação.");
+    } else if (ctx.belowMinimum.length >= 3) {
+      lines.push("**🎯 Decisão sugerida:** Priorizar produção dos itens críticos para evitar ruptura.");
     } else {
-      lines.push("\n💡 **Sugestão:** Manter monitoramento. Operação estável.");
+      lines.push("**🎯 Decisão sugerida:** Manter ritmo atual. Focar em eficiência e monitoramento.");
     }
 
-    // Risk
-    if (cf.alertLevel === "critico") lines.push(`\n⚠️ **Risco principal:** Inadimplência — déficit de ${fmtBRL(Math.abs(cf.folgaOuDeficit))}.`);
-    else if (cf.totalVencidas > 0) lines.push(`\n⚠️ **Risco:** ${cf.contasVencidas.length} conta(s) vencida(s) acumulando.`);
-    else if (ctx.belowMinimum.length >= 3) lines.push(`\n⚠️ **Risco:** Ruptura em ${ctx.belowMinimum.length} produtos simultaneamente.`);
-    else if (ctx.lossRate > 5) lines.push(`\n⚠️ **Risco:** Perda de ${ctx.lossRate}% corroendo margem.`);
+    // 3 actions in 24h
+    lines.push("\n**⏰ 3 ações nas próximas 24h:**");
+    const actions24h: string[] = [];
+    if (cf.totalVencidas > 0) actions24h.push(`Resolver ${cf.contasVencidas.length} conta(s) vencida(s) — total ${fmtBRL(cf.totalVencidas)}`);
+    if (cf.alertLevel === "critico" || cf.alertLevel === "alerta") actions24h.push("Levantar recebíveis pendentes e cobrar imediatamente");
+    if (ctx.belowMinimum.length > 0) actions24h.push(`Produzir os ${ctx.belowMinimum.length} produto(s) abaixo do mínimo`);
+    if (ctx.pendingApprovals > 0) actions24h.push(`Processar ${ctx.pendingApprovals} aprovação(ões) pendente(s)`);
+    if (ctx.divergences.length > 0) actions24h.push(`Recontar ${ctx.divergences.length} item(ns) com divergência`);
+    if (cf.totalProx2Dias > 0) actions24h.push(`Preparar pagamento de ${fmtBRL(cf.totalProx2Dias)} vencendo em 2 dias`);
+    if (actions24h.length === 0) actions24h.push("Revisar indicadores do dia", "Validar estoque vs demanda", "Confirmar agenda de produção");
+    actions24h.slice(0, 3).forEach((a, i) => lines.push(`${i + 1}. ${a}`));
 
-    // Missing data
-    const missing: string[] = [];
-    if (ctx.dataCompleteness !== "alta") missing.push("configuração completa de produtos");
-    missing.push("dados de vendas e custos unitários");
-    lines.push(`\n❓ **Falta saber:** ${missing.join(", ")}.`);
+    // What to freeze
+    lines.push("\n**🧊 O que congelar:**");
+    if (cf.alertLevel === "critico") {
+      lines.push("- Qualquer compra não essencial");
+      lines.push("- Novos contratos ou assinaturas");
+      lines.push("- Produção de itens sem demanda comprovada");
+    } else if (cf.alertLevel === "alerta") {
+      lines.push("- Gastos discricionários esta semana");
+      lines.push("- Compras de insumos sem urgência");
+    } else if (ctx.overProduced.length > 0) {
+      lines.push(`- Produção dos ${ctx.overProduced.length} item(ns) com excesso de estoque`);
+    } else {
+      lines.push("- Sem congelamentos necessários no momento");
+    }
 
-    lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
+    // What to watch
+    lines.push("\n**👁️ Acompanhar até sexta:**");
+    const watch: string[] = [];
+    if (cf.totalCompromissos > 0) watch.push(`Evolução do caixa vs ${fmtBRL(cf.totalCompromissos)} em compromissos`);
+    if (ctx.dre && ctx.dre.receitaTotal > 0) {
+      const ebitdaPct = pctOf(ctx.dre.ebitda, ctx.dre.receitaTotal);
+      watch.push(`EBITDA (atual: ${ebitdaPct.toFixed(1)}%) — precisa se manter positivo`);
+    }
+    if (ctx.belowMinimum.length > 0) watch.push(`Regularização dos ${ctx.belowMinimum.length} produto(s) críticos`);
+    if (ctx.lossRate > 2) watch.push(`Taxa de perda (atual: ${ctx.lossRate}%)`);
+    if (ctx.divergences.length > 0) watch.push("Resultado da recontagem de divergências");
+    if (watch.length === 0) watch.push("Indicadores de caixa e produção", "Novas contas a vencer");
+    watch.slice(0, 4).forEach((w) => lines.push(`- ${w}`));
+
     lines.push("\n*A decisão final é sempre sua, Gustavo.*");
 
     speeches.push({ memberId: "chatgpt", content: lines.join("\n"), stance: "sintetiza" });
