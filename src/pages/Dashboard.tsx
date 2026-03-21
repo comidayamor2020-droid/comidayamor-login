@@ -29,47 +29,48 @@ export default function Dashboard() {
   const { data, isError } = useDreData();
   const { data: caixa } = useCaixaDisponivel();
 
+  const pctCalc = (v: number, t: number) => (t ? (v / t) * 100 : 0);
+
   const metrics: MetricCardProps[] = data
     ? [
         {
           title: "Receita Total",
-          value: formatBRL(data.receita_total),
+          value: formatBRL(data.receitaTotal),
           description: "Total de receitas no período",
           variant: "neutral",
         },
         {
           title: "CPV",
-          value: formatBRL(data.cpv),
+          value: formatBRL(data.cpv.total),
           description: "Custo dos produtos vendidos",
           variant: "cost",
         },
         {
           title: "Margem Bruta %",
-          value: formatPercent(data.margem_bruta_percentual),
+          value: formatPercent(pctCalc(data.margemBruta, data.receitaTotal)),
           description: "Receita menos custo dos produtos",
           variant: "profit",
         },
         {
           title: "Margem de Contribuição %",
-          value: formatPercent(data.margem_contribuicao_percentual),
+          value: formatPercent(pctCalc(data.margemContribuicao, data.receitaTotal)),
           description: "Margem após despesas variáveis",
           variant: "profit",
         },
         {
           title: "EBITDA %",
-          value: formatPercent(data.ebitda_percentual),
+          value: formatPercent(pctCalc(data.ebitda, data.receitaTotal)),
           description: "Lucro antes de juros, impostos e depreciação",
           variant: "profit",
         },
         {
           title: "Lucro Líquido %",
-          value: formatPercent(data.lucro_liquido_percentual),
+          value: formatPercent(pctCalc(data.lucroLiquido, data.receitaTotal)),
           description: "Resultado final após todas as deduções",
           variant: "profit",
         },
       ]
     : [];
-
   return (
     <DashboardLayout>
       <div className="mb-8">
