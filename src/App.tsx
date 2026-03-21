@@ -102,7 +102,7 @@ const App = () => (
               <Route path="/op/aprovacoes" element={<R path="/op/aprovacoes"><AprovacoesOp /></R>} />
               <Route path="/op/programadas" element={<R path="/op/programadas"><ProducoesProgamadas /></R>} />
 
-              {/* Conselho */}
+              {/* Conselho — Strategic */}
               <Route path="/conselho" element={<R path="/conselho"><Conselho /></R>} />
 
               <Route path="*" element={<NotFound />} />
