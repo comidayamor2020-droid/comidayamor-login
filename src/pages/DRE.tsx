@@ -169,7 +169,7 @@ function SectionBlock({ section, receitaTotal, positive, negative }: { section: 
       </tr>
       {open && section.items.map((item) => (
         <tr key={item.subcategoria} className="border-b border-border/50 bg-muted/10">
-          <td className="pl-12 pr-5 py-2 text-muted-foreground text-xs">{item.subcategoria}</td>
+          <td className="pl-12 pr-5 py-2 text-muted-foreground text-xs">{getSubcategoriaLabel(sectionKey, item.subcategoria)}</td>
           <td className={`px-5 py-2 text-right tabular-nums text-xs ${negative ? "text-destructive/80" : "text-foreground/80"}`}>
             {negative ? `- ${formatBRL(item.valor)}` : formatBRL(item.valor)}
           </td>
