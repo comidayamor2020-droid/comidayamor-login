@@ -436,6 +436,14 @@ function ContextPanel({ ctx }: { ctx: CouncilContextData }) {
     ctx.dataCompleteness === "media" ? "text-amber-600" :
     ctx.dataCompleteness === "baixa" ? "text-orange-600" : "text-destructive";
 
+  const cf = ctx.cashFlow;
+  const cashColor =
+    cf.alertLevel === "critico" ? "text-destructive" :
+    cf.alertLevel === "alerta" ? "text-amber-600" :
+    cf.alertLevel === "atencao" ? "text-orange-600" : "text-emerald-600";
+
+  const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   return (
     <Card>
       <CardContent className="py-3 px-4">
@@ -456,6 +464,27 @@ function ContextPanel({ ctx }: { ctx: CouncilContextData }) {
           <StatBadge label="Abaixo Ideal" value={ctx.underProduced.length} color="text-orange-600" />
           <StatBadge label="Eficiência" value={`${ctx.productionEfficiency}%`} color={ctx.productionEfficiency >= 80 ? "text-emerald-600" : ctx.productionEfficiency >= 50 ? "text-amber-600" : "text-destructive"} />
         </div>
+
+        {/* Cash Flow Summary */}
+        {(cf.totalCompromissos > 0 || cf.alertLevel !== "normal") && (
+          <>
+            <Separator className="my-2" />
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-medium text-foreground">💰 Caixa</span>
+              <span className={`text-[10px] font-semibold uppercase ${cashColor}`}>
+                {cf.alertLevel}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
+              <StatBadge label="Caixa" value={fmtBRL(cf.caixaDisponivel)} color={cashColor} />
+              {cf.totalVencidas > 0 && <StatBadge label="Vencidas" value={fmtBRL(cf.totalVencidas)} color="text-destructive" />}
+              {cf.totalProx2Dias > 0 && <StatBadge label="2 dias" value={fmtBRL(cf.totalProx2Dias)} color="text-orange-600" />}
+              {cf.totalProx7Dias > 0 && <StatBadge label="7 dias" value={fmtBRL(cf.totalProx7Dias)} color="text-amber-600" />}
+              <StatBadge label="Compromissos" value={fmtBRL(cf.totalCompromissos)} />
+              <StatBadge label={cf.folgaOuDeficit >= 0 ? "Folga" : "DÉFICIT"} value={fmtBRL(cf.folgaOuDeficit)} color={cf.folgaOuDeficit >= 0 ? "text-emerald-600" : "text-destructive"} />
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
