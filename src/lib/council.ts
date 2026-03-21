@@ -231,6 +231,110 @@ function isCashRelatedQuestion(question: string): boolean {
 }
 
 // ────────────────────────────────────────────────
+// DRE ANALYSIS HELPERS
+// ────────────────────────────────────────────────
+
+function pctOf(val: number, total: number): number {
+  return total ? (val / total) * 100 : 0;
+}
+
+function generateDreBlock(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  lines.push("📊 **DRE Gerencial do Período**\n");
+  lines.push("| Indicador | Valor | % Receita |");
+  lines.push("|---|---|---|");
+  lines.push(`| Receita Operacional | ${fmtBRL(dre.receitasOp.total)} | ${pctOf(dre.receitasOp.total, dre.receitaTotal).toFixed(1)}% |`);
+  if (dre.receitasNaoOp.total > 0) lines.push(`| Receita Não Operacional | ${fmtBRL(dre.receitasNaoOp.total)} | ${pctOf(dre.receitasNaoOp.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **Receita Total** | **${fmtBRL(dre.receitaTotal)}** | 100% |`);
+  lines.push(`| (-) CPV | ${fmtBRL(dre.cpv.total)} | ${pctOf(dre.cpv.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) Margem Bruta** | **${fmtBRL(dre.margemBruta)}** | **${pctOf(dre.margemBruta, dre.receitaTotal).toFixed(1)}%** |`);
+  lines.push(`| (-) Despesas Variáveis | ${fmtBRL(dre.despesasVar.total)} | ${pctOf(dre.despesasVar.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) Margem Contribuição** | **${fmtBRL(dre.margemContribuicao)}** | **${pctOf(dre.margemContribuicao, dre.receitaTotal).toFixed(1)}%** |`);
+  lines.push(`| (-) Custos Fixos | ${fmtBRL(dre.custosFixos.total)} | ${pctOf(dre.custosFixos.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) EBITDA** | **${fmtBRL(dre.ebitda)}** | **${pctOf(dre.ebitda, dre.receitaTotal).toFixed(1)}%** |`);
+  lines.push(`| (-) Impostos | ${fmtBRL(dre.impostos.total)} | ${pctOf(dre.impostos.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) Lucro Líquido** | **${fmtBRL(dre.lucroLiquido)}** | **${pctOf(dre.lucroLiquido, dre.receitaTotal).toFixed(1)}%** |`);
+  return lines.join("\n");
+}
+
+function generateCFODreAnalysis(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  const mbPct = pctOf(dre.margemBruta, dre.receitaTotal);
+  const mcPct = pctOf(dre.margemContribuicao, dre.receitaTotal);
+  const ebitdaPct = pctOf(dre.ebitda, dre.receitaTotal);
+  const cpvPct = pctOf(dre.cpv.total, dre.receitaTotal);
+  const fixoPct = pctOf(dre.custosFixos.total, dre.receitaTotal);
+
+  lines.push("\n**Análise do DRE Gerencial:**\n");
+
+  // CPV
+  if (cpvPct > 50) lines.push(`⚠️ **CPV em ${cpvPct.toFixed(1)}%** — acima de 50% da receita. Insumos e matéria-prima estão comprimindo a margem. Necessário renegociar com fornecedores ou revisar composição dos produtos.`);
+  else if (cpvPct > 40) lines.push(`🟡 CPV em ${cpvPct.toFixed(1)}% — dentro do esperado, mas monitore. Qualquer aumento de preço de insumo vai pressionar.`);
+  else lines.push(`🟢 CPV em ${cpvPct.toFixed(1)}% — saudável.`);
+
+  // Margem bruta
+  if (mbPct < 40) lines.push(`⚠️ **Margem bruta de ${mbPct.toFixed(1)}%** — pressionada. O negócio precisa melhorar eficiência de produção ou repricing.`);
+  else if (mbPct < 55) lines.push(`🟡 Margem bruta de ${mbPct.toFixed(1)}% — razoável, mas há espaço para melhoria.`);
+  else lines.push(`🟢 Margem bruta de ${mbPct.toFixed(1)}% — saudável.`);
+
+  // Custos fixos
+  if (fixoPct > 30) lines.push(`⚠️ **Custos fixos em ${fixoPct.toFixed(1)}%** — desproporcionais. A estrutura pode estar pesada demais para o faturamento atual.`);
+  else if (fixoPct > 20) lines.push(`🟡 Custos fixos em ${fixoPct.toFixed(1)}% — controlados, mas merecem revisão.`);
+  else lines.push(`🟢 Custos fixos em ${fixoPct.toFixed(1)}% — leve e eficiente.`);
+
+  // EBITDA
+  if (dre.ebitda < 0) lines.push(`🔴 **EBITDA negativo (${fmtBRL(dre.ebitda)}).** A operação está gerando prejuízo operacional. Urgente conter custos e/ou aumentar receita.`);
+  else if (ebitdaPct < 5) lines.push(`⚠️ EBITDA de apenas ${ebitdaPct.toFixed(1)}% — muito apertado. Qualquer variação transforma o resultado em prejuízo.`);
+  else if (ebitdaPct < 15) lines.push(`🟡 EBITDA de ${ebitdaPct.toFixed(1)}% — positivo, mas sem gordura.`);
+  else lines.push(`🟢 EBITDA de ${ebitdaPct.toFixed(1)}% — resultado operacional sólido.`);
+
+  // Lucro líquido
+  if (dre.lucroLiquido < 0) lines.push(`\n🔴 **Lucro líquido negativo: ${fmtBRL(dre.lucroLiquido)}.** O negócio está queimando caixa.`);
+  else lines.push(`\nLucro líquido: **${fmtBRL(dre.lucroLiquido)}** (${pctOf(dre.lucroLiquido, dre.receitaTotal).toFixed(1)}%).`);
+
+  return lines.join("\n");
+}
+
+function generateGrokDreConfrontation(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  const mbPct = pctOf(dre.margemBruta, dre.receitaTotal);
+  const ebitdaPct = pctOf(dre.ebitda, dre.receitaTotal);
+
+  if (dre.receitaTotal > 0 && dre.lucroLiquido < 0) {
+    lines.push("**O DRE mostra que estamos trabalhando para ter prejuízo.**\n");
+    lines.push(`Faturamento de ${fmtBRL(dre.receitaTotal)} e o resultado é negativo. A operação está girando dinheiro, mas sobrando menos do que consome.`);
+    lines.push("\n**Pergunta que ninguém quer fazer:** estamos crescendo para lucrar ou crescendo para gastar mais?");
+  } else if (ebitdaPct < 10 && dre.receitaTotal > 0) {
+    lines.push(`EBITDA de ${ebitdaPct.toFixed(1)}% é **perigosamente baixo**. Se qualquer custo subir 5%, vira prejuízo.`);
+    lines.push(`\nCom margem bruta de ${mbPct.toFixed(1)}%, a questão é clara: ou reduzimos custos fixos, ou aumentamos preço, ou aumentamos volume sem aumentar custo.`);
+    lines.push("\n**Não adianta faturar mais se o custo cresce junto.** Crescimento sem margem é ilusão.");
+  } else if (mbPct < 45 && dre.receitaTotal > 0) {
+    lines.push(`Margem bruta de ${mbPct.toFixed(1)}% — o CPV está comendo boa parte da receita. Antes de pensar em vender mais, temos que entender por que produzir custa tanto.`);
+  }
+
+  return lines.join("\n");
+}
+
+function generateCEODreSynthesis(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  const ebitdaPct = pctOf(dre.ebitda, dre.receitaTotal);
+
+  if (dre.lucroLiquido < 0) {
+    lines.push(`\n📊 **DRE: Resultado NEGATIVO** — lucro de ${fmtBRL(dre.lucroLiquido)}. Prioridade é reverter o resultado antes de investir em crescimento.`);
+  } else if (ebitdaPct < 10) {
+    lines.push(`\n📊 **DRE: Resultado apertado** — EBITDA de ${ebitdaPct.toFixed(1)}%. Manter atenção na relação entre custos e receita.`);
+  } else {
+    lines.push(`\n📊 **DRE: Resultado positivo** — EBITDA de ${ebitdaPct.toFixed(1)}%, lucro de ${fmtBRL(dre.lucroLiquido)}.`);
+  }
+
+  return lines.join("\n");
+}
+
+// ────────────────────────────────────────────────
 // CASH ALERT BLOCK (used in debates)
 // ────────────────────────────────────────────────
 
