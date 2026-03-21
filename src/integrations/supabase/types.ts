@@ -1162,6 +1162,7 @@ export type Database = {
       current_user_role: { Args: never; Returns: string }
       get_current_user_is_active: { Args: never; Returns: boolean }
       get_current_user_role: { Args: never; Returns: string }
+      update_own_last_login: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
