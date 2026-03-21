@@ -1,6 +1,7 @@
 /** Council member definitions, debate engine, and data-driven analysis */
 
 import type { CouncilContextData, CashFlowAnalysis } from "@/hooks/use-council-context";
+import type { DreResult } from "@/hooks/use-dre-data";
 
 export interface CouncilMember {
   id: string;
@@ -185,6 +186,18 @@ function assessSeverity(ctx: CouncilContextData): Severity {
 
   if (ctx.productionEfficiency < 50 && ctx.totalProducts > 0) { if (level === "normal") level = "alerta"; reasons.push(`Eficiência de estoque em ${ctx.productionEfficiency}%`); }
 
+  // DRE assessment
+  const dre = ctx.dre;
+  if (dre && dre.receitaTotal > 0) {
+    const margemBrutaPct = (dre.margemBruta / dre.receitaTotal) * 100;
+    const ebitdaPct = (dre.ebitda / dre.receitaTotal) * 100;
+    if (dre.lucroLiquido < 0) { level = "critico"; reasons.push(`Lucro líquido negativo: ${fmtBRL(dre.lucroLiquido)}`); }
+    else if (ebitdaPct < 5) { if (level === "normal") level = "alerta"; reasons.push(`EBITDA apertado: ${ebitdaPct.toFixed(1)}% da receita`); }
+    if (margemBrutaPct < 40) { if (level === "normal") level = "atencao"; reasons.push(`Margem bruta pressionada: ${margemBrutaPct.toFixed(1)}%`); }
+    const cpvPct = (dre.cpv.total / dre.receitaTotal) * 100;
+    if (cpvPct > 50) { if (level === "normal") level = "alerta"; reasons.push(`CPV alto: ${cpvPct.toFixed(1)}% da receita`); }
+  }
+
   if (reasons.length === 0) reasons.push("Operação dentro dos parâmetros normais");
   return { level, reasons };
 }
@@ -213,8 +226,112 @@ function detectTargetMember(question: string): string | null {
 
 function isCashRelatedQuestion(question: string): boolean {
   const q = question.toLowerCase();
-  const triggers = ["caixa", "financ", "pagar", "receber", "déficit", "deficit", "folga", "compromisso", "vencid", "pagamento", "dinheiro", "gasto", "despesa", "custo", "aperto"];
+  const triggers = ["caixa", "financ", "pagar", "receber", "déficit", "deficit", "folga", "compromisso", "vencid", "pagamento", "dinheiro", "gasto", "despesa", "custo", "aperto", "dre", "margem", "lucro", "ebitda", "receita", "cpv", "resultado"];
   return triggers.some((t) => q.includes(t));
+}
+
+// ────────────────────────────────────────────────
+// DRE ANALYSIS HELPERS
+// ────────────────────────────────────────────────
+
+function pctOf(val: number, total: number): number {
+  return total ? (val / total) * 100 : 0;
+}
+
+function generateDreBlock(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  lines.push("📊 **DRE Gerencial do Período**\n");
+  lines.push("| Indicador | Valor | % Receita |");
+  lines.push("|---|---|---|");
+  lines.push(`| Receita Operacional | ${fmtBRL(dre.receitasOp.total)} | ${pctOf(dre.receitasOp.total, dre.receitaTotal).toFixed(1)}% |`);
+  if (dre.receitasNaoOp.total > 0) lines.push(`| Receita Não Operacional | ${fmtBRL(dre.receitasNaoOp.total)} | ${pctOf(dre.receitasNaoOp.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **Receita Total** | **${fmtBRL(dre.receitaTotal)}** | 100% |`);
+  lines.push(`| (-) CPV | ${fmtBRL(dre.cpv.total)} | ${pctOf(dre.cpv.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) Margem Bruta** | **${fmtBRL(dre.margemBruta)}** | **${pctOf(dre.margemBruta, dre.receitaTotal).toFixed(1)}%** |`);
+  lines.push(`| (-) Despesas Variáveis | ${fmtBRL(dre.despesasVar.total)} | ${pctOf(dre.despesasVar.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) Margem Contribuição** | **${fmtBRL(dre.margemContribuicao)}** | **${pctOf(dre.margemContribuicao, dre.receitaTotal).toFixed(1)}%** |`);
+  lines.push(`| (-) Custos Fixos | ${fmtBRL(dre.custosFixos.total)} | ${pctOf(dre.custosFixos.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) EBITDA** | **${fmtBRL(dre.ebitda)}** | **${pctOf(dre.ebitda, dre.receitaTotal).toFixed(1)}%** |`);
+  lines.push(`| (-) Impostos | ${fmtBRL(dre.impostos.total)} | ${pctOf(dre.impostos.total, dre.receitaTotal).toFixed(1)}% |`);
+  lines.push(`| **(=) Lucro Líquido** | **${fmtBRL(dre.lucroLiquido)}** | **${pctOf(dre.lucroLiquido, dre.receitaTotal).toFixed(1)}%** |`);
+  return lines.join("\n");
+}
+
+function generateCFODreAnalysis(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  const mbPct = pctOf(dre.margemBruta, dre.receitaTotal);
+  const mcPct = pctOf(dre.margemContribuicao, dre.receitaTotal);
+  const ebitdaPct = pctOf(dre.ebitda, dre.receitaTotal);
+  const cpvPct = pctOf(dre.cpv.total, dre.receitaTotal);
+  const fixoPct = pctOf(dre.custosFixos.total, dre.receitaTotal);
+
+  lines.push("\n**Análise do DRE Gerencial:**\n");
+
+  // CPV
+  if (cpvPct > 50) lines.push(`⚠️ **CPV em ${cpvPct.toFixed(1)}%** — acima de 50% da receita. Insumos e matéria-prima estão comprimindo a margem. Necessário renegociar com fornecedores ou revisar composição dos produtos.`);
+  else if (cpvPct > 40) lines.push(`🟡 CPV em ${cpvPct.toFixed(1)}% — dentro do esperado, mas monitore. Qualquer aumento de preço de insumo vai pressionar.`);
+  else lines.push(`🟢 CPV em ${cpvPct.toFixed(1)}% — saudável.`);
+
+  // Margem bruta
+  if (mbPct < 40) lines.push(`⚠️ **Margem bruta de ${mbPct.toFixed(1)}%** — pressionada. O negócio precisa melhorar eficiência de produção ou repricing.`);
+  else if (mbPct < 55) lines.push(`🟡 Margem bruta de ${mbPct.toFixed(1)}% — razoável, mas há espaço para melhoria.`);
+  else lines.push(`🟢 Margem bruta de ${mbPct.toFixed(1)}% — saudável.`);
+
+  // Custos fixos
+  if (fixoPct > 30) lines.push(`⚠️ **Custos fixos em ${fixoPct.toFixed(1)}%** — desproporcionais. A estrutura pode estar pesada demais para o faturamento atual.`);
+  else if (fixoPct > 20) lines.push(`🟡 Custos fixos em ${fixoPct.toFixed(1)}% — controlados, mas merecem revisão.`);
+  else lines.push(`🟢 Custos fixos em ${fixoPct.toFixed(1)}% — leve e eficiente.`);
+
+  // EBITDA
+  if (dre.ebitda < 0) lines.push(`🔴 **EBITDA negativo (${fmtBRL(dre.ebitda)}).** A operação está gerando prejuízo operacional. Urgente conter custos e/ou aumentar receita.`);
+  else if (ebitdaPct < 5) lines.push(`⚠️ EBITDA de apenas ${ebitdaPct.toFixed(1)}% — muito apertado. Qualquer variação transforma o resultado em prejuízo.`);
+  else if (ebitdaPct < 15) lines.push(`🟡 EBITDA de ${ebitdaPct.toFixed(1)}% — positivo, mas sem gordura.`);
+  else lines.push(`🟢 EBITDA de ${ebitdaPct.toFixed(1)}% — resultado operacional sólido.`);
+
+  // Lucro líquido
+  if (dre.lucroLiquido < 0) lines.push(`\n🔴 **Lucro líquido negativo: ${fmtBRL(dre.lucroLiquido)}.** O negócio está queimando caixa.`);
+  else lines.push(`\nLucro líquido: **${fmtBRL(dre.lucroLiquido)}** (${pctOf(dre.lucroLiquido, dre.receitaTotal).toFixed(1)}%).`);
+
+  return lines.join("\n");
+}
+
+function generateGrokDreConfrontation(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  const mbPct = pctOf(dre.margemBruta, dre.receitaTotal);
+  const ebitdaPct = pctOf(dre.ebitda, dre.receitaTotal);
+
+  if (dre.receitaTotal > 0 && dre.lucroLiquido < 0) {
+    lines.push("**O DRE mostra que estamos trabalhando para ter prejuízo.**\n");
+    lines.push(`Faturamento de ${fmtBRL(dre.receitaTotal)} e o resultado é negativo. A operação está girando dinheiro, mas sobrando menos do que consome.`);
+    lines.push("\n**Pergunta que ninguém quer fazer:** estamos crescendo para lucrar ou crescendo para gastar mais?");
+  } else if (ebitdaPct < 10 && dre.receitaTotal > 0) {
+    lines.push(`EBITDA de ${ebitdaPct.toFixed(1)}% é **perigosamente baixo**. Se qualquer custo subir 5%, vira prejuízo.`);
+    lines.push(`\nCom margem bruta de ${mbPct.toFixed(1)}%, a questão é clara: ou reduzimos custos fixos, ou aumentamos preço, ou aumentamos volume sem aumentar custo.`);
+    lines.push("\n**Não adianta faturar mais se o custo cresce junto.** Crescimento sem margem é ilusão.");
+  } else if (mbPct < 45 && dre.receitaTotal > 0) {
+    lines.push(`Margem bruta de ${mbPct.toFixed(1)}% — o CPV está comendo boa parte da receita. Antes de pensar em vender mais, temos que entender por que produzir custa tanto.`);
+  }
+
+  return lines.join("\n");
+}
+
+function generateCEODreSynthesis(dre: DreResult): string {
+  if (dre.receitaTotal === 0) return "";
+  const lines: string[] = [];
+  const ebitdaPct = pctOf(dre.ebitda, dre.receitaTotal);
+
+  if (dre.lucroLiquido < 0) {
+    lines.push(`\n📊 **DRE: Resultado NEGATIVO** — lucro de ${fmtBRL(dre.lucroLiquido)}. Prioridade é reverter o resultado antes de investir em crescimento.`);
+  } else if (ebitdaPct < 10) {
+    lines.push(`\n📊 **DRE: Resultado apertado** — EBITDA de ${ebitdaPct.toFixed(1)}%. Manter atenção na relação entre custos e receita.`);
+  } else {
+    lines.push(`\n📊 **DRE: Resultado positivo** — EBITDA de ${ebitdaPct.toFixed(1)}%, lucro de ${fmtBRL(dre.lucroLiquido)}.`);
+  }
+
+  return lines.join("\n");
 }
 
 // ────────────────────────────────────────────────
@@ -396,6 +513,13 @@ function generateQuickResponse(ctx: CouncilContextData, question: string): Counc
     if (cf.totalVencidas > 0) lines.push(`🔴 **${cf.contasVencidas.length} conta(s) vencida(s)** — ${fmtBRL(cf.totalVencidas)}`);
   }
 
+  // DRE summary in quick mode
+  if (ctx.dre && ctx.dre.receitaTotal > 0) {
+    const ebitdaPct = pctOf(ctx.dre.ebitda, ctx.dre.receitaTotal);
+    const dreEmoji = ctx.dre.lucroLiquido < 0 ? "🔴" : ebitdaPct < 10 ? "🟡" : "🟢";
+    lines.push(`\n${dreEmoji} **DRE:** Receita ${fmtBRL(ctx.dre.receitaTotal)} | EBITDA ${ebitdaPct.toFixed(1)}% | Lucro ${fmtBRL(ctx.dre.lucroLiquido)}`);
+  }
+
   if (ctx.belowMinimum.length > 0) lines.push(`\n🔴 **${ctx.belowMinimum.length}** produto(s) abaixo do mínimo.`);
   if (ctx.divergences.length > 0) lines.push(`⚠️ **${ctx.divergences.length}** divergência(s).`);
   if (ctx.pendingApprovals > 0) lines.push(`🔔 **${ctx.pendingApprovals}** aprovação(ões) pendente(s).`);
@@ -443,6 +567,12 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
       if (cashSynthesis) lines.push(`\n${cashSynthesis}`);
       else if (cf.totalCompromissos > 0) lines.push(`\nCaixa: ${fmtBRL(cf.caixaDisponivel)} | Compromissos: ${fmtBRL(cf.totalCompromissos)} | Folga: ${fmtBRL(cf.folgaOuDeficit)}`);
 
+      // DRE synthesis
+      if (ctx.dre) {
+        const dreSynth = generateCEODreSynthesis(ctx.dre);
+        if (dreSynth) lines.push(dreSynth);
+      }
+
       if (ctx.belowMinimum.length > 0) lines.push(`\nPrioridade operacional: regularizar ${ctx.belowMinimum.length} produto(s) críticos.`);
       lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
       content = lines.join("\n");
@@ -455,6 +585,12 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
 
       // Cash analysis first (priority)
       lines.push(cfoAnalysis.content);
+
+      // DRE analysis
+      if (ctx.dre) {
+        const dreAnalysis = generateCFODreAnalysis(ctx.dre);
+        if (dreAnalysis) lines.push(dreAnalysis);
+      }
 
       // Then operational financial impacts
       if (ctx.todayLosses > 0) {
@@ -500,6 +636,15 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
       if (cashConfrontation) {
         lines.push(cashConfrontation);
         lines.push("");
+      }
+
+      // DRE confrontation
+      if (ctx.dre) {
+        const dreConfront = generateGrokDreConfrontation(ctx.dre);
+        if (dreConfront) {
+          lines.push(dreConfront);
+          lines.push("");
+        }
       }
 
       // Operational
@@ -582,6 +727,11 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
       if (cashBlock) lines.push(`\n${cashBlock}`);
     }
 
+    // DRE overview
+    if (ctx.dre && ctx.dre.receitaTotal > 0) {
+      lines.push(`\n${generateDreBlock(ctx.dre)}`);
+    }
+
     if (severity.reasons.length > 0) {
       lines.push("\n**Pontos de atenção:**");
       severity.reasons.forEach((r) => lines.push(`  → ${r}`));
@@ -605,6 +755,13 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
     if (ctx.belowMinimum.length > 0) {
       lines.push(`\n**Risco de receita:** ${ctx.belowMinimum.length} produto(s) podem gerar ruptura.`);
     }
+
+    // DRE analysis
+    if (ctx.dre) {
+      const dreAnalysis = generateCFODreAnalysis(ctx.dre);
+      if (dreAnalysis) lines.push(dreAnalysis);
+    }
+
     lines.push(`\nEficiência geral: **${ctx.productionEfficiency}%**. ${ctx.productionEfficiency >= 80 ? "Bom nível." : ctx.productionEfficiency >= 50 ? "Há margem para melhoria." : "Nível preocupante."}`);
 
     speeches.push({
@@ -656,6 +813,15 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
     if (cashConfrontation) {
       lines.push(cashConfrontation);
       hasContention = true;
+    }
+
+    // DRE confrontation
+    if (ctx.dre) {
+      const dreConfront = generateGrokDreConfrontation(ctx.dre);
+      if (dreConfront) {
+        lines.push(`\n${dreConfront}`);
+        hasContention = true;
+      }
     }
 
     if (ctx.divergences.length > 0) {
@@ -740,9 +906,16 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
       lines.push("");
     }
 
+    // DRE synthesis
+    if (ctx.dre) {
+      const dreSynth = generateCEODreSynthesis(ctx.dre);
+      if (dreSynth) lines.push(dreSynth);
+    }
+
     // Convergences
     const conv: string[] = [];
     if (cf.alertLevel !== "normal") conv.push("necessidade de controle de caixa");
+    if (ctx.dre && ctx.dre.lucroLiquido < 0) conv.push("reversão do prejuízo como prioridade");
     if (ctx.belowMinimum.length > 0) conv.push("risco de ruptura como prioridade");
     if (ctx.lossRate > 5) conv.push("necessidade de reduzir perdas");
     if (ctx.divergences.length > 0) conv.push("investigar divergências");

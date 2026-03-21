@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCaixaDisponivel } from "@/hooks/use-caixa";
+import { useDreData, type DreResult } from "@/hooks/use-dre-data";
 import {
   useOpProducts,
   useTodayLotes,
@@ -110,6 +111,7 @@ export interface CouncilContextData {
   productionEfficiency: number;
   dataCompleteness: "alta" | "media" | "baixa" | "insuficiente";
   cashFlow: CashFlowAnalysis;
+  dre: DreResult | null;
 }
 
 // ─── Supabase queries for financial data ────────
@@ -301,8 +303,9 @@ export function useCouncilContext(): CouncilContextData {
   const { data: contasPagas, isLoading: l8 } = useContasPagas();
   const { data: caixaManual, isLoading: l9 } = useCaixaDisponivel();
   const { data: fluxoEntradas, isLoading: l10 } = useFluxoEntradas();
+  const { data: dreData, isLoading: l11 } = useDreData();
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9 || l10;
+  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9 || l10 || l11;
 
   if (loading) {
     return {
@@ -324,6 +327,7 @@ export function useCouncilContext(): CouncilContextData {
       productionEfficiency: 0,
       dataCompleteness: "insuficiente",
       cashFlow: EMPTY_CASH_FLOW,
+      dre: null,
     };
   }
 
@@ -470,5 +474,6 @@ export function useCouncilContext(): CouncilContextData {
     productionEfficiency,
     dataCompleteness,
     cashFlow,
+    dre: dreData ?? null,
   };
 }
