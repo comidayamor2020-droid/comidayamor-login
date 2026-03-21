@@ -254,6 +254,13 @@ function computeCashFlow(
     alertLevel = "alerta";
   }
 
+  // Fluxo resumo
+  const entradasPeriodo = entradasFluxo.reduce((s, e) => s + (Number(e.valor) || 0), 0);
+  const saidasPeriodo = contasPagas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const saldoFinal = caixaDisponivel + entradasPeriodo - saidasPeriodo;
+  const mediaDiariaSaidas = saidasPeriodo / 30;
+  const projecao7d = caixaDisponivel - mediaDiariaSaidas * 7;
+
   return {
     caixaDisponivel,
     contasVencidas,
@@ -265,6 +272,7 @@ function computeCashFlow(
     totalCompromissos,
     folgaOuDeficit,
     alertLevel,
+    fluxo: { entradasPeriodo, saidasPeriodo, saldoFinal, mediaDiariaSaidas, projecao7d },
   };
 }
 
