@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import {
   useOpProducts,
   useTodayLotes,
@@ -152,6 +153,7 @@ function computeCashFlow(
   contasPagar: { descricao: string; valor: number | null; data_vencimento: string | null; status: string | null; categoria: string | null; fornecedor: string | null; forma_pagamento: string | null }[],
   contasReceber: { valor: number | null; status: string | null }[],
   contasPagas: { valor: number | null }[],
+  caixaManualValor: number | null,
 ): CashFlowAnalysis {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -161,14 +163,17 @@ function computeCashFlow(
   const in7Days = new Date(today);
   in7Days.setDate(in7Days.getDate() + 7);
 
-  // Estimate cash: received amounts minus paid amounts
-  const totalRecebido = contasReceber
-    .filter((c) => c.status === "recebido" || c.status === "pago")
-    .reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
-
-  const totalPago = contasPagas.reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
-
-  const caixaDisponivel = totalRecebido - totalPago;
+  // Use manual cash balance if available, otherwise estimate from receivables - payables
+  let caixaDisponivel: number;
+  if (caixaManualValor !== null && caixaManualValor !== undefined) {
+    caixaDisponivel = caixaManualValor;
+  } else {
+    const totalRecebido = contasReceber
+      .filter((c) => c.status === "recebido" || c.status === "pago")
+      .reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
+    const totalPago = contasPagas.reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
+    caixaDisponivel = totalRecebido - totalPago;
+  }
 
   // Unpaid bills
   const unpaid = contasPagar.filter(
@@ -258,8 +263,9 @@ export function useCouncilContext(): CouncilContextData {
   const { data: contasPagar, isLoading: l6 } = useContasPagar();
   const { data: contasReceber, isLoading: l7 } = useContasReceber();
   const { data: contasPagas, isLoading: l8 } = useContasPagas();
+  const { data: caixaManual, isLoading: l9 } = useCaixaDisponivel();
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8;
+  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9;
 
   if (loading) {
     return {
@@ -406,7 +412,7 @@ export function useCouncilContext(): CouncilContextData {
     signals >= 4 ? "alta" : signals >= 3 ? "media" : signals >= 2 ? "baixa" : "insuficiente";
 
   // Cash flow analysis
-  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? []);
+  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? [], caixaManual?.valor ?? null);
 
   return {
     loading: false,

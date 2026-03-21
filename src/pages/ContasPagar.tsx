@@ -7,15 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Pencil, Filter } from "lucide-react";
+import { Plus, Pencil, Filter, Wallet } from "lucide-react";
 import { format, differenceInDays, parseISO, addMonths } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { formatBRL } from "@/lib/format";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCaixaDisponivel, useUpdateCaixa } from "@/hooks/use-caixa";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -93,12 +95,20 @@ const EMPTY_FORM: FormState = {
 
 export default function ContasPagar() {
   const qc = useQueryClient();
+  const { profile } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [filter, setFilter] = useState<FilterPreset>("todas");
   const [catFilter, setCatFilter] = useState<string>("todas");
   const [fpFilter, setFpFilter] = useState<string>("todas");
+
+  // Caixa disponível
+  const { data: caixa } = useCaixaDisponivel();
+  const updateCaixa = useUpdateCaixa();
+  const [caixaDialogOpen, setCaixaDialogOpen] = useState(false);
+  const [caixaValor, setCaixaValor] = useState("");
+  const [caixaObs, setCaixaObs] = useState("");
 
   const set = (key: keyof FormState, val: string | boolean) => setForm((p) => ({ ...p, [key]: val }));
 
@@ -222,10 +232,43 @@ export default function ContasPagar() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Contas a Pagar</h1>
             <p className="text-sm text-muted-foreground">Controle manual das contas e parcelas</p>
           </div>
-          <Button onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4" /> Cadastrar CPG
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setCaixaValor(caixa?.valor?.toString() ?? ""); setCaixaObs(""); setCaixaDialogOpen(true); }}>
+              <Wallet className="h-4 w-4" /> Caixa Disponível
+            </Button>
+            <Button onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4" /> Cadastrar CPG
+            </Button>
+          </div>
         </div>
+
+        {/* Caixa Disponível Card */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-4 px-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Wallet className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Caixa Disponível</p>
+                  <p className="text-2xl font-bold text-foreground">{caixa ? formatBRL(caixa.valor) : "Não informado"}</p>
+                </div>
+              </div>
+              {caixa && (
+                <div className="text-right">
+                  <p className="text-[11px] text-muted-foreground">
+                    Atualizado em {format(new Date(caixa.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                  </p>
+                  {caixa.autor_nome && (
+                    <p className="text-[11px] text-muted-foreground">por {caixa.autor_nome}</p>
+                  )}
+                  {caixa.observacao && (
+                    <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{caixa.observacao}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
@@ -434,6 +477,39 @@ export default function ContasPagar() {
               <Button type="button" variant="outline" onClick={closeDialog}>Cancelar</Button>
               <Button type="submit" disabled={upsertMutation.isPending}>
                 {upsertMutation.isPending ? "Salvando…" : editingId ? "Salvar" : "Cadastrar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Caixa Dialog */}
+      <Dialog open={caixaDialogOpen} onOpenChange={setCaixaDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atualizar Caixa Disponível</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const val = parseFloat(caixaValor.replace(",", "."));
+            if (isNaN(val)) { toast.error("Valor inválido"); return; }
+            updateCaixa.mutate({ valor: val, observacao: caixaObs, userId: profile?.id }, {
+              onSuccess: () => { toast.success("Caixa atualizado!"); setCaixaDialogOpen(false); },
+              onError: (err: Error) => toast.error(err.message),
+            });
+          }} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Valor atual do caixa (R$) *</Label>
+              <Input type="number" step="0.01" value={caixaValor} onChange={(e) => setCaixaValor(e.target.value)} placeholder="0,00" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Observação</Label>
+              <Input value={caixaObs} onChange={(e) => setCaixaObs(e.target.value)} placeholder="Ex: conferência de caixa manhã" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCaixaDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={updateCaixa.isPending}>
+                {updateCaixa.isPending ? "Salvando…" : "Atualizar"}
               </Button>
             </div>
           </form>

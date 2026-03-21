@@ -1,6 +1,9 @@
 import { formatBRL, formatPercent } from "@/lib/format";
 import { useDreData } from "@/hooks/use-dre-data";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useCaixaDisponivel } from "@/hooks/use-caixa";
+import { Wallet } from "lucide-react";
+import { format } from "date-fns";
 
 interface MetricCardProps {
   title: string;
@@ -24,6 +27,7 @@ function MetricCard({ title, value, description, variant }: MetricCardProps) {
 
 export default function Dashboard() {
   const { data, isError } = useDreData();
+  const { data: caixa } = useCaixaDisponivel();
 
   const metrics: MetricCardProps[] = data
     ? [
@@ -76,6 +80,23 @@ export default function Dashboard() {
       {isError && (
         <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
           Não foi possível carregar os dados da API. Exibindo valores de exemplo.
+        </div>
+      )}
+
+      {/* Caixa Disponível */}
+      {caixa && (
+        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-5 flex items-center gap-4">
+          <Wallet className="h-6 w-6 text-primary shrink-0" />
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Caixa Disponível</p>
+            <p className="text-2xl font-bold text-foreground">{formatBRL(caixa.valor)}</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-[11px] text-muted-foreground">
+              Atualizado em {format(new Date(caixa.created_at), "dd/MM/yyyy 'às' HH:mm")}
+            </p>
+            {caixa.autor_nome && <p className="text-[11px] text-muted-foreground">por {caixa.autor_nome}</p>}
+          </div>
         </div>
       )}
 
