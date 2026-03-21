@@ -153,6 +153,7 @@ function computeCashFlow(
   contasPagar: { descricao: string; valor: number | null; data_vencimento: string | null; status: string | null; categoria: string | null; fornecedor: string | null; forma_pagamento: string | null }[],
   contasReceber: { valor: number | null; status: string | null }[],
   contasPagas: { valor: number | null }[],
+  caixaManualValor: number | null,
 ): CashFlowAnalysis {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
