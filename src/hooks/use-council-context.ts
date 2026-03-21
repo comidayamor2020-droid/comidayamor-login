@@ -474,5 +474,6 @@ export function useCouncilContext(): CouncilContextData {
     productionEfficiency,
     dataCompleteness,
     cashFlow,
+    dre: dreData ?? null,
   };
 }
