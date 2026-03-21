@@ -128,6 +128,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Formato de email inválido. Use: usuario@dominio.com" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: "Senha deve ter pelo menos 6 caracteres" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!ALLOWED_ROLES.has(role)) {
       return new Response(
         JSON.stringify({ error: `Perfil inválido: ${body.role}` }),
