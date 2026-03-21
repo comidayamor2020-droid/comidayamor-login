@@ -60,6 +60,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    const ALLOWED_ROLES = ["admin", "gestao", "financeiro", "compras", "vendas", "producao", "gerente_operacional", "loja", "b2b_cliente", "cliente_b2c"];
+    const ALLOWED_GROUPS = ["cya", "b2b", "b2c"];
+
+    if (!ALLOWED_ROLES.includes(role)) {
+      return new Response(
+        JSON.stringify({ error: `Perfil inválido: ${role}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (user_group && !ALLOWED_GROUPS.includes(user_group)) {
+      return new Response(
+        JSON.stringify({ error: `Grupo inválido: ${user_group}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
