@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
   LayoutDashboard, FileText, LogOut, Package, Factory, Store,
-  ClipboardList, ShoppingBag, Building2, Users,
+  ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
   BarChart3, Zap, ArrowLeftRight, CheckCircle, Calendar, X,
-  ChevronDown,
+  ChevronDown, Users,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
