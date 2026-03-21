@@ -287,6 +287,7 @@ const EMPTY_CASH_FLOW: CashFlowAnalysis = {
   totalCompromissos: 0,
   folgaOuDeficit: 0,
   alertLevel: "normal",
+  fluxo: { entradasPeriodo: 0, saidasPeriodo: 0, saldoFinal: 0, mediaDiariaSaidas: 0, projecao7d: 0 },
 };
 
 export function useCouncilContext(): CouncilContextData {
