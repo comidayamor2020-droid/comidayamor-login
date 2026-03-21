@@ -1,43 +1,30 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from "react-markdown";
 import {
-  Users, Send, AlertTriangle, TrendingUp, ArrowDown, Package,
-  Clock, ChevronDown, ChevronUp, Sparkles, Plus,
-  ArrowUp, Activity, ShieldAlert,
+  Users, Send, ChevronDown, ChevronUp, Plus, Activity,
 } from "lucide-react";
 import { useCouncilContext, type CouncilContextData } from "@/hooks/use-council-context";
 import {
   COUNCIL_MEMBERS,
-  RESPONSE_SECTIONS,
-  QUICK_ACTIONS,
-  generateConversationalResponse,
-  type CouncilResponse,
-  type CouncilMember,
+  AI_MEMBERS,
+  getMember,
+  generateCouncilResponse,
   type CouncilMessage,
+  type DebateSpeech,
 } from "@/lib/council";
 
 const PLACEHOLDER_QUESTIONS = [
   "O que precisa de atenção hoje?",
   "Qual deve ser a prioridade da semana?",
   "Onde está o maior risco da operação?",
-  "O que o conselho recomenda neste momento?",
-  "Quais dados ainda faltam para uma decisão melhor?",
+  "Quais dados ainda faltam para decidir melhor?",
 ];
-
-const SECTION_ICONS: Record<string, string> = {
-  leitura_executiva: "📋", atencao: "🚨", visao_ceo_auxiliar: "🧠",
-  visao_cfo: "📊", visao_cmo: "🎯", visao_cio: "⚡", visao_cto: "🔧",
-  convergencias: "🤝", divergencias: "⚔️", sugestao_principal: "💡",
-  alternativas: "🔀", risco_principal: "⚠️", falta_saber: "❓",
-  proximo_passo: "👣", nivel_confianca: "📐",
-};
 
 export default function Conselho() {
   const ctx = useCouncilContext();
@@ -45,14 +32,32 @@ export default function Conselho() {
   const [messages, setMessages] = useState<CouncilMessage[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
+  const [revealedSpeeches, setRevealedSpeeches] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }, []);
 
-  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+  useEffect(() => { scrollToBottom(); }, [messages, revealedSpeeches, scrollToBottom]);
+
+  // Progressive reveal of speeches
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "debate" || !lastMsg.speeches) return;
+
+    const totalSpeeches = lastMsg.speeches.length;
+    const revealed = revealedSpeeches[lastMsg.id] ?? 0;
+
+    if (revealed < totalSpeeches) {
+      const timer = setTimeout(() => {
+        setRevealedSpeeches((prev) => ({ ...prev, [lastMsg.id]: revealed + 1 }));
+      }, 600 + Math.random() * 400);
+      return () => clearTimeout(timer);
+    } else if (revealed === totalSpeeches && analyzing) {
+      setAnalyzing(false);
+    }
+  }, [messages, revealedSpeeches, analyzing]);
 
   const handleSend = useCallback((text?: string) => {
     const q = (text ?? input).trim();
@@ -62,8 +67,8 @@ export default function Conselho() {
       id: crypto.randomUUID(),
       role: "user",
       content: q,
-      isStructured: false,
       timestamp: new Date(),
+      mode: "debate",
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -71,10 +76,10 @@ export default function Conselho() {
     setAnalyzing(true);
 
     setTimeout(() => {
-      const response = generateConversationalResponse(ctx, q, [...messages, userMsg]);
+      const response = generateCouncilResponse(ctx, q, [...messages, userMsg]);
+      setRevealedSpeeches((prev) => ({ ...prev, [response.id]: 0 }));
       setMessages((prev) => [...prev, response]);
-      setAnalyzing(false);
-    }, 1200 + Math.random() * 800);
+    }, 400);
   }, [input, ctx, analyzing, messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -88,6 +93,7 @@ export default function Conselho() {
     setMessages([]);
     setInput("");
     setAnalyzing(false);
+    setRevealedSpeeches({});
   };
 
   if (ctx.loading) {
@@ -113,7 +119,7 @@ export default function Conselho() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Conselho</h1>
               <p className="text-xs text-muted-foreground">
-                Conversa estratégica com IAs especializadas · A decisão final é sempre humana.
+                Debate estratégico entre IAs especializadas · A decisão final é sempre humana.
               </p>
             </div>
           </div>
@@ -132,7 +138,6 @@ export default function Conselho() {
           </div>
         </div>
 
-        {/* Context panel (collapsible) */}
         {contextOpen && (
           <div className="shrink-0 mb-3">
             <ContextPanel ctx={ctx} />
@@ -147,23 +152,33 @@ export default function Conselho() {
             ) : (
               <div className="space-y-4">
                 {messages.map((msg) => (
-                  <ChatBubble key={msg.id} message={msg} onQuickAction={handleSend} />
+                  msg.role === "user" ? (
+                    <UserBubble key={msg.id} message={msg} />
+                  ) : (
+                    <DebateBlock
+                      key={msg.id}
+                      message={msg}
+                      revealedCount={revealedSpeeches[msg.id] ?? 0}
+                      onQuickAction={handleSend}
+                    />
+                  )
                 ))}
-                {analyzing && <AnalyzingIndicator />}
+                {analyzing && revealedSpeeches[messages[messages.length - 1]?.id] === undefined && (
+                  <AnalyzingIndicator />
+                )}
                 <div ref={chatEndRef} />
               </div>
             )}
           </ScrollArea>
 
-          {/* Input bar */}
+          {/* Input */}
           <div className="border-t border-border p-3 bg-background/50 shrink-0">
             <div className="flex gap-2 items-end">
               <Textarea
-                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Pergunte ao Conselho..."
+                placeholder="Pergunte ao Conselho ou direcione a um membro..."
                 className="min-h-[44px] max-h-[120px] resize-none text-sm"
                 rows={1}
               />
@@ -176,6 +191,9 @@ export default function Conselho() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5 pl-1">
+              Dica: direcione para um membro — ex: "Claude, analise os custos" ou "Grok, critique essa ideia"
+            </p>
           </div>
         </div>
       </div>
@@ -184,13 +202,12 @@ export default function Conselho() {
 }
 
 // ────────────────────────────────────────────
-// EMPTY STATE — shown when no messages yet
+// EMPTY STATE
 // ────────────────────────────────────────────
 
 function EmptyState({ onSelect }: { onSelect: (q: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-6">
-      {/* Member avatars */}
       <div className="flex gap-1">
         {COUNCIL_MEMBERS.map((m) => (
           <div
@@ -205,10 +222,10 @@ function EmptyState({ onSelect }: { onSelect: (q: string) => void }) {
       </div>
 
       <div className="text-center space-y-1">
-        <p className="text-sm font-medium text-foreground">Como posso ajudar hoje?</p>
+        <p className="text-sm font-medium text-foreground">Inicie um debate estratégico</p>
         <p className="text-xs text-muted-foreground max-w-md">
-          Faça perguntas sobre a operação, riscos, finanças ou qualquer tema estratégico.
-          O Conselho analisa os dados do sistema e recomenda ações.
+          Faça uma pergunta e os membros do Conselho vão debater, cada um trazendo sua perspectiva.
+          Você pode aprofundar com qualquer membro depois.
         </p>
       </div>
 
@@ -228,93 +245,157 @@ function EmptyState({ onSelect }: { onSelect: (q: string) => void }) {
 }
 
 // ────────────────────────────────────────────
-// CHAT BUBBLE
+// USER BUBBLE
 // ────────────────────────────────────────────
 
-function ChatBubble({
-  message,
-  onQuickAction,
-}: {
-  message: CouncilMessage;
-  onQuickAction: (q: string) => void;
-}) {
-  if (message.role === "user") {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5">
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-          <p className="text-[10px] opacity-60 mt-1 text-right">
-            {message.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Council response
+function UserBubble({ message }: { message: CouncilMessage }) {
   return (
-    <div className="flex gap-2.5 max-w-[90%]">
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted border border-border shrink-0 mt-0.5 text-sm">
-        🧠
-      </div>
-      <div className="flex-1 space-y-2">
-        <div className="rounded-2xl rounded-bl-md bg-muted/50 border border-border/50 px-4 py-3">
-          {message.isStructured && message.structured ? (
-            <StructuredResponse response={message.structured} />
-          ) : (
-            <div className="prose prose-sm max-w-none text-sm text-foreground [&_strong]:text-foreground [&_p]:text-muted-foreground [&_p]:leading-relaxed">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-            </div>
-          )}
-          <p className="text-[10px] text-muted-foreground/60 mt-2">
-            {message.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-          </p>
-        </div>
-
-        {/* Quick actions */}
-        {message.quickActions && message.quickActions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {message.quickActions.map((action) => (
-              <button
-                key={action}
-                onClick={() => onQuickAction(action)}
-                className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        )}
+    <div className="flex justify-end">
+      <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5">
+        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        <p className="text-[10px] opacity-60 mt-1 text-right">
+          {message.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        </p>
       </div>
     </div>
   );
 }
 
 // ────────────────────────────────────────────
-// STRUCTURED RESPONSE (full analysis mode)
+// DEBATE BLOCK — sequential member speeches
 // ────────────────────────────────────────────
 
-function StructuredResponse({ response }: { response: CouncilResponse }) {
+function DebateBlock({
+  message,
+  revealedCount,
+  onQuickAction,
+}: {
+  message: CouncilMessage;
+  revealedCount: number;
+  onQuickAction: (q: string) => void;
+}) {
+  const speeches = message.speeches ?? [];
+  const visibleSpeeches = speeches.slice(0, revealedCount);
+  const isRevealing = revealedCount < speeches.length;
+
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-primary uppercase tracking-wider">Análise Estruturada do Conselho</p>
-      {RESPONSE_SECTIONS.map(({ key, label }, idx) => {
-        const content = response[key];
-        if (!content) return null;
-        const icon = SECTION_ICONS[key] ?? "•";
-        return (
-          <div key={key}>
-            <div className="flex items-start gap-2">
-              <span className="text-sm shrink-0">{icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold text-foreground uppercase tracking-wide mb-1">{label}</p>
-                <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{content}</p>
-              </div>
-            </div>
-            {idx < RESPONSE_SECTIONS.length - 1 && <Separator className="mt-2" />}
+      {visibleSpeeches.map((speech, idx) => (
+        <SpeechBubble key={`${message.id}-${idx}`} speech={speech} />
+      ))}
+
+      {isRevealing && (
+        <TypingIndicator memberId={speeches[revealedCount]?.memberId} />
+      )}
+
+      {!isRevealing && message.quickActions && message.quickActions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pl-11">
+          {message.quickActions.map((action) => (
+            <button
+              key={action}
+              onClick={() => onQuickAction(action)}
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              {action}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────
+// INDIVIDUAL SPEECH BUBBLE
+// ────────────────────────────────────────────
+
+const STANCE_LABELS: Record<string, { label: string; className: string }> = {
+  concorda: { label: "concorda", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+  diverge: { label: "diverge", className: "bg-destructive/10 text-destructive" },
+  alerta: { label: "alerta", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  sintetiza: { label: "síntese", className: "bg-primary/10 text-primary" },
+  neutro: { label: "", className: "" },
+};
+
+function SpeechBubble({ speech }: { speech: DebateSpeech }) {
+  const member = getMember(speech.memberId);
+  const stanceInfo = STANCE_LABELS[speech.stance ?? "neutro"];
+  const referencedMember = speech.referencedMember ? getMember(speech.referencedMember) : null;
+  const isSynthesis = speech.stance === "sintetiza";
+
+  return (
+    <div className="flex gap-2.5 max-w-[92%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div
+        className="flex h-8 w-8 items-center justify-center rounded-full border shrink-0 mt-0.5 text-sm"
+        style={{
+          borderColor: member.color,
+          backgroundColor: `${member.color}15`,
+        }}
+      >
+        {member.avatar}
+      </div>
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-semibold text-foreground">{member.name}</span>
+          <span className="text-[10px] text-muted-foreground">{member.role}</span>
+          {stanceInfo.label && (
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${stanceInfo.className}`}>
+              {stanceInfo.label}
+            </span>
+          )}
+          {referencedMember && (
+            <span className="text-[10px] text-muted-foreground italic">
+              → respondendo {referencedMember.name}
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div
+          className={`rounded-2xl rounded-tl-md px-4 py-3 ${
+            isSynthesis
+              ? "bg-primary/5 border border-primary/20"
+              : "bg-muted/50 border border-border/50"
+          }`}
+        >
+          <div className="prose prose-sm max-w-none text-sm text-foreground [&_strong]:text-foreground [&_p]:text-muted-foreground [&_p]:leading-relaxed">
+            <ReactMarkdown>{speech.content}</ReactMarkdown>
           </div>
-        );
-      })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────
+// TYPING INDICATOR
+// ────────────────────────────────────────────
+
+function TypingIndicator({ memberId }: { memberId?: string }) {
+  const member = memberId ? getMember(memberId) : null;
+
+  return (
+    <div className="flex gap-2.5 max-w-[92%]">
+      <div
+        className="flex h-8 w-8 items-center justify-center rounded-full border shrink-0 mt-0.5 text-sm"
+        style={member ? {
+          borderColor: member.color,
+          backgroundColor: `${member.color}15`,
+        } : {}}
+      >
+        {member?.avatar ?? "🧠"}
+      </div>
+      <div className="rounded-2xl rounded-tl-md bg-muted/50 border border-border/50 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-foreground">{member?.name ?? "Conselho"}</span>
+          <div className="flex gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0s" }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0.15s" }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0.3s" }} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -325,24 +406,20 @@ function StructuredResponse({ response }: { response: CouncilResponse }) {
 
 function AnalyzingIndicator() {
   return (
-    <div className="flex gap-2.5 max-w-[90%]">
+    <div className="flex gap-2.5 max-w-[92%]">
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted border border-border shrink-0 mt-0.5 text-sm">
         🧠
       </div>
-      <div className="rounded-2xl rounded-bl-md bg-muted/50 border border-border/50 px-4 py-3">
+      <div className="rounded-2xl rounded-tl-md bg-muted/50 border border-border/50 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="flex gap-1">
-            {COUNCIL_MEMBERS.filter((m) => !m.isHuman).map((m, i) => (
-              <span
-                key={m.id}
-                className="text-sm animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              >
+            {AI_MEMBERS.map((m, i) => (
+              <span key={m.id} className="text-sm animate-bounce" style={{ animationDelay: `${i * 0.15}s` }}>
                 {m.avatar}
               </span>
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">Analisando...</span>
+          <span className="text-xs text-muted-foreground">Convocando o Conselho...</span>
         </div>
       </div>
     </div>
@@ -350,7 +427,7 @@ function AnalyzingIndicator() {
 }
 
 // ────────────────────────────────────────────
-// CONTEXT PANEL (compact)
+// CONTEXT PANEL
 // ────────────────────────────────────────────
 
 function ContextPanel({ ctx }: { ctx: CouncilContextData }) {
@@ -384,19 +461,7 @@ function ContextPanel({ ctx }: { ctx: CouncilContextData }) {
   );
 }
 
-// ────────────────────────────────────────────
-// STAT BADGE (compact)
-// ────────────────────────────────────────────
-
-function StatBadge({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number | string;
-  color?: string;
-}) {
+function StatBadge({ label, value, color }: { label: string; value: number | string; color?: string }) {
   return (
     <div className="flex flex-col items-center rounded-md border border-border p-1.5">
       <span className={`text-sm font-bold ${color ?? "text-foreground"}`}>{value}</span>

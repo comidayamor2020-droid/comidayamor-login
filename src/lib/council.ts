@@ -1,4 +1,4 @@
-/** Council member definitions, response structure, and V1 data-driven analysis engine */
+/** Council member definitions, debate engine, and data-driven analysis */
 
 import type { CouncilContextData } from "@/hooks/use-council-context";
 
@@ -9,6 +9,7 @@ export interface CouncilMember {
   title: string;
   description: string;
   avatar: string;
+  color: string;
   isHuman: boolean;
 }
 
@@ -20,15 +21,17 @@ export const COUNCIL_MEMBERS: CouncilMember[] = [
     title: "Fundador & CEO",
     description: "Decisão final, visão do dono, prioridade estratégica e aprovação final.",
     avatar: "👤",
+    color: "hsl(var(--primary))",
     isHuman: true,
   },
   {
     id: "chatgpt",
     name: "ChatGPT",
-    role: "CEO Auxiliar / Chief of Staff de IA",
+    role: "CEO Auxiliar",
     title: "Chief of Staff IA",
     description: "Consolida análises, organiza prioridades, mostra conflitos e sugere caminhos.",
     avatar: "🧠",
+    color: "#10a37f",
     isHuman: false,
   },
   {
@@ -38,6 +41,7 @@ export const COUNCIL_MEMBERS: CouncilMember[] = [
     title: "CFO IA",
     description: "Análise financeira, fluxo de caixa, DRE, margem, cenários e risco econômico.",
     avatar: "📊",
+    color: "#d97706",
     isHuman: false,
   },
   {
@@ -45,104 +49,80 @@ export const COUNCIL_MEMBERS: CouncilMember[] = [
     name: "Perplexity",
     role: "CMO de IA",
     title: "CMO IA",
-    description: "Marketing estratégico, tendências, concorrência e oportunidades de posicionamento.",
+    description: "Marketing estratégico, tendências, concorrência e oportunidades.",
     avatar: "🎯",
+    color: "#2563eb",
     isHuman: false,
   },
   {
     id: "grok",
     name: "Grok",
-    role: "CIO / Contrarian de IA",
+    role: "CIO / Contrarian",
     title: "CIO Contrarian IA",
     description: "Contraponto crítico, alertas de risco, questionamento de conclusões frágeis.",
     avatar: "⚡",
+    color: "#dc2626",
     isHuman: false,
   },
   {
     id: "manus",
     name: "Manus",
-    role: "CTO / Executor de IA",
+    role: "CTO / Executor",
     title: "CTO Executor IA",
     description: "Arquitetura, integrações, automações, fluxos técnicos e viabilidade.",
     avatar: "🔧",
+    color: "#7c3aed",
     isHuman: false,
   },
 ];
 
-export const RESPONSE_SECTIONS = [
-  { key: "leitura_executiva", label: "Leitura Executiva" },
-  { key: "atencao", label: "O que mais merece atenção" },
-  { key: "visao_ceo_auxiliar", label: "Visão do CEO Auxiliar (ChatGPT)" },
-  { key: "visao_cfo", label: "Visão do CFO (Claude)" },
-  { key: "visao_cmo", label: "Visão do CMO (Perplexity)" },
-  { key: "visao_cio", label: "Visão do CIO / Contrarian (Grok)" },
-  { key: "visao_cto", label: "Visão do CTO / Executor (Manus)" },
-  { key: "convergencias", label: "Convergências" },
-  { key: "divergencias", label: "Divergências" },
-  { key: "sugestao_principal", label: "Sugestão Principal" },
-  { key: "alternativas", label: "Alternativas Possíveis" },
-  { key: "risco_principal", label: "Risco Principal" },
-  { key: "falta_saber", label: "O que ainda falta saber" },
-  { key: "proximo_passo", label: "Próximo Passo Sugerido" },
-  { key: "nivel_confianca", label: "Nível de Confiança" },
-] as const;
+export const AI_MEMBERS = COUNCIL_MEMBERS.filter((m) => !m.isHuman);
 
-export type CouncilResponse = Record<string, string>;
+export function getMember(id: string): CouncilMember {
+  return COUNCIL_MEMBERS.find((m) => m.id === id) ?? COUNCIL_MEMBERS[1];
+}
 
 // ────────────────────────────────────────────────
-// CHAT MESSAGE TYPES
+// MESSAGE TYPES
 // ────────────────────────────────────────────────
+
+export interface DebateSpeech {
+  memberId: string;
+  content: string;
+  stance?: "concorda" | "diverge" | "neutro" | "alerta" | "sintetiza";
+  referencedMember?: string; // member id they reference
+}
 
 export interface CouncilMessage {
   id: string;
-  role: "user" | "council";
-  content: string;
-  /** Only present for council messages */
-  structured?: CouncilResponse;
-  /** Whether this is a full structured response */
-  isStructured: boolean;
+  role: "user" | "debate";
+  content: string; // plain text for user messages, ignored for debate
+  speeches?: DebateSpeech[];
   timestamp: Date;
   quickActions?: string[];
+  mode: "quick" | "debate";
 }
 
 // ────────────────────────────────────────────────
-// QUICK ACTION DEFINITIONS
+// QUICK ACTIONS
 // ────────────────────────────────────────────────
 
 export const QUICK_ACTIONS = [
-  "Aprofundar visão financeira",
-  "Aprofundar visão operacional",
+  "Claude, aprofunde o impacto financeiro",
+  "Grok, critique essa estratégia",
+  "Manus, isso é executável agora?",
+  "Perplexity, qual oportunidade comercial?",
+  "CEO Auxiliar, compare as opções",
   "Mostrar riscos",
-  "Sugerir plano prático",
-  "Resumir decisão",
-  "Mostrar dados faltantes",
 ] as const;
 
-// ────────────────────────────────────────────────
-// CONFIDENCE LEVELS
-// ────────────────────────────────────────────────
-
-const CONFIDENCE_LABELS = {
-  alta: "🟢 Alta confiança — Dados operacionais completos para esta análise.",
-  media: "🟡 Média confiança — Dados parciais. Algumas métricas não estão disponíveis.",
-  baixa: "🟠 Baixa confiança — Poucos dados disponíveis. Recomendações são preliminares.",
-  insuficiente: "🔴 Dados insuficientes — Não há dados operacionais suficientes para uma análise confiável.",
-} as const;
-
-// ────────────────────────────────────────────────
-// HELPERS
-// ────────────────────────────────────────────────
-
-function listItems(items: string[], max = 5): string {
-  const shown = items.slice(0, max);
-  const rest = items.length - max;
-  const lines = shown.map((i) => `• ${i}`).join("\n");
-  return rest > 0 ? `${lines}\n  ...e mais ${rest} item(ns).` : lines;
-}
-
-function plural(n: number, singular: string, pluralStr?: string): string {
-  return n === 1 ? `${n} ${singular}` : `${n} ${pluralStr ?? singular + "s"}`;
-}
+export const MEMBER_QUICK_ACTIONS: Record<string, string[]> = {
+  chatgpt: ["CEO Auxiliar, resuma o debate", "CEO Auxiliar, compare as opções"],
+  claude: ["Claude, aprofunde o impacto financeiro", "Claude, qual o pior cenário?"],
+  perplexity: ["Perplexity, qual oportunidade comercial?", "Perplexity, como posicionar isso?"],
+  grok: ["Grok, critique essa estratégia", "Grok, qual o contraponto?"],
+  manus: ["Manus, isso é executável agora?", "Manus, sugira um plano prático"],
+};
 
 // ────────────────────────────────────────────────
 // SEVERITY ASSESSMENT
@@ -157,594 +137,449 @@ function assessSeverity(ctx: CouncilContextData): Severity {
   const reasons: string[] = [];
   let level: Severity["level"] = "normal";
 
-  if (ctx.belowMinimum.length >= 5) {
-    level = "critico";
-    reasons.push(`${ctx.belowMinimum.length} produtos abaixo do estoque mínimo`);
-  } else if (ctx.belowMinimum.length > 0) {
-    if (level === "normal") level = "alerta";
-    reasons.push(`${ctx.belowMinimum.length} produto(s) abaixo do mínimo`);
-  }
+  if (ctx.belowMinimum.length >= 5) { level = "critico"; reasons.push(`${ctx.belowMinimum.length} produtos abaixo do estoque mínimo`); }
+  else if (ctx.belowMinimum.length > 0) { if (level === "normal") level = "alerta"; reasons.push(`${ctx.belowMinimum.length} produto(s) abaixo do mínimo`); }
 
-  if (ctx.lossRate > 10) {
-    level = "critico";
-    reasons.push(`Taxa de perda de ${ctx.lossRate}% (acima de 10%)`);
-  } else if (ctx.lossRate > 5) {
-    if (level === "normal") level = "alerta";
-    reasons.push(`Taxa de perda de ${ctx.lossRate}% (acima de 5%)`);
-  }
+  if (ctx.lossRate > 10) { level = "critico"; reasons.push(`Taxa de perda de ${ctx.lossRate}% (acima de 10%)`); }
+  else if (ctx.lossRate > 5) { if (level === "normal") level = "alerta"; reasons.push(`Taxa de perda de ${ctx.lossRate}% (acima de 5%)`); }
 
-  if (ctx.divergences.length >= 5) {
-    if (level === "normal") level = "alerta";
-    reasons.push(`${ctx.divergences.length} divergências na contagem`);
-  } else if (ctx.divergences.length > 0) {
-    if (level === "normal") level = "atencao";
-    reasons.push(`${ctx.divergences.length} divergência(s) na contagem`);
-  }
+  if (ctx.divergences.length >= 5) { if (level === "normal") level = "alerta"; reasons.push(`${ctx.divergences.length} divergências na contagem`); }
+  else if (ctx.divergences.length > 0) { if (level === "normal") level = "atencao"; reasons.push(`${ctx.divergences.length} divergência(s) na contagem`); }
 
-  if (ctx.pendingApprovals >= 5) {
-    if (level === "normal") level = "alerta";
-    reasons.push(`${ctx.pendingApprovals} aprovações pendentes`);
-  } else if (ctx.pendingApprovals > 0) {
-    if (level === "normal") level = "atencao";
-    reasons.push(`${ctx.pendingApprovals} aprovação(ões) pendente(s)`);
-  }
+  if (ctx.pendingApprovals >= 5) { if (level === "normal") level = "alerta"; reasons.push(`${ctx.pendingApprovals} aprovações pendentes`); }
+  else if (ctx.pendingApprovals > 0) { if (level === "normal") level = "atencao"; reasons.push(`${ctx.pendingApprovals} aprovação(ões) pendente(s)`); }
 
-  if (ctx.productionEfficiency < 50 && ctx.totalProducts > 0) {
-    if (level === "normal") level = "alerta";
-    reasons.push(`Eficiência de estoque em ${ctx.productionEfficiency}%`);
-  }
+  if (ctx.productionEfficiency < 50 && ctx.totalProducts > 0) { if (level === "normal") level = "alerta"; reasons.push(`Eficiência de estoque em ${ctx.productionEfficiency}%`); }
 
-  if (reasons.length === 0) {
-    reasons.push("Operação dentro dos parâmetros normais");
-  }
-
+  if (reasons.length === 0) reasons.push("Operação dentro dos parâmetros normais");
   return { level, reasons };
 }
 
 // ────────────────────────────────────────────────
-// RESPONSE GENERATOR — data-driven V1
+// HELPERS
 // ────────────────────────────────────────────────
 
-export function generateV1Response(
-  ctx: CouncilContextData,
-  question: string,
-): CouncilResponse {
-  const resp: CouncilResponse = {};
-  const severity = assessSeverity(ctx);
-  const today = new Date().toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-  });
+function listItems(items: string[], max = 5): string {
+  const shown = items.slice(0, max);
+  const rest = items.length - max;
+  const lines = shown.map((i) => `• ${i}`).join("\n");
+  return rest > 0 ? `${lines}\n  ...e mais ${rest} item(ns).` : lines;
+}
 
-  // ── 1. LEITURA EXECUTIVA ──
-  const statusEmoji =
-    severity.level === "critico" ? "🔴" :
-    severity.level === "alerta" ? "🟡" :
-    severity.level === "atencao" ? "🟠" : "🟢";
+const CONFIDENCE_LABELS: Record<string, string> = {
+  alta: "🟢 Alta confiança",
+  media: "🟡 Média confiança — dados parciais",
+  baixa: "🟠 Baixa confiança — poucos dados",
+  insuficiente: "🔴 Dados insuficientes",
+};
 
-  const summaryLines = [
-    `${statusEmoji} Status geral: ${severity.level.toUpperCase()}`,
-    `Data: ${today}`,
-    "",
-    `📦 ${plural(ctx.totalProducts, "produto ativo", "produtos ativos")} no sistema`,
-    `✅ ${plural(ctx.todayProduced, "unidade produzida", "unidades produzidas")} hoje`,
-    `❌ ${plural(ctx.todayLosses, "unidade perdida", "unidades perdidas")} (${ctx.lossRate}% de perda)`,
-    `🍽️ ${plural(ctx.todayTastings, "unidade em degustação", "unidades em degustação")}`,
-    `📊 Eficiência de estoque: ${ctx.productionEfficiency}% dos produtos atingindo o ideal do dia`,
-    "",
-    "Pontos de atenção:",
-    ...severity.reasons.map((r) => `  → ${r}`),
-  ];
-  resp.leitura_executiva = summaryLines.join("\n");
+// ────────────────────────────────────────────────
+// DETECT MODE
+// ────────────────────────────────────────────────
 
-  // ── 2. O QUE MAIS MERECE ATENÇÃO ──
-  const attentionItems: string[] = [];
+const QUICK_TRIGGERS = ["rápido", "rapido", "curto", "resumido", "sim ou não", "sim ou nao"];
 
-  if (ctx.belowMinimum.length > 0) {
-    attentionItems.push(
-      `🔴 ESTOQUE CRÍTICO — ${plural(ctx.belowMinimum.length, "produto")} abaixo do mínimo:\n` +
-      listItems(
-        ctx.belowMinimum.map(
-          (p) => `${p.name}: ${p.current} un (mínimo: ${p.minimum}, ideal: ${p.ideal})`,
-        ),
-      ),
-    );
-  }
-
-  if (ctx.divergences.length > 0) {
-    attentionItems.push(
-      `⚠️ DIVERGÊNCIAS — ${plural(ctx.divergences.length, "produto")} com contagem diferente do esperado:\n` +
-      listItems(
-        ctx.divergences.map(
-          (d) => `${d.productName}: esperado ${d.expected}, contado ${d.counted} (diferença: ${d.diff > 0 ? "+" : ""}${d.diff})`,
-        ),
-      ),
-    );
-  }
-
-  if (ctx.pendingOccurrences.length > 0) {
-    attentionItems.push(
-      `🔔 PENDÊNCIAS — ${plural(ctx.pendingOccurrences.length, "solicitação", "solicitações")} aguardando aprovação:\n` +
-      listItems(
-        ctx.pendingOccurrences.map(
-          (o) => `${o.productName}: ${o.type} de ${o.quantity} un — motivo: ${o.reason}`,
-        ),
-      ),
-    );
-  }
-
-  if (ctx.underProduced.length > 0) {
-    attentionItems.push(
-      `📉 ABAIXO DO IDEAL — ${plural(ctx.underProduced.length, "produto")} com estoque abaixo do ideal do dia:\n` +
-      listItems(
-        ctx.underProduced.slice(0, 5).map(
-          (p) => `${p.name}: estoque ${p.current} (ideal: ${p.ideal}, faltam ${p.gap} un)`,
-        ),
-      ),
-    );
-  }
-
-  if (ctx.overProduced.length > 0) {
-    attentionItems.push(
-      `📈 ACIMA DO IDEAL — ${plural(ctx.overProduced.length, "produto")} com estoque acima do ideal:\n` +
-      listItems(
-        ctx.overProduced.slice(0, 3).map(
-          (p) => `${p.name}: estoque ${p.current} (ideal: ${p.ideal}, excesso de ${Math.abs(p.gap)} un)`,
-        ),
-      ),
-    );
-  }
-
-  if (attentionItems.length === 0) {
-    attentionItems.push("✅ Nenhum alerta crítico no momento. Operação estável.");
-  }
-
-  resp.atencao = attentionItems.join("\n\n");
-
-  // ── 3. VISÃO CEO AUXILIAR ──
-  const ceoLines: string[] = [
-    `📋 Pergunta analisada: "${question}"`,
-    "",
-  ];
-
-  if (severity.level === "critico") {
-    ceoLines.push(
-      "⚡ PRIORIDADE IMEDIATA: A operação apresenta sinais críticos que exigem ação hoje.",
-      "",
-    );
-  }
-
-  // Priority list based on data
-  const priorities: string[] = [];
-  if (ctx.belowMinimum.length > 0) priorities.push(`Regularizar estoque dos ${ctx.belowMinimum.length} produto(s) abaixo do mínimo`);
-  if (ctx.pendingApprovals > 0) priorities.push(`Aprovar ${ctx.pendingApprovals} solicitação(ões) pendente(s) para liberar a operação`);
-  if (ctx.divergences.length > 0) priorities.push(`Investigar ${ctx.divergences.length} divergência(s) de contagem`);
-  if (ctx.lossRate > 5) priorities.push(`Reduzir taxa de perda atual (${ctx.lossRate}%)`);
-  if (ctx.underProduced.length > 3) priorities.push(`Alinhar produção para ${ctx.underProduced.length} itens abaixo do ideal`);
-
-  if (priorities.length > 0) {
-    ceoLines.push("Prioridades sugeridas, em ordem de urgência:");
-    priorities.forEach((p, i) => ceoLines.push(`  ${i + 1}. ${p}`));
-  } else {
-    ceoLines.push("A operação está fluindo dentro dos parâmetros. Recomendo manter o monitoramento e focar em otimizações.");
-  }
-
-  if (ctx.activeScheduled.length > 0) {
-    const urgent = ctx.activeScheduled.filter((s) => s.priority === "urgente" || s.priority === "alta");
-    if (urgent.length > 0) {
-      ceoLines.push("", `⚠️ Atenção: ${urgent.length} programação(ões) com prioridade alta/urgente em andamento.`);
-    }
-  }
-
-  resp.visao_ceo_auxiliar = ceoLines.join("\n");
-
-  // ── 4. VISÃO CFO ──
-  const cfoLines: string[] = [];
-
-  if (ctx.todayLosses > 0 || ctx.todayTastings > 0) {
-    cfoLines.push("💰 IMPACTO FINANCEIRO DAS PERDAS:");
-    if (ctx.todayLosses > 0) {
-      cfoLines.push(`  • Perdas: ${ctx.todayLosses} unidades (${ctx.lossRate}% da produção)`);
-      if (ctx.lossRate > 5) {
-        cfoLines.push(`  ⚠️ Taxa acima do aceitável (5%). Cada ponto percentual reduzido impacta diretamente a margem.`);
-      }
-    }
-    if (ctx.todayTastings > 0) {
-      cfoLines.push(`  • Degustações: ${ctx.todayTastings} unidades — considerar se o volume está dentro do planejado.`);
-    }
-  } else {
-    cfoLines.push("✅ Sem perdas ou degustações registradas até o momento.");
-  }
-
-  if (ctx.belowMinimum.length > 0) {
-    cfoLines.push(
-      "",
-      `📉 RISCO DE RECEITA: ${ctx.belowMinimum.length} produto(s) com risco de ruptura.`,
-      "Ruptura gera perda de venda + insatisfação do cliente + possível desvio para concorrentes.",
-    );
-  }
-
-  if (ctx.overProduced.length > 0) {
-    cfoLines.push(
-      "",
-      `📈 CAPITAL PARADO: ${ctx.overProduced.length} produto(s) acima do ideal.`,
-      "Produção excedente pode gerar perdas por validade ou capital imobilizado em estoque.",
-    );
-  }
-
-  cfoLines.push("", `📊 Eficiência geral de estoque: ${ctx.productionEfficiency}%`);
-  resp.visao_cfo = cfoLines.join("\n");
-
-  // ── 5. VISÃO CMO ──
-  const cmoLines: string[] = [];
-
-  if (ctx.belowMinimum.length > 0) {
-    cmoLines.push(
-      "🎯 RISCO PARA A EXPERIÊNCIA DO CLIENTE:",
-      `${ctx.belowMinimum.length} produto(s) em risco de ruptura. Se esses itens são populares, clientes podem migrar.`,
-      "",
-    );
-  }
-
-  if (ctx.overProduced.length > 0) {
-    cmoLines.push(
-      "💡 OPORTUNIDADE PROMOCIONAL:",
-      "Produtos com estoque acima do ideal podem ser impulsionados com ações no Instagram, combos ou degustação estratégica:",
-      ...ctx.overProduced.slice(0, 3).map(
-        (p) => `  • ${p.name}: ${Math.abs(p.gap)} un acima do ideal — potencial para ação promocional`,
-      ),
-      "",
-    );
-  }
-
-  if (ctx.todayProduced > 0) {
-    cmoLines.push(
-      "📸 CONTEÚDO:",
-      `Produção de ${ctx.todayProduced} unidades hoje pode gerar conteúdo para stories/reels mostrando bastidores.`,
-    );
-  }
-
-  if (cmoLines.length === 0) {
-    cmoLines.push("Sem insights de marketing relevantes com os dados disponíveis neste momento.");
-  }
-
-  resp.visao_cmo = cmoLines.join("\n");
-
-  // ── 6. VISÃO CIO / CONTRARIAN ──
-  const cioLines: string[] = [];
-
-  if (ctx.divergences.length > 0) {
-    const bigDivs = ctx.divergences.filter((d) => Math.abs(d.diff) >= 3);
-    cioLines.push(
-      "🔍 QUESTIONAMENTO SOBRE DIVERGÊNCIAS:",
-      `${ctx.divergences.length} produto(s) com contagem divergente.`,
-    );
-    if (bigDivs.length > 0) {
-      cioLines.push(
-        `⚠️ ${bigDivs.length} com diferença ≥ 3 unidades — pode indicar problema de processo, não apenas contagem:`,
-        ...bigDivs.slice(0, 3).map(
-          (d) => `  • ${d.productName}: diferença de ${d.diff > 0 ? "+" : ""}${d.diff} un`,
-        ),
-      );
-    }
-    cioLines.push("", "Pergunto: essas divergências são pontuais ou padrão recorrente? Se recorrente, o problema é sistêmico.");
-  }
-
-  if (ctx.pendingApprovals > 0) {
-    cioLines.push(
-      "",
-      `⏳ GARGALO DE APROVAÇÃO: ${ctx.pendingApprovals} item(ns) pendente(s).`,
-      "Se aprovações travadas são recorrentes, considerar delegar autonomia para o nível operacional em valores menores.",
-    );
-  }
-
-  if (ctx.lossRate > 0 && ctx.todayProduced > 0) {
-    cioLines.push(
-      "",
-      `📐 PROPORÇÃO PRODUÇÃO/PERDA: ${ctx.lossRate}%.`,
-      ctx.lossRate <= 2
-        ? "Taxa saudável. Monitorar para manter."
-        : ctx.lossRate <= 5
-          ? "Taxa aceitável, mas há espaço para melhoria. Investigar causas raiz."
-          : "Taxa preocupante. Recomendo auditoria do processo produtivo.",
-    );
-  }
-
-  if (ctx.dataCompleteness !== "alta") {
-    cioLines.push(
-      "",
-      `🔎 ALERTA DE DADOS: Completude classificada como "${ctx.dataCompleteness}".`,
-      "Decisões baseadas em dados parciais têm risco maior. Recomendo cautela nas conclusões.",
-    );
-  }
-
-  if (cioLines.length === 0) {
-    cioLines.push("Sem contrapontos relevantes neste momento. Dados consistentes.");
-  }
-
-  resp.visao_cio = cioLines.join("\n");
-
-  // ── 7. VISÃO CTO / EXECUTOR ──
-  const ctoLines: string[] = [];
-
-  ctoLines.push(
-    "🔧 STATUS DO SISTEMA:",
-    `  • Dados carregados: ${ctx.dataCompleteness === "alta" ? "✅ completos" : `⚠️ ${ctx.dataCompleteness}`}`,
-    `  • Produtos configurados: ${ctx.totalProducts}`,
-    `  • Lotes registrados hoje: ${ctx.todayLotes.length}`,
-    `  • Contagens realizadas: ${ctx.divergences.length > 0 ? `sim, com ${ctx.divergences.length} divergência(s)` : "sem divergências"}`,
-  );
-
-  const improvements: string[] = [];
-  if (ctx.dataCompleteness !== "alta") improvements.push("Completar cadastro de configuração de todos os produtos (estoque mínimo e ideal por dia)");
-  if (ctx.divergences.length > 3) improvements.push("Implementar contagem dupla obrigatória para itens de alto valor");
-  if (ctx.pendingApprovals > 3) improvements.push("Criar regra de aprovação automática para solicitações de baixo valor");
-  if (ctx.belowMinimum.length > 0) improvements.push("Configurar alertas automáticos quando estoque atingir nível crítico");
-
-  if (improvements.length > 0) {
-    ctoLines.push("", "🛠️ MELHORIAS TÉCNICAS SUGERIDAS:");
-    improvements.forEach((imp, i) => ctoLines.push(`  ${i + 1}. ${imp}`));
-  }
-
-  resp.visao_cto = ctoLines.join("\n");
-
-  // ── 8. CONVERGÊNCIAS ──
-  const conv: string[] = [];
-  if (ctx.belowMinimum.length > 0) conv.push("Todos identificam o risco de ruptura como prioridade");
-  if (ctx.lossRate > 5) conv.push("Consenso sobre a necessidade de reduzir a taxa de perda");
-  if (ctx.divergences.length > 0) conv.push("Acordo sobre investigar as causas das divergências");
-  if (ctx.pendingApprovals > 0) conv.push("Necessidade de agilizar o fluxo de aprovações");
-  if (conv.length === 0) conv.push("Operação estável — todos concordam em manter o monitoramento");
-  resp.convergencias = conv.map((c) => `✓ ${c}`).join("\n");
-
-  // ── 9. DIVERGÊNCIAS ──
-  const div: string[] = [];
-  if (ctx.overProduced.length > 0) {
-    div.push("CMO quer aproveitar excesso para ações promocionais; CFO prefere reduzir produção para economizar.");
-  }
-  if (ctx.lossRate > 2) {
-    div.push("CIO questiona se o processo produtivo é o problema; CTO sugere solução tecnológica com alertas.");
-  }
-  if (ctx.pendingApprovals > 0) {
-    div.push("CIO sugere delegar aprovações; CFO prefere manter controle centralizado para segurança financeira.");
-  }
-  if (div.length === 0) div.push("Sem divergências significativas neste momento.");
-  resp.divergencias = div.map((d) => `⟡ ${d}`).join("\n");
-
-  // ── 10. SUGESTÃO PRINCIPAL ──
-  if (severity.level === "critico") {
-    resp.sugestao_principal =
-      "🚨 AÇÃO IMEDIATA: Focar 100% na regularização dos produtos em nível crítico.\n\n" +
-      (ctx.belowMinimum.length > 0
-        ? `Priorizar produção dos seguintes itens:\n${listItems(ctx.belowMinimum.slice(0, 5).map((p) => `${p.name} (faltam ${Math.max(0, p.minimum - p.current)} un para o mínimo)`))}`
-        : "Investigar as causas das perdas e divergências e tomar ação corretiva hoje.");
-  } else if (severity.level === "alerta") {
-    const topAction = ctx.belowMinimum.length > 0
-      ? `regularizar o estoque de ${ctx.belowMinimum.length} produto(s) abaixo do mínimo`
-      : ctx.divergences.length > 0
-        ? `investigar as ${ctx.divergences.length} divergência(s) de contagem`
-        : "revisar o fluxo de aprovações pendentes";
-    resp.sugestao_principal = `⚡ Prioridade do dia: ${topAction}.\n\nApós resolver, revisar a produção para alinhar com os ideais do dia.`;
-  } else {
-    resp.sugestao_principal = "✅ Operação estável. Manter monitoramento e focar em otimizações de longo prazo: redução de perdas, melhoria de processos de contagem e automação de alertas.";
-  }
-
-  // ── 11. ALTERNATIVAS ──
-  const alts: string[] = [];
-  if (ctx.belowMinimum.length > 0) {
-    alts.push("Produção emergencial focada nos itens críticos");
-    alts.push("Ajustar estoque mínimo para refletir a demanda real (pode estar superdimensionado)");
-  }
-  if (ctx.overProduced.length > 0) {
-    alts.push("Promoção relâmpago para escoar excesso antes do vencimento");
-    alts.push("Reduzir produção do dia seguinte para equilibrar");
-  }
-  if (ctx.divergences.length > 0) {
-    alts.push("Implementar contagem dupla (dois operadores independentes)");
-    alts.push("Revisar processo de registro de saída para identificar falhas");
-  }
-  if (alts.length === 0) {
-    alts.push("Manter operação atual");
-    alts.push("Investir em automação de alertas e relatórios");
-  }
-  resp.alternativas = alts.map((a, i) => `${i + 1}. ${a}`).join("\n");
-
-  // ── 12. RISCO PRINCIPAL ──
-  if (ctx.belowMinimum.length >= 3) {
-    resp.risco_principal = `🔴 Ruptura de estoque em ${ctx.belowMinimum.length} produtos simultaneamente. Impacto: perda de vendas, insatisfação e possível migração de clientes para concorrentes.`;
-  } else if (ctx.lossRate > 10) {
-    resp.risco_principal = `🔴 Taxa de perda em ${ctx.lossRate}% — corrosão direta da margem. Se mantida, pode comprometer a viabilidade financeira da operação.`;
-  } else if (ctx.divergences.length >= 5) {
-    resp.risco_principal = `🟡 ${ctx.divergences.length} divergências indicam possível falha sistêmica no controle de estoque. Risco de dados não confiáveis para decisões.`;
-  } else if (ctx.pendingApprovals >= 5) {
-    resp.risco_principal = `🟡 Gargalo de aprovações (${ctx.pendingApprovals} pendentes) pode travar a operação e gerar atrasos.`;
-  } else {
-    resp.risco_principal = "🟢 Sem riscos críticos identificados no momento. Monitorar indicadores diariamente para detecção precoce.";
-  }
-
-  // ── 13. O QUE FALTA SABER ──
-  const missing: string[] = [];
-  if (ctx.dataCompleteness !== "alta") missing.push("Configuração completa de estoque mínimo e ideal para todos os produtos");
-  missing.push("Dados de vendas por produto (demanda real do dia)");
-  missing.push("Custo unitário dos produtos (para calcular impacto financeiro das perdas em R$)");
-  missing.push("Histórico de produção e perdas (para identificar tendências)");
-  if (ctx.divergences.length > 0) missing.push("Histórico de divergências (para diferenciar erro pontual de problema recorrente)");
-  resp.falta_saber = missing.map((m) => `❓ ${m}`).join("\n");
-
-  // ── 14. PRÓXIMO PASSO ──
-  const steps: string[] = [];
-  if (ctx.belowMinimum.length > 0) steps.push(`Abrir a tela de Produção do Dia e registrar lotes para os ${ctx.belowMinimum.length} produto(s) críticos`);
-  if (ctx.pendingApprovals > 0) steps.push(`Acessar Aprovações e processar as ${ctx.pendingApprovals} solicitação(ões) pendente(s)`);
-  if (ctx.divergences.length > 0) steps.push("Revisar divergências no Estoque da Loja e recontagem dos itens com maior diferença");
-  if (steps.length === 0) steps.push("Revisar o Resumo Operacional e planejar a produção de amanhã");
-  resp.proximo_passo = steps.map((s, i) => `${i + 1}. ${s}`).join("\n");
-
-  // ── 15. NÍVEL DE CONFIANÇA ──
-  resp.nivel_confianca = CONFIDENCE_LABELS[ctx.dataCompleteness] +
-    "\n\nFatores considerados: estoque, produção, perdas, degustações, divergências, aprovações e programações." +
-    "\nFatores NÃO disponíveis: vendas, receita, custos, margens e dados financeiros do DRE.";
-
-  return resp;
+function detectMode(question: string): "quick" | "debate" {
+  const q = question.toLowerCase();
+  if (QUICK_TRIGGERS.some((t) => q.includes(t))) return "quick";
+  return "debate";
 }
 
 // ────────────────────────────────────────────────
-// DETECT IF USER WANTS STRUCTURED RESPONSE
+// DETECT MEMBER-DIRECTED QUESTIONS
 // ────────────────────────────────────────────────
 
-const STRUCTURED_TRIGGERS = [
-  "análise completa",
-  "analise completa",
-  "relatório",
-  "relatorio",
-  "análise estruturada",
-  "analise estruturada",
-  "visão de cada membro",
-  "visão de cada conselheiro",
-  "análise formal",
-  "analise formal",
-  "análise detalhada",
-  "analise detalhada",
-  "análise executiva",
-  "analise executiva",
-];
-
-function wantsStructured(question: string): boolean {
+function detectTargetMember(question: string): string | null {
   const q = question.toLowerCase();
-  return STRUCTURED_TRIGGERS.some((t) => q.includes(t));
+  if (q.includes("claude") || q.includes("cfo")) return "claude";
+  if (q.includes("perplexity") || q.includes("cmo")) return "perplexity";
+  if (q.includes("grok") || q.includes("cio") || q.includes("contrarian")) return "grok";
+  if (q.includes("manus") || q.includes("cto") || q.includes("executor")) return "manus";
+  if (q.includes("ceo auxiliar") || q.includes("chatgpt") || q.includes("chief of staff")) return "chatgpt";
+  return null;
 }
 
 // ────────────────────────────────────────────────
-// CONVERSATIONAL RESPONSE GENERATOR
+// GENERATE QUICK RESPONSE
 // ────────────────────────────────────────────────
 
-export function generateConversationalResponse(
-  ctx: CouncilContextData,
-  question: string,
-  history: CouncilMessage[],
-): CouncilMessage {
-  const q = question.toLowerCase();
+function generateQuickResponse(ctx: CouncilContextData, question: string): CouncilMessage {
   const severity = assessSeverity(ctx);
+  const emoji = severity.level === "critico" ? "🔴" : severity.level === "alerta" ? "🟡" : severity.level === "atencao" ? "🟠" : "🟢";
 
-  // If user explicitly asks for full analysis, return structured
-  if (wantsStructured(question)) {
-    const structured = generateV1Response(ctx, question);
-    return {
-      id: crypto.randomUUID(),
-      role: "council",
-      content: "",
-      structured,
-      isStructured: true,
-      timestamp: new Date(),
-      quickActions: ["Aprofundar visão financeira", "Mostrar riscos", "Sugerir plano prático"],
-    };
-  }
+  const lines = [
+    `${emoji} **${severity.level === "normal" ? "Operação estável" : "Atenção necessária"}**`,
+    "",
+    `Produzidos: **${ctx.todayProduced}** | Perdas: **${ctx.todayLosses}** (${ctx.lossRate}%) | Eficiência: **${ctx.productionEfficiency}%**`,
+  ];
 
-  const lines: string[] = [];
-  let actions: string[] = [];
+  if (ctx.belowMinimum.length > 0) lines.push(`\n🔴 **${ctx.belowMinimum.length}** produto(s) abaixo do mínimo.`);
+  if (ctx.divergences.length > 0) lines.push(`⚠️ **${ctx.divergences.length}** divergência(s).`);
+  if (ctx.pendingApprovals > 0) lines.push(`🔔 **${ctx.pendingApprovals}** aprovação(ões) pendente(s).`);
 
-  // ── FINANCIAL DEEP-DIVE ──
-  if (q.includes("financ") || q.includes("margem") || q.includes("custo") || q.includes("cfo") || q.includes("dinheiro") || q.includes("receita")) {
-    lines.push("📊 **Visão Financeira (Claude — CFO IA)**\n");
-    if (ctx.todayLosses > 0) {
-      lines.push(`Hoje temos ${ctx.todayLosses} unidades perdidas (${ctx.lossRate}% da produção).`);
-      if (ctx.lossRate > 5) lines.push(`⚠️ Taxa acima do aceitável (5%). Cada ponto percentual reduzido impacta diretamente na margem.`);
-    }
-    if (ctx.overProduced.length > 0) lines.push(`\n${ctx.overProduced.length} produto(s) com estoque acima do ideal — capital parado.`);
-    if (ctx.belowMinimum.length > 0) lines.push(`\n🔴 ${ctx.belowMinimum.length} produto(s) em risco de ruptura — perda de venda.`);
-    if (ctx.todayLosses === 0 && ctx.overProduced.length === 0 && ctx.belowMinimum.length === 0) {
-      lines.push("✅ Sem alertas financeiros. Operação saudável.");
-    }
-    lines.push(`\nEficiência geral: **${ctx.productionEfficiency}%**`);
-    actions = ["Mostrar riscos", "Aprofundar visão operacional", "Sugerir plano prático"];
-
-  // ── OPERATIONAL DEEP-DIVE ──
-  } else if (q.includes("operac") || q.includes("produç") || q.includes("produc") || q.includes("estoque") || q.includes("lote") || q.includes("dia")) {
-    lines.push("🔧 **Visão Operacional**\n");
-    lines.push(`Hoje: **${ctx.todayProduced}** produzidos, **${ctx.todayLosses}** perdas, **${ctx.todayTastings}** degustações.`);
-    if (ctx.belowMinimum.length > 0) {
-      lines.push(`\n🔴 **${ctx.belowMinimum.length} abaixo do mínimo:**`);
-      ctx.belowMinimum.slice(0, 5).forEach((p) => lines.push(`  • ${p.name}: ${p.current} un (mín: ${p.minimum}, ideal: ${p.ideal})`));
-    }
-    if (ctx.underProduced.length > 0) lines.push(`\n📉 ${ctx.underProduced.length} abaixo do ideal.`);
-    if (ctx.divergences.length > 0) lines.push(`\n⚠️ ${ctx.divergences.length} divergência(s) de contagem.`);
-    if (ctx.pendingApprovals > 0) lines.push(`\n🔔 ${ctx.pendingApprovals} aprovação(ões) pendente(s).`);
-    actions = ["Aprofundar visão financeira", "Mostrar riscos", "Mostrar dados faltantes"];
-
-  // ── RISKS ──
-  } else if (q.includes("risco") || q.includes("perigo") || q.includes("alerta") || q.includes("cuidado")) {
-    lines.push("⚡ **Análise de Riscos (Grok — CIO Contrarian IA)**\n");
-    if (severity.level === "critico") lines.push("🔴 **STATUS CRÍTICO** — Ação imediata necessária.\n");
-    else if (severity.level === "alerta") lines.push("🟡 **Alertas identificados.**\n");
-    severity.reasons.forEach((r) => lines.push(`→ ${r}`));
-    if (ctx.divergences.filter((d) => Math.abs(d.diff) >= 3).length > 0) {
-      lines.push(`\n⚠️ Divergências grandes podem indicar problema de processo.`);
-    }
-    if (ctx.lossRate > 0) lines.push(`\nTaxa de perda: **${ctx.lossRate}%** — ${ctx.lossRate <= 2 ? "saudável" : ctx.lossRate <= 5 ? "aceitável" : "preocupante"}.`);
-    actions = ["Sugerir plano prático", "Aprofundar visão financeira", "Resumir decisão"];
-
-  // ── PRACTICAL PLAN ──
-  } else if (q.includes("plano") || q.includes("prático") || q.includes("pratico") || q.includes("ação") || q.includes("acao") || q.includes("fazer") || q.includes("próximo") || q.includes("proximo")) {
-    lines.push("💡 **Plano Prático (Manus — CTO Executor IA)**\n");
-    const steps: string[] = [];
-    if (ctx.belowMinimum.length > 0) steps.push(`Produzir os ${ctx.belowMinimum.length} produto(s) abaixo do mínimo`);
-    if (ctx.pendingApprovals > 0) steps.push(`Aprovar as ${ctx.pendingApprovals} solicitação(ões) pendente(s)`);
-    if (ctx.divergences.length > 0) steps.push(`Investigar ${ctx.divergences.length} divergência(s)`);
-    if (ctx.lossRate > 5) steps.push(`Auditar processo produtivo (perda em ${ctx.lossRate}%)`);
-    if (ctx.underProduced.length > 3) steps.push(`Alinhar produção para ${ctx.underProduced.length} itens abaixo do ideal`);
-    if (steps.length === 0) steps.push("Manter monitoramento e focar em otimizações");
-    steps.forEach((s, i) => lines.push(`**${i + 1}.** ${s}`));
-    actions = ["Mostrar riscos", "Aprofundar visão financeira", "Mostrar dados faltantes"];
-
-  // ── DECISION SUMMARY ──
-  } else if (q.includes("resum") || q.includes("decisão") || q.includes("decisao") || q.includes("conclu")) {
-    lines.push("🧠 **Resumo Executivo (ChatGPT — CEO Auxiliar IA)**\n");
-    const emoji = severity.level === "critico" ? "🔴" : severity.level === "alerta" ? "🟡" : severity.level === "atencao" ? "🟠" : "🟢";
-    lines.push(`${emoji} **Status:** ${severity.level.toUpperCase()}\n`);
-    severity.reasons.forEach((r) => lines.push(`  → ${r}`));
-    lines.push(`\n**Números:** ${ctx.todayProduced} produzidos, ${ctx.todayLosses} perdas, eficiência ${ctx.productionEfficiency}%`);
-    if (ctx.belowMinimum.length > 0) lines.push(`\n⚡ **Prioridade:** regularizar ${ctx.belowMinimum.length} produto(s) abaixo do mínimo.`);
-    actions = ["Sugerir plano prático", "Mostrar riscos", "Aprofundar visão operacional"];
-
-  // ── MISSING DATA ──
-  } else if (q.includes("falta") || q.includes("dado") || q.includes("informaç") || q.includes("informac") || q.includes("completo")) {
-    lines.push("❓ **Dados Faltantes**\n");
-    lines.push(`Completude atual: **${ctx.dataCompleteness}**\n`);
-    const missing: string[] = [];
-    if (ctx.dataCompleteness !== "alta") missing.push("Configuração completa de estoque mínimo e ideal");
-    missing.push("Dados de vendas por produto", "Custo unitário dos produtos", "Histórico de produção e perdas");
-    if (ctx.divergences.length > 0) missing.push("Histórico de divergências");
-    missing.forEach((m) => lines.push(`• ${m}`));
-    actions = ["Aprofundar visão operacional", "Resumir decisão"];
-
-  // ── GENERIC ──
-  } else {
-    const emoji = severity.level === "critico" ? "🔴" : severity.level === "alerta" ? "🟡" : severity.level === "atencao" ? "🟠" : "🟢";
-    lines.push(`${emoji} **${severity.level === "normal" ? "Operação estável" : "Atenção necessária"}**\n`);
-    lines.push(`Hoje: **${ctx.todayProduced}** produzidos | **${ctx.todayLosses}** perdas (${ctx.lossRate}%) | **${ctx.todayTastings}** degustações | Eficiência: **${ctx.productionEfficiency}%**\n`);
-    if (ctx.belowMinimum.length > 0) {
-      lines.push(`🔴 **${ctx.belowMinimum.length} produto(s) abaixo do mínimo:**`);
-      ctx.belowMinimum.slice(0, 3).forEach((p) => lines.push(`  • ${p.name}: ${p.current} un (mín: ${p.minimum})`));
-      if (ctx.belowMinimum.length > 3) lines.push(`  ...e mais ${ctx.belowMinimum.length - 3}.`);
-      lines.push("");
-    }
-    if (ctx.divergences.length > 0) lines.push(`⚠️ ${ctx.divergences.length} divergência(s) de contagem.`);
-    if (ctx.pendingApprovals > 0) lines.push(`🔔 ${ctx.pendingApprovals} aprovação(ões) pendente(s).`);
-    if (ctx.overProduced.length > 0) lines.push(`📈 ${ctx.overProduced.length} produto(s) acima do ideal.`);
-    if (severity.level !== "normal") {
-      lines.push("\n💡 **Sugestão:** " + (ctx.belowMinimum.length > 0 ? "Priorizar produção dos itens críticos." : ctx.pendingApprovals > 0 ? "Processar aprovações pendentes." : "Investigar divergências."));
-    } else {
-      lines.push("\n✅ Operação dentro dos parâmetros. Continue monitorando.");
-    }
-    actions = ["Aprofundar visão financeira", "Aprofundar visão operacional", "Mostrar riscos", "Sugerir plano prático"];
+  if (severity.level !== "normal") {
+    lines.push("\n💡 " + (ctx.belowMinimum.length > 0 ? "Priorizar produção dos itens críticos." : "Resolver pendências operacionais."));
   }
 
   return {
     id: crypto.randomUUID(),
-    role: "council",
-    content: lines.join("\n"),
-    isStructured: false,
+    role: "debate",
+    content: "",
+    speeches: [{ memberId: "chatgpt", content: lines.join("\n"), stance: "neutro" }],
     timestamp: new Date(),
-    quickActions: actions,
+    quickActions: ["Grok, critique essa estratégia", "Claude, aprofunde o impacto financeiro", "Manus, sugira um plano prático"],
+    mode: "quick",
   };
+}
+
+// ────────────────────────────────────────────────
+// GENERATE SINGLE-MEMBER FOLLOW-UP
+// ────────────────────────────────────────────────
+
+function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, question: string): CouncilMessage {
+  const severity = assessSeverity(ctx);
+  let content = "";
+  let stance: DebateSpeech["stance"] = "neutro";
+
+  switch (memberId) {
+    case "chatgpt": {
+      const lines = ["Vou sintetizar o que sabemos:\n"];
+      lines.push(`Status: **${severity.level.toUpperCase()}** — ${severity.reasons.join("; ")}.`);
+      lines.push(`\nDados disponíveis: ${ctx.totalProducts} produtos, ${ctx.todayProduced} produzidos hoje, eficiência ${ctx.productionEfficiency}%.`);
+      if (ctx.belowMinimum.length > 0) lines.push(`\nPrioridade: regularizar ${ctx.belowMinimum.length} produto(s) críticos.`);
+      lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
+      content = lines.join("\n");
+      stance = "sintetiza";
+      break;
+    }
+    case "claude": {
+      const lines = ["Analisando sob a ótica financeira:\n"];
+      if (ctx.todayLosses > 0) {
+        lines.push(`Perdas hoje: **${ctx.todayLosses}** un (${ctx.lossRate}%). ${ctx.lossRate > 5 ? "⚠️ Acima do aceitável — corrói margem diretamente." : "Dentro do tolerável, mas monitorar."}`);
+      }
+      if (ctx.overProduced.length > 0) {
+        lines.push(`\n**Capital parado:** ${ctx.overProduced.length} produto(s) acima do ideal — risco de vencimento e desperdício.`);
+        ctx.overProduced.slice(0, 3).forEach((p) => lines.push(`  • ${p.name}: +${Math.abs(p.gap)} un excedente`));
+      }
+      if (ctx.belowMinimum.length > 0) {
+        lines.push(`\n**Risco de receita:** ${ctx.belowMinimum.length} produto(s) com risco de ruptura — perda de vendas + insatisfação.`);
+      }
+      if (ctx.todayLosses === 0 && ctx.overProduced.length === 0 && ctx.belowMinimum.length === 0) {
+        lines.push("✅ Sem alertas financeiros no momento.");
+      }
+      content = lines.join("\n");
+      stance = ctx.lossRate > 5 || ctx.belowMinimum.length > 2 ? "alerta" : "neutro";
+      break;
+    }
+    case "perplexity": {
+      const lines = ["Do ponto de vista comercial e de mercado:\n"];
+      if (ctx.belowMinimum.length > 0) {
+        lines.push(`🎯 **Risco para o cliente:** ${ctx.belowMinimum.length} produto(s) podem faltar. Se são populares, clientes migram.`);
+      }
+      if (ctx.overProduced.length > 0) {
+        lines.push("\n💡 **Oportunidade:** Excesso de estoque pode virar ação promocional:");
+        ctx.overProduced.slice(0, 3).forEach((p) => lines.push(`  • ${p.name}: +${Math.abs(p.gap)} un — combo, degustação ou desconto`));
+      }
+      if (ctx.todayProduced > 0) {
+        lines.push(`\n📸 Produção de ${ctx.todayProduced} un hoje = conteúdo de bastidores para Instagram.`);
+      }
+      content = lines.join("\n");
+      stance = "neutro";
+      break;
+    }
+    case "grok": {
+      const lines = ["Vou ser direto — preciso levantar pontos que talvez ninguém queira ouvir:\n"];
+      if (ctx.divergences.length > 0) {
+        const big = ctx.divergences.filter((d) => Math.abs(d.diff) >= 3);
+        lines.push(`🔍 **${ctx.divergences.length} divergência(s) de contagem.** ${big.length > 0 ? `${big.length} com diferença ≥ 3 un — isso pode ser sistêmico, não pontual.` : "Diferenças pequenas, mas padrão merece atenção."}`);
+      }
+      if (ctx.lossRate > 2) {
+        lines.push(`\n📐 Perda em ${ctx.lossRate}% — ${ctx.lossRate > 5 ? "**preocupante**. Recomendo auditoria do processo produtivo." : "aceitável, mas não ideal."}`);
+      }
+      if (ctx.pendingApprovals > 3) {
+        lines.push(`\n⏳ ${ctx.pendingApprovals} aprovações pendentes — **gargalo**. Se é recorrente, o processo está errado.`);
+      }
+      if (ctx.dataCompleteness !== "alta") {
+        lines.push(`\n🔎 Completude "${ctx.dataCompleteness}" — estamos decidindo com dados incompletos. Cuidado com conclusões.`);
+      }
+      if (ctx.divergences.length === 0 && ctx.lossRate <= 2 && ctx.pendingApprovals <= 3) {
+        lines.push("Surpreendentemente, sem contrapontos fortes hoje. Dados consistentes.");
+      }
+      content = lines.join("\n");
+      stance = "diverge";
+      break;
+    }
+    case "manus": {
+      const lines = ["Avaliando viabilidade prática:\n"];
+      const steps: string[] = [];
+      if (ctx.belowMinimum.length > 0) steps.push(`Produção emergencial: ${ctx.belowMinimum.slice(0, 3).map((p) => p.name).join(", ")}`);
+      if (ctx.pendingApprovals > 0) steps.push(`Processar ${ctx.pendingApprovals} aprovação(ões) pendente(s)`);
+      if (ctx.divergences.length > 0) steps.push(`Recontagem dos ${ctx.divergences.length} itens divergentes`);
+      if (ctx.lossRate > 5) steps.push("Auditoria do processo produtivo");
+      if (steps.length > 0) {
+        lines.push("**Ações executáveis agora:**");
+        steps.forEach((s, i) => lines.push(`  ${i + 1}. ${s}`));
+      } else {
+        lines.push("✅ Operação fluindo. Sem ações urgentes necessárias.");
+      }
+      const improvements: string[] = [];
+      if (ctx.dataCompleteness !== "alta") improvements.push("Completar cadastro de configuração de todos os produtos");
+      if (ctx.divergences.length > 3) improvements.push("Implementar contagem dupla obrigatória");
+      if (ctx.pendingApprovals > 3) improvements.push("Criar regra de auto-aprovação para baixo valor");
+      if (improvements.length > 0) {
+        lines.push("\n🛠️ **Melhorias de processo:**");
+        improvements.forEach((imp) => lines.push(`  • ${imp}`));
+      }
+      content = lines.join("\n");
+      stance = "concorda";
+      break;
+    }
+  }
+
+  const member = getMember(memberId);
+  return {
+    id: crypto.randomUUID(),
+    role: "debate",
+    content: "",
+    speeches: [{ memberId, content, stance }],
+    timestamp: new Date(),
+    quickActions: Object.entries(MEMBER_QUICK_ACTIONS)
+      .filter(([k]) => k !== memberId)
+      .map(([, actions]) => actions[0])
+      .slice(0, 4),
+    mode: "debate",
+  };
+}
+
+// ────────────────────────────────────────────────
+// GENERATE FULL DEBATE (all 5 members)
+// ────────────────────────────────────────────────
+
+function generateFullDebate(ctx: CouncilContextData, question: string): CouncilMessage {
+  const severity = assessSeverity(ctx);
+  const speeches: DebateSpeech[] = [];
+
+  // 1. CEO Auxiliar opens — frames the problem
+  {
+    const lines = [`Vamos analisar a pergunta: **"${question}"**\n`];
+    const emoji = severity.level === "critico" ? "🔴" : severity.level === "alerta" ? "🟡" : severity.level === "atencao" ? "🟠" : "🟢";
+    lines.push(`${emoji} Status geral: **${severity.level.toUpperCase()}**`);
+    lines.push(`\n**Dados do dia:** ${ctx.todayProduced} produzidos, ${ctx.todayLosses} perdas (${ctx.lossRate}%), ${ctx.todayTastings} degustações, eficiência ${ctx.productionEfficiency}%`);
+    if (severity.reasons.length > 0) {
+      lines.push("\n**Pontos de atenção:**");
+      severity.reasons.forEach((r) => lines.push(`  → ${r}`));
+    }
+    lines.push("\nVou passar a palavra para cada conselheiro trazer sua perspectiva.");
+    speeches.push({ memberId: "chatgpt", content: lines.join("\n"), stance: "neutro" });
+  }
+
+  // 2. CFO — financial view
+  {
+    const lines: string[] = [];
+    if (ctx.todayLosses > 0 || ctx.overProduced.length > 0 || ctx.belowMinimum.length > 0) {
+      if (ctx.todayLosses > 0) {
+        lines.push(`Perdas de **${ctx.todayLosses} un** (${ctx.lossRate}%) impactam diretamente a margem. ${ctx.lossRate > 5 ? "**Acima do aceitável.** Cada ponto reduzido melhora o resultado." : "Dentro do tolerável, mas vale monitorar."}`);
+      }
+      if (ctx.overProduced.length > 0) {
+        lines.push(`\n**Capital parado** em ${ctx.overProduced.length} produto(s) acima do ideal. Risco de vencimento: ${ctx.overProduced.slice(0, 2).map((p) => `${p.name} (+${Math.abs(p.gap)})`).join(", ")}.`);
+      }
+      if (ctx.belowMinimum.length > 0) {
+        lines.push(`\n**Risco de receita:** ${ctx.belowMinimum.length} produto(s) podem gerar ruptura. Ruptura = perda de venda + insatisfação.`);
+      }
+    } else {
+      lines.push("Sem alertas financeiros críticos. Operação saudável do ponto de vista de custos e perdas.");
+    }
+    lines.push(`\nEficiência geral: **${ctx.productionEfficiency}%**. ${ctx.productionEfficiency >= 80 ? "Bom nível." : ctx.productionEfficiency >= 50 ? "Há margem para melhoria." : "Nível preocupante."}`);
+    speeches.push({
+      memberId: "claude",
+      content: lines.join("\n"),
+      stance: ctx.lossRate > 5 || ctx.belowMinimum.length > 2 ? "alerta" : "concorda",
+    });
+  }
+
+  // 3. CMO — market/commercial view
+  {
+    const lines: string[] = [];
+    if (ctx.belowMinimum.length > 0) {
+      lines.push(`Concordo com Claude sobre o risco de ruptura. Do lado do cliente, **${ctx.belowMinimum.length} produto(s) faltando** pode causar migração para concorrentes.`);
+    }
+    if (ctx.overProduced.length > 0) {
+      lines.push(`\nPor outro lado, vejo **oportunidade** no excesso:`);
+      ctx.overProduced.slice(0, 3).forEach((p) => lines.push(`  • ${p.name}: +${Math.abs(p.gap)} un → combo ou promoção relâmpago`));
+      lines.push("\nEsses itens podem virar ação no Instagram ou degustação estratégica.");
+    }
+    if (ctx.todayProduced > 0) {
+      lines.push(`\nProdução de **${ctx.todayProduced} un** hoje = conteúdo de bastidores para engajamento.`);
+    }
+    if (ctx.overProduced.length === 0 && ctx.belowMinimum.length === 0) {
+      lines.push("Mix equilibrado hoje. Sem oportunidades promocionais urgentes, mas bom momento para conteúdo de marca.");
+    }
+    speeches.push({
+      memberId: "perplexity",
+      content: lines.join("\n"),
+      stance: ctx.belowMinimum.length > 0 ? "concorda" : "neutro",
+      referencedMember: ctx.belowMinimum.length > 0 ? "claude" : undefined,
+    });
+  }
+
+  // 4. CIO / Contrarian — challenges the dominant view
+  {
+    const lines: string[] = [];
+    lines.push("Preciso levantar alguns pontos que podem estar passando despercebidos:\n");
+
+    let hasContention = false;
+
+    if (ctx.divergences.length > 0) {
+      const big = ctx.divergences.filter((d) => Math.abs(d.diff) >= 3);
+      lines.push(`**${ctx.divergences.length} divergência(s) de contagem.** ${big.length > 0 ? `${big.length} com diferença ≥ 3 un — pode ser problema de processo, não apenas contagem.` : "Pequenas, mas a recorrência importa."}`);
+      if (big.length > 0) {
+        big.slice(0, 3).forEach((d) => lines.push(`  • ${d.productName}: esperado ${d.expected}, contado ${d.counted} (diff: ${d.diff > 0 ? "+" : ""}${d.diff})`));
+      }
+      hasContention = true;
+    }
+
+    if (ctx.overProduced.length > 0) {
+      lines.push(`\n**Discordo parcialmente de Perplexity.** Antes de fazer promoção, precisamos entender *por que* estamos produzindo a mais. Se é erro de planejamento, promoção não resolve — mascara o problema.`);
+      hasContention = true;
+    }
+
+    if (ctx.lossRate > 2) {
+      lines.push(`\nPerda de ${ctx.lossRate}% — ${ctx.lossRate > 5 ? "preocupante. Recomendo auditoria antes de novas decisões." : "tolerável, mas questiono: estamos aceitando como normal algo que deveria ser exceção?"}`);
+      hasContention = true;
+    }
+
+    if (ctx.dataCompleteness !== "alta") {
+      lines.push(`\n🔎 **Alerta:** completude "${ctx.dataCompleteness}". Estamos tomando decisões com dados incompletos.`);
+      hasContention = true;
+    }
+
+    if (!hasContention) {
+      lines.push("Surpreendentemente, dados consistentes hoje. Sem contrapontos fortes — o que é raro e bom.");
+    }
+
+    speeches.push({
+      memberId: "grok",
+      content: lines.join("\n"),
+      stance: hasContention ? "diverge" : "concorda",
+      referencedMember: ctx.overProduced.length > 0 ? "perplexity" : undefined,
+    });
+  }
+
+  // 5. CTO / Executor — practical feasibility
+  {
+    const lines: string[] = [];
+
+    if (ctx.divergences.length > 0 || ctx.belowMinimum.length > 0 || ctx.pendingApprovals > 0) {
+      lines.push("Concordo com os pontos levantados. Vamos ao que é executável **agora**:\n");
+      const steps: string[] = [];
+      if (ctx.belowMinimum.length > 0) steps.push(`Produção emergencial dos ${ctx.belowMinimum.length} itens críticos`);
+      if (ctx.pendingApprovals > 0) steps.push(`Processar ${ctx.pendingApprovals} aprovação(ões) pendente(s)`);
+      if (ctx.divergences.length > 0) steps.push(`Recontagem dos ${ctx.divergences.length} itens divergentes`);
+      if (ctx.lossRate > 5) steps.push("Auditoria rápida do processo produtivo");
+      steps.forEach((s, i) => lines.push(`**${i + 1}.** ${s}`));
+    } else {
+      lines.push("Operação fluindo bem. Sem ações urgentes necessárias.");
+    }
+
+    const improvements: string[] = [];
+    if (ctx.dataCompleteness !== "alta") improvements.push("Completar configuração de produtos (mín/ideal)");
+    if (ctx.divergences.length > 3) improvements.push("Implementar contagem dupla obrigatória");
+    if (ctx.pendingApprovals > 3) improvements.push("Auto-aprovação para solicitações de baixo impacto");
+    if (improvements.length > 0) {
+      lines.push("\n🛠️ **Para a próxima sprint:**");
+      improvements.forEach((imp) => lines.push(`  • ${imp}`));
+    }
+
+    speeches.push({
+      memberId: "manus",
+      content: lines.join("\n"),
+      stance: "concorda",
+      referencedMember: ctx.divergences.length > 0 ? "grok" : undefined,
+    });
+  }
+
+  // 6. CEO Auxiliar closes — synthesis
+  {
+    const lines = ["**Síntese do debate:**\n"];
+
+    // Convergences
+    const conv: string[] = [];
+    if (ctx.belowMinimum.length > 0) conv.push("risco de ruptura como prioridade");
+    if (ctx.lossRate > 5) conv.push("necessidade de reduzir perdas");
+    if (ctx.divergences.length > 0) conv.push("investigar divergências");
+    if (conv.length > 0) lines.push(`✅ **Convergências:** ${conv.join(", ")}.`);
+
+    // Divergences
+    const div: string[] = [];
+    if (ctx.overProduced.length > 0) div.push("CMO quer promoção, Grok questiona se é a causa raiz");
+    if (ctx.pendingApprovals > 3) div.push("Grok quer delegar aprovações, Claude prefere controle");
+    if (div.length > 0) lines.push(`⚔️ **Divergências:** ${div.join("; ")}.`);
+
+    // Main suggestion
+    if (severity.level === "critico" || severity.level === "alerta") {
+      const topAction = ctx.belowMinimum.length > 0
+        ? `regularizar estoque dos ${ctx.belowMinimum.length} produto(s) críticos`
+        : ctx.divergences.length > 0
+          ? `investigar ${ctx.divergences.length} divergência(s)`
+          : "resolver pendências operacionais";
+      lines.push(`\n💡 **Sugestão principal:** ${topAction}.`);
+    } else {
+      lines.push("\n💡 **Sugestão:** Manter monitoramento. Operação estável.");
+    }
+
+    // Main risk
+    if (ctx.belowMinimum.length >= 3) lines.push(`\n⚠️ **Risco:** Ruptura em ${ctx.belowMinimum.length} produtos simultaneamente.`);
+    else if (ctx.lossRate > 5) lines.push(`\n⚠️ **Risco:** Perda de ${ctx.lossRate}% corroendo margem.`);
+
+    // Missing data
+    const missing: string[] = [];
+    if (ctx.dataCompleteness !== "alta") missing.push("configuração completa de produtos");
+    missing.push("dados de vendas e custos unitários");
+    lines.push(`\n❓ **Falta saber:** ${missing.join(", ")}.`);
+
+    // Confidence
+    lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
+
+    lines.push("\n*A decisão final é sempre sua, Gustavo.*");
+
+    speeches.push({ memberId: "chatgpt", content: lines.join("\n"), stance: "sintetiza" });
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    role: "debate",
+    content: "",
+    speeches,
+    timestamp: new Date(),
+    quickActions: [
+      "Claude, aprofunde o impacto financeiro",
+      "Grok, critique essa estratégia",
+      "Manus, isso é executável agora?",
+      "CEO Auxiliar, resuma o debate",
+    ],
+    mode: "debate",
+  };
+}
+
+// ────────────────────────────────────────────────
+// MAIN EXPORT
+// ────────────────────────────────────────────────
+
+export function generateCouncilResponse(
+  ctx: CouncilContextData,
+  question: string,
+  _history: CouncilMessage[],
+): CouncilMessage {
+  // If directed at a specific member
+  const targetMember = detectTargetMember(question);
+  if (targetMember) {
+    return generateMemberFollowUp(ctx, targetMember, question);
+  }
+
+  const mode = detectMode(question);
+  if (mode === "quick") {
+    return generateQuickResponse(ctx, question);
+  }
+
+  return generateFullDebate(ctx, question);
 }
