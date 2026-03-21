@@ -232,10 +232,43 @@ export default function ContasPagar() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Contas a Pagar</h1>
             <p className="text-sm text-muted-foreground">Controle manual das contas e parcelas</p>
           </div>
-          <Button onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4" /> Cadastrar CPG
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setCaixaValor(caixa?.valor?.toString() ?? ""); setCaixaObs(""); setCaixaDialogOpen(true); }}>
+              <Wallet className="h-4 w-4" /> Caixa Disponível
+            </Button>
+            <Button onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4" /> Cadastrar CPG
+            </Button>
+          </div>
         </div>
+
+        {/* Caixa Disponível Card */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-4 px-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Wallet className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Caixa Disponível</p>
+                  <p className="text-2xl font-bold text-foreground">{caixa ? formatBRL(caixa.valor) : "Não informado"}</p>
+                </div>
+              </div>
+              {caixa && (
+                <div className="text-right">
+                  <p className="text-[11px] text-muted-foreground">
+                    Atualizado em {format(new Date(caixa.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                  </p>
+                  {caixa.autor_nome && (
+                    <p className="text-[11px] text-muted-foreground">por {caixa.autor_nome}</p>
+                  )}
+                  {caixa.observacao && (
+                    <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{caixa.observacao}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
