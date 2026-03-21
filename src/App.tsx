@@ -18,6 +18,7 @@ const Produtos = lazy(() => import("./pages/Produtos"));
 const ClientesB2B = lazy(() => import("./pages/ClientesB2B"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Compras = lazy(() => import("./pages/Compras"));
+const ContasPagar = lazy(() => import("./pages/ContasPagar"));
 const Producao = lazy(() => import("./pages/Producao"));
 const PortalB2B = lazy(() => import("./pages/PortalB2B"));
 const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
@@ -86,6 +87,7 @@ const App = () => (
               {/* Financial */}
               <Route path="/" element={<R path="/"><Dashboard /></R>} />
               <Route path="/dre" element={<R path="/dre"><DRE /></R>} />
+              <Route path="/contas-pagar" element={<R path="/contas-pagar"><ContasPagar /></R>} />
               <Route path="/produtos" element={<R path="/produtos"><Produtos /></R>} />
               <Route path="/clientes-b2b" element={<R path="/clientes-b2b"><ClientesB2B /></R>} />
               <Route path="/usuarios" element={<R path="/usuarios"><Usuarios /></R>} />

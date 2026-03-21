@@ -29,6 +29,7 @@ const GROUPS: NavGroup[] = [
     label: "Financeiro",
     items: [
       { title: "DRE", url: "/dre", icon: FileText },
+      { title: "Contas a Pagar", url: "/contas-pagar", icon: ClipboardList },
       { title: "Compras", url: "/compras", icon: Package },
       { title: "Produção", url: "/producao", icon: Factory },
     ],
