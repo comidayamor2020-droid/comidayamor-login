@@ -1,6 +1,7 @@
 /** Council member definitions, debate engine, and data-driven analysis */
 
 import type { CouncilContextData, CashFlowAnalysis } from "@/hooks/use-council-context";
+import type { DreResult } from "@/hooks/use-dre-data";
 
 export interface CouncilMember {
   id: string;
