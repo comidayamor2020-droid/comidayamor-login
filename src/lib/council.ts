@@ -720,6 +720,11 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
       if (cashBlock) lines.push(`\n${cashBlock}`);
     }
 
+    // DRE overview
+    if (ctx.dre && ctx.dre.receitaTotal > 0) {
+      lines.push(`\n${generateDreBlock(ctx.dre)}`);
+    }
+
     if (severity.reasons.length > 0) {
       lines.push("\n**Pontos de atenção:**");
       severity.reasons.forEach((r) => lines.push(`  → ${r}`));
