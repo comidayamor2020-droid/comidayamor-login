@@ -403,6 +403,27 @@ export default function ContasPagar() {
               </div>
             </div>
 
+            {/* Classificação DRE */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Classificação DRE *</Label>
+                <Select value={form.classificacao_dre} onValueChange={(v) => { set("classificacao_dre", v); set("subcategoria_dre", ""); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    {CLASSIFICACOES_SAIDA.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Subcategoria DRE *</Label>
+                <Select value={form.subcategoria_dre} onValueChange={(v) => set("subcategoria_dre", v)} disabled={!form.classificacao_dre}>
+                  <SelectTrigger><SelectValue placeholder={form.classificacao_dre ? "Selecionar" : "Escolha a classificação"} /></SelectTrigger>
+                  <SelectContent>
+                    {(SUBCATEGORIAS[form.classificacao_dre] ?? []).map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {/* Forma de pagamento */}
             <div className="space-y-1.5">
               <Label>Forma de pagamento</Label>
