@@ -29,6 +29,8 @@ interface EntradaForm {
   categoria: string;
   valor: string;
   observacao: string;
+  classificacao_dre: string;
+  subcategoria_dre: string;
 }
 
 const EMPTY_FORM: EntradaForm = {
@@ -37,6 +39,8 @@ const EMPTY_FORM: EntradaForm = {
   categoria: "vendas",
   valor: "",
   observacao: "",
+  classificacao_dre: "receita_operacional",
+  subcategoria_dre: "",
 };
 
 export default function FluxoCaixa() {
