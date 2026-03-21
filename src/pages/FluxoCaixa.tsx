@@ -118,6 +118,10 @@ export default function FluxoCaixa() {
       toast.error("Preencha descrição e valor.");
       return;
     }
+    if (!form.classificacao_dre || !form.subcategoria_dre) {
+      toast.error("Preencha classificação e subcategoria DRE.");
+      return;
+    }
     createEntrada.mutate(
       {
         data: form.data,
