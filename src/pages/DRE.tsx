@@ -136,6 +136,9 @@ export default function DRE() {
 function SectionBlock({ section, receitaTotal, positive, negative }: { section: DreSection; receitaTotal: number; positive?: boolean; negative?: boolean }) {
   const [open, setOpen] = useState(false);
   const prefix = negative ? "(-) " : "";
+  const sectionKey = section.key;
+  const [open, setOpen] = useState(false);
+  const prefix = negative ? "(-) " : "";
 
   if (section.total === 0 && section.items.length === 0) {
     return (
