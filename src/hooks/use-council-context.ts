@@ -412,7 +412,7 @@ export function useCouncilContext(): CouncilContextData {
     signals >= 4 ? "alta" : signals >= 3 ? "media" : signals >= 2 ? "baixa" : "insuficiente";
 
   // Cash flow analysis
-  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? []);
+  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? [], caixaManual?.valor ?? null);
 
   return {
     loading: false,
