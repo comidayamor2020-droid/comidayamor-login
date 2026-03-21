@@ -631,6 +631,15 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
         lines.push("");
       }
 
+      // DRE confrontation
+      if (ctx.dre) {
+        const dreConfront = generateGrokDreConfrontation(ctx.dre);
+        if (dreConfront) {
+          lines.push(dreConfront);
+          lines.push("");
+        }
+      }
+
       // Operational
       if (ctx.divergences.length > 0) {
         const big = ctx.divergences.filter((d) => Math.abs(d.diff) >= 3);
