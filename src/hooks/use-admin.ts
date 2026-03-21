@@ -32,7 +32,6 @@ export function useB2BCompanyWithUsers() {
         .select("id, name, email, role, company_id, last_login_at");
       if (uErr) throw uErr;
 
-      // count orders per company
       const { data: orders, error: oErr } = await supabase
         .from("b2b_orders")
         .select("id, company_id");
@@ -105,6 +104,32 @@ export function useUpdateUser() {
     mutationFn: async ({ id, ...values }: { id: string } & Record<string, unknown>) => {
       const { error } = await supabase.from("users").update(values as any).eq("id", id);
       if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin_users"] });
+      qc.invalidateQueries({ queryKey: ["b2b_companies_with_users"] });
+    },
+  });
+}
+
+export function useCreateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      email: string;
+      password: string;
+      name: string;
+      role: string;
+      user_group: string;
+      company_id?: string;
+      is_active?: boolean;
+    }) => {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: input,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin_users"] });

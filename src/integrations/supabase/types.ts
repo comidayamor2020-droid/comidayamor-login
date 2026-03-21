@@ -1087,6 +1087,7 @@ export type Database = {
           last_login_at: string | null
           name: string
           role: string
+          user_group: string
         }
         Insert: {
           auth_user_id?: string | null
@@ -1098,6 +1099,7 @@ export type Database = {
           last_login_at?: string | null
           name: string
           role: string
+          user_group?: string
         }
         Update: {
           auth_user_id?: string | null
@@ -1109,6 +1111,7 @@ export type Database = {
           last_login_at?: string | null
           name?: string
           role?: string
+          user_group?: string
         }
         Relationships: [
           {
