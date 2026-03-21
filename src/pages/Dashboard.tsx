@@ -27,6 +27,7 @@ function MetricCard({ title, value, description, variant }: MetricCardProps) {
 
 export default function Dashboard() {
   const { data, isError } = useDreData();
+  const { data: caixa } = useCaixaDisponivel();
 
   const metrics: MetricCardProps[] = data
     ? [
