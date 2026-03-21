@@ -327,6 +327,7 @@ export function useCouncilContext(): CouncilContextData {
       productionEfficiency: 0,
       dataCompleteness: "insuficiente",
       cashFlow: EMPTY_CASH_FLOW,
+      dre: null,
     };
   }
 
