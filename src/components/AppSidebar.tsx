@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, LogOut, Package, Factory, Store,
   ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
   BarChart3, Zap, ArrowLeftRight, CheckCircle, Calendar, X,
-  ChevronDown, Users, TrendingUp,
+  ChevronDown, Users, TrendingUp, PieChart,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +28,7 @@ const GROUPS: NavGroup[] = [
   {
     label: "Financeiro",
     items: [
+      { title: "Dashboard Financeiro", url: "/dashboard-financeiro", icon: PieChart },
       { title: "DRE", url: "/dre", icon: FileText },
       { title: "Contas a Pagar", url: "/contas-pagar", icon: ClipboardList },
       { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: TrendingUp },
