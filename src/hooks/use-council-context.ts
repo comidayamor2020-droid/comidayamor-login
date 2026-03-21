@@ -242,7 +242,7 @@ export function useCouncilContext(): CouncilContextData {
     divergences,
     todayOccurrences,
     activeScheduled,
-    todayLotes,
+    todayLotes: todayLotesList,
     pendingOccurrences,
     lossRate,
     productionEfficiency,
