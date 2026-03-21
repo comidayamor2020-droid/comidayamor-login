@@ -91,6 +91,7 @@ const App = () => (
               <Route path="/dre" element={<R path="/dre"><DRE /></R>} />
               <Route path="/contas-pagar" element={<R path="/contas-pagar"><ContasPagar /></R>} />
               <Route path="/fluxo-caixa" element={<R path="/fluxo-caixa"><FluxoCaixa /></R>} />
+              <Route path="/dashboard-financeiro" element={<R path="/dashboard-financeiro"><DashboardFinanceiro /></R>} />
               <Route path="/produtos" element={<R path="/produtos"><Produtos /></R>} />
               <Route path="/clientes-b2b" element={<R path="/clientes-b2b"><ClientesB2B /></R>} />
               <Route path="/usuarios" element={<R path="/usuarios"><Usuarios /></R>} />

@@ -2,12 +2,12 @@ export type AppRole = "admin" | "gestao" | "gerente_operacional" | "loja" | "pro
 
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
   admin: [
-    "/", "/dre", "/contas-pagar", "/fluxo-caixa", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
+    "/", "/dre", "/contas-pagar", "/fluxo-caixa", "/dashboard-financeiro", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
     "/conselho",
   ],
   gestao: [
-    "/", "/dre", "/contas-pagar", "/fluxo-caixa", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
+    "/", "/dre", "/contas-pagar", "/fluxo-caixa", "/dashboard-financeiro", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
     "/conselho",
   ],
