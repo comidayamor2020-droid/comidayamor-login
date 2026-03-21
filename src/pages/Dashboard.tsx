@@ -83,6 +83,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Caixa Disponível */}
+      {caixa && (
+        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-5 flex items-center gap-4">
+          <Wallet className="h-6 w-6 text-primary shrink-0" />
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Caixa Disponível</p>
+            <p className="text-2xl font-bold text-foreground">{formatBRL(caixa.valor)}</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-[11px] text-muted-foreground">
+              Atualizado em {format(new Date(caixa.created_at), "dd/MM/yyyy 'às' HH:mm")}
+            </p>
+            {caixa.autor_nome && <p className="text-[11px] text-muted-foreground">por {caixa.autor_nome}</p>}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map((m) => (
           <MetricCard key={m.title} {...m} />
