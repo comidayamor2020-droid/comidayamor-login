@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { useDreData, type DreSection } from "@/hooks/use-dre-data";
+import { getSubcategoriaLabel } from "@/lib/dre-constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ChevronDown, ChevronRight, Calendar } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
