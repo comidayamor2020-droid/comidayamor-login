@@ -7,15 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Pencil, Filter } from "lucide-react";
+import { Plus, Pencil, Filter, Wallet } from "lucide-react";
 import { format, differenceInDays, parseISO, addMonths } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { formatBRL } from "@/lib/format";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCaixaDisponivel, useUpdateCaixa } from "@/hooks/use-caixa";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
