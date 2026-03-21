@@ -18,6 +18,7 @@ const Produtos = lazy(() => import("./pages/Produtos"));
 const ClientesB2B = lazy(() => import("./pages/ClientesB2B"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Compras = lazy(() => import("./pages/Compras"));
+const ContasPagar = lazy(() => import("./pages/ContasPagar"));
 const Producao = lazy(() => import("./pages/Producao"));
 const PortalB2B = lazy(() => import("./pages/PortalB2B"));
 const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
