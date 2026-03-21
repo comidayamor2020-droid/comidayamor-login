@@ -95,12 +95,20 @@ const EMPTY_FORM: FormState = {
 
 export default function ContasPagar() {
   const qc = useQueryClient();
+  const { profile } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [filter, setFilter] = useState<FilterPreset>("todas");
   const [catFilter, setCatFilter] = useState<string>("todas");
   const [fpFilter, setFpFilter] = useState<string>("todas");
+
+  // Caixa disponível
+  const { data: caixa } = useCaixaDisponivel();
+  const updateCaixa = useUpdateCaixa();
+  const [caixaDialogOpen, setCaixaDialogOpen] = useState(false);
+  const [caixaValor, setCaixaValor] = useState("");
+  const [caixaObs, setCaixaObs] = useState("");
 
   const set = (key: keyof FormState, val: string | boolean) => setForm((p) => ({ ...p, [key]: val }));
 
