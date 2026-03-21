@@ -560,6 +560,12 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
       if (cashSynthesis) lines.push(`\n${cashSynthesis}`);
       else if (cf.totalCompromissos > 0) lines.push(`\nCaixa: ${fmtBRL(cf.caixaDisponivel)} | Compromissos: ${fmtBRL(cf.totalCompromissos)} | Folga: ${fmtBRL(cf.folgaOuDeficit)}`);
 
+      // DRE synthesis
+      if (ctx.dre) {
+        const dreSynth = generateCEODreSynthesis(ctx.dre);
+        if (dreSynth) lines.push(dreSynth);
+      }
+
       if (ctx.belowMinimum.length > 0) lines.push(`\nPrioridade operacional: regularizar ${ctx.belowMinimum.length} produto(s) críticos.`);
       lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
       content = lines.join("\n");
