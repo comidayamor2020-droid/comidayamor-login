@@ -90,6 +90,35 @@ export const RESPONSE_SECTIONS = [
 export type CouncilResponse = Record<string, string>;
 
 // ────────────────────────────────────────────────
+// CHAT MESSAGE TYPES
+// ────────────────────────────────────────────────
+
+export interface CouncilMessage {
+  id: string;
+  role: "user" | "council";
+  content: string;
+  /** Only present for council messages */
+  structured?: CouncilResponse;
+  /** Whether this is a full structured response */
+  isStructured: boolean;
+  timestamp: Date;
+  quickActions?: string[];
+}
+
+// ────────────────────────────────────────────────
+// QUICK ACTION DEFINITIONS
+// ────────────────────────────────────────────────
+
+export const QUICK_ACTIONS = [
+  "Aprofundar visão financeira",
+  "Aprofundar visão operacional",
+  "Mostrar riscos",
+  "Sugerir plano prático",
+  "Resumir decisão",
+  "Mostrar dados faltantes",
+] as const;
+
+// ────────────────────────────────────────────────
 // CONFIDENCE LEVELS
 // ────────────────────────────────────────────────
 
