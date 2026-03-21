@@ -132,6 +132,8 @@ export default function ContasPagar() {
 
       if (!form.descricao.trim()) throw new Error("Nome da conta é obrigatório");
       if (!form.data_vencimento) throw new Error("Data de vencimento é obrigatória");
+      if (!form.classificacao_dre) throw new Error("Classificação DRE é obrigatória");
+      if (!form.subcategoria_dre) throw new Error("Subcategoria DRE é obrigatória");
 
       const basePayload = {
         descricao: form.descricao.trim(),
