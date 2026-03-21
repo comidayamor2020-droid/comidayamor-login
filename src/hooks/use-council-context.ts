@@ -88,6 +88,7 @@ export interface CashFlowAnalysis {
   folgaOuDeficit: number;
   /** Alert level */
   alertLevel: "normal" | "atencao" | "alerta" | "critico";
+  fluxo: FluxoResumo;
 }
 
 export interface CouncilContextData {
