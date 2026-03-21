@@ -41,6 +41,8 @@ export function useCreateEntrada() {
       valor: number;
       observacao?: string;
       criado_por?: string;
+      classificacao_dre?: string;
+      subcategoria_dre?: string;
     }) => {
       const { error } = await supabase.from("fluxo_caixa_entradas").insert({
         data: payload.data,
@@ -50,6 +52,8 @@ export function useCreateEntrada() {
         observacao: payload.observacao || null,
         origem: "manual",
         criado_por: payload.criado_por || null,
+        classificacao_dre: payload.classificacao_dre || null,
+        subcategoria_dre: payload.subcategoria_dre || null,
       });
       if (error) throw error;
     },

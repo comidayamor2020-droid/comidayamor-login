@@ -130,6 +130,8 @@ export default function FluxoCaixa() {
         valor,
         observacao: form.observacao || undefined,
         criado_por: profile?.id,
+        classificacao_dre: form.classificacao_dre,
+        subcategoria_dre: form.subcategoria_dre,
       },
       {
         onSuccess: () => {
