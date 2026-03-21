@@ -235,6 +235,38 @@ export type Database = {
           },
         ]
       }
+      caixa_disponivel: {
+        Row: {
+          atualizado_por: string | null
+          created_at: string
+          id: string
+          observacao: string | null
+          valor: number
+        }
+        Insert: {
+          atualizado_por?: string | null
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          valor?: number
+        }
+        Update: {
+          atualizado_por?: string | null
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caixa_disponivel_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Clientes: {
         Row: {
           data_criacao: string | null
