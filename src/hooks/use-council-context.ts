@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCaixaDisponivel } from "@/hooks/use-caixa";
+import { useDreData, type DreResult } from "@/hooks/use-dre-data";
 import {
   useOpProducts,
   useTodayLotes,
