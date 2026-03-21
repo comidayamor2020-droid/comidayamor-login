@@ -575,7 +575,21 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
 
       if (ctx.belowMinimum.length > 0) lines.push(`\nPrioridade operacional: regularizar ${ctx.belowMinimum.length} produto(s) críticos.`);
       lines.push(`\n${CONFIDENCE_LABELS[ctx.dataCompleteness]}`);
+
+      // Action block for follow-up too
+      lines.push("\n---");
+      lines.push("\n**🎯 Decisão sugerida:** " + (cf.alertLevel === "critico" ? "Contenção financeira imediata." : cf.alertLevel === "alerta" ? "Frear gastos e cobrar recebíveis." : ctx.belowMinimum.length > 0 ? "Regularizar estoque crítico." : "Manter ritmo. Monitorar indicadores."));
+      
+      const actions: string[] = [];
+      if (cf.totalVencidas > 0) actions.push(`Resolver ${cf.contasVencidas.length} conta(s) vencida(s)`);
+      if (ctx.belowMinimum.length > 0) actions.push(`Produzir ${ctx.belowMinimum.length} item(ns) críticos`);
+      if (ctx.pendingApprovals > 0) actions.push(`Processar ${ctx.pendingApprovals} aprovação(ões)`);
+      if (cf.totalProx2Dias > 0) actions.push(`Pagar ${fmtBRL(cf.totalProx2Dias)} vencendo em 2 dias`);
+      if (actions.length === 0) actions.push("Revisar indicadores", "Validar estoque", "Confirmar produção");
+      lines.push("\n**⏰ Próximas 24h:** " + actions.slice(0, 3).join(" · "));
+
       content = lines.join("\n");
+
       stance = cf.alertLevel === "critico" ? "alerta" : "sintetiza";
       break;
     }
