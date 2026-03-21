@@ -1,6 +1,9 @@
 import { formatBRL, formatPercent } from "@/lib/format";
 import { useDreData } from "@/hooks/use-dre-data";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useCaixaDisponivel } from "@/hooks/use-caixa";
+import { Wallet } from "lucide-react";
+import { format } from "date-fns";
 
 interface MetricCardProps {
   title: string;
