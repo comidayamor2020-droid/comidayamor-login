@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useOpProducts,
   useTodayLotes,
@@ -5,7 +7,6 @@ import {
   useTodayCounts,
   useScheduledProductions,
   getIdealField,
-  type DayField,
 } from "@/hooks/use-operational";
 
 export interface ProductDetail {
@@ -14,7 +15,7 @@ export interface ProductDetail {
   minimum: number;
   ideal: number;
   produced: number;
-  gap: number; // ideal - current (positive = under, negative = over)
+  gap: number;
 }
 
 export interface DivergenceDetail {
@@ -48,6 +49,38 @@ export interface LoteDetail {
   observation: string | null;
 }
 
+// ─── Cash Flow Types ────────────────────────────
+
+export interface ContaPagar {
+  descricao: string;
+  valor: number;
+  data_vencimento: string;
+  status: string;
+  categoria: string | null;
+  fornecedor: string | null;
+  forma_pagamento: string | null;
+}
+
+export interface CashFlowAnalysis {
+  /** Estimated available cash (received - paid) */
+  caixaDisponivel: number;
+  /** Overdue unpaid bills */
+  contasVencidas: ContaPagar[];
+  totalVencidas: number;
+  /** Due in next 2 days */
+  contasProx2Dias: ContaPagar[];
+  totalProx2Dias: number;
+  /** Due in next 7 days */
+  contasProx7Dias: ContaPagar[];
+  totalProx7Dias: number;
+  /** Total upcoming commitments (overdue + 7 days) */
+  totalCompromissos: number;
+  /** Cash minus commitments */
+  folgaOuDeficit: number;
+  /** Alert level */
+  alertLevel: "normal" | "atencao" | "alerta" | "critico";
+}
+
 export interface CouncilContextData {
   loading: boolean;
   totalProducts: number;
@@ -63,10 +96,158 @@ export interface CouncilContextData {
   activeScheduled: ScheduledDetail[];
   todayLotes: LoteDetail[];
   pendingOccurrences: OccurrenceDetail[];
-  lossRate: number; // perdas / produzido (%)
-  productionEfficiency: number; // % of products meeting ideal
+  lossRate: number;
+  productionEfficiency: number;
   dataCompleteness: "alta" | "media" | "baixa" | "insuficiente";
+  cashFlow: CashFlowAnalysis;
 }
+
+// ─── Supabase queries for financial data ────────
+
+function useContasPagar() {
+  return useQuery({
+    queryKey: ["council-contas-pagar"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contas_pagar")
+        .select("descricao, valor, data_vencimento, status, categoria, fornecedor, forma_pagamento")
+        .order("data_vencimento", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+function useContasReceber() {
+  return useQuery({
+    queryKey: ["council-contas-receber"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contas_receber")
+        .select("valor, status");
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+function useContasPagas() {
+  return useQuery({
+    queryKey: ["council-contas-pagas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contas_pagar")
+        .select("valor")
+        .eq("status", "pago");
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+function computeCashFlow(
+  contasPagar: { descricao: string; valor: number | null; data_vencimento: string | null; status: string | null; categoria: string | null; fornecedor: string | null; forma_pagamento: string | null }[],
+  contasReceber: { valor: number | null; status: string | null }[],
+  contasPagas: { valor: number | null }[],
+): CashFlowAnalysis {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const in2Days = new Date(today);
+  in2Days.setDate(in2Days.getDate() + 2);
+  const in7Days = new Date(today);
+  in7Days.setDate(in7Days.getDate() + 7);
+
+  // Estimate cash: received amounts minus paid amounts
+  const totalRecebido = contasReceber
+    .filter((c) => c.status === "recebido" || c.status === "pago")
+    .reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
+
+  const totalPago = contasPagas.reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
+
+  const caixaDisponivel = totalRecebido - totalPago;
+
+  // Unpaid bills
+  const unpaid = contasPagar.filter(
+    (c) => c.status !== "pago" && c.data_vencimento && c.valor,
+  );
+
+  const toContaPagar = (c: typeof unpaid[0]): ContaPagar => ({
+    descricao: c.descricao,
+    valor: Number(c.valor) || 0,
+    data_vencimento: c.data_vencimento!,
+    status: c.status || "falta_pagar",
+    categoria: c.categoria,
+    fornecedor: c.fornecedor,
+    forma_pagamento: c.forma_pagamento,
+  });
+
+  const contasVencidas: ContaPagar[] = [];
+  const contasProx2Dias: ContaPagar[] = [];
+  const contasProx7Dias: ContaPagar[] = [];
+
+  for (const c of unpaid) {
+    const venc = new Date(c.data_vencimento + "T00:00:00");
+    const cp = toContaPagar(c);
+    if (venc < today) {
+      contasVencidas.push(cp);
+    } else if (venc <= in2Days) {
+      contasProx2Dias.push(cp);
+    } else if (venc <= in7Days) {
+      contasProx7Dias.push(cp);
+    }
+  }
+
+  const totalVencidas = contasVencidas.reduce((s, c) => s + c.valor, 0);
+  const totalProx2Dias = contasProx2Dias.reduce((s, c) => s + c.valor, 0);
+  const totalProx7Dias = contasProx7Dias.reduce((s, c) => s + c.valor, 0);
+  const totalCompromissos = totalVencidas + totalProx2Dias + totalProx7Dias;
+  const folgaOuDeficit = caixaDisponivel - totalCompromissos;
+
+  // Alert level
+  let alertLevel: CashFlowAnalysis["alertLevel"] = "normal";
+  if (totalCompromissos > 0) {
+    const ratio = caixaDisponivel / totalCompromissos;
+    if (ratio < 1) alertLevel = "critico";
+    else if (ratio < 1.2) alertLevel = "alerta";
+    else if (ratio < 1.5) alertLevel = "atencao";
+  }
+  // Overdue alone is critical
+  if (totalVencidas > 0 && caixaDisponivel < totalVencidas) {
+    alertLevel = "critico";
+  } else if (totalVencidas > 0 && alertLevel === "normal") {
+    alertLevel = "alerta";
+  }
+
+  return {
+    caixaDisponivel,
+    contasVencidas,
+    totalVencidas,
+    contasProx2Dias,
+    totalProx2Dias,
+    contasProx7Dias,
+    totalProx7Dias,
+    totalCompromissos,
+    folgaOuDeficit,
+    alertLevel,
+  };
+}
+
+const EMPTY_CASH_FLOW: CashFlowAnalysis = {
+  caixaDisponivel: 0,
+  contasVencidas: [],
+  totalVencidas: 0,
+  contasProx2Dias: [],
+  totalProx2Dias: 0,
+  contasProx7Dias: [],
+  totalProx7Dias: 0,
+  totalCompromissos: 0,
+  folgaOuDeficit: 0,
+  alertLevel: "normal",
+};
 
 export function useCouncilContext(): CouncilContextData {
   const { data: products, isLoading: l1 } = useOpProducts();
@@ -74,8 +255,11 @@ export function useCouncilContext(): CouncilContextData {
   const { data: occurrences, isLoading: l3 } = useOccurrences();
   const { data: counts, isLoading: l4 } = useTodayCounts();
   const { data: scheduled, isLoading: l5 } = useScheduledProductions();
+  const { data: contasPagar, isLoading: l6 } = useContasPagar();
+  const { data: contasReceber, isLoading: l7 } = useContasReceber();
+  const { data: contasPagas, isLoading: l8 } = useContasPagas();
 
-  const loading = l1 || l2 || l3 || l4 || l5;
+  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8;
 
   if (loading) {
     return {
@@ -96,16 +280,14 @@ export function useCouncilContext(): CouncilContextData {
       lossRate: 0,
       productionEfficiency: 0,
       dataCompleteness: "insuficiente",
+      cashFlow: EMPTY_CASH_FLOW,
     };
   }
 
   const todayStr = new Date().toISOString().split("T")[0];
   const idealField = getIdealField();
-
-  // Map product names
   const productNameMap = new Map((products ?? []).map((p) => [p.id, p.nome]));
 
-  // Today's lotes with product names
   const todayLotesList: LoteDetail[] = (lotes ?? []).map((l) => ({
     productName: productNameMap.get(l.produto_id) ?? "Desconhecido",
     quantity: Number(l.quantidade),
@@ -116,7 +298,6 @@ export function useCouncilContext(): CouncilContextData {
   const completedLotes = todayLotesList.filter((l) => l.status === "concluido");
   const todayProduced = completedLotes.reduce((a, l) => a + l.quantity, 0);
 
-  // Production per product
   const prodByProduct = new Map<string, number>();
   for (const l of lotes ?? []) {
     if (l.status === "concluido") {
@@ -125,7 +306,6 @@ export function useCouncilContext(): CouncilContextData {
     }
   }
 
-  // Today occurrences
   const todayOcc = (occurrences ?? []).filter(
     (o) => o.data_solicitacao?.startsWith(todayStr) || o.created_at?.startsWith(todayStr),
   );
@@ -158,7 +338,6 @@ export function useCouncilContext(): CouncilContextData {
 
   const pendingApprovals = pendingOccurrences.length;
 
-  // Divergences with detail
   const divergences: DivergenceDetail[] = (counts ?? [])
     .filter((c) => c.diferenca !== 0 && c.diferenca !== null)
     .map((c) => ({
@@ -169,7 +348,6 @@ export function useCouncilContext(): CouncilContextData {
     }))
     .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 
-  // Product analysis: below minimum, over/under produced
   const belowMinimum: ProductDetail[] = [];
   const overProduced: ProductDetail[] = [];
   const underProduced: ProductDetail[] = [];
@@ -191,8 +369,8 @@ export function useCouncilContext(): CouncilContextData {
   }
 
   belowMinimum.sort((a, b) => (a.current / Math.max(a.minimum, 1)) - (b.current / Math.max(b.minimum, 1)));
-  overProduced.sort((a, b) => a.gap - b.gap); // most over first (most negative)
-  underProduced.sort((a, b) => b.gap - a.gap); // most under first (most positive)
+  overProduced.sort((a, b) => a.gap - b.gap);
+  underProduced.sort((a, b) => b.gap - a.gap);
 
   const totalWithIdeal = (products ?? []).filter(
     (p) => p.config && Number((p.config as Record<string, unknown>)[idealField] ?? 0) > 0,
@@ -206,7 +384,6 @@ export function useCouncilContext(): CouncilContextData {
     ? Math.round((todayLosses / todayProduced) * 100 * 10) / 10
     : 0;
 
-  // Scheduled productions
   const activeScheduled: ScheduledDetail[] = (scheduled ?? [])
     .filter((s) => s.status !== "concluido" && s.status !== "cancelado")
     .map((s) => ({
@@ -220,7 +397,6 @@ export function useCouncilContext(): CouncilContextData {
       ).length,
     }));
 
-  // Data completeness assessment
   const hasProducts = (products ?? []).length > 0;
   const hasLotes = (lotes ?? []).length > 0;
   const hasCounts = (counts ?? []).length > 0;
@@ -228,6 +404,9 @@ export function useCouncilContext(): CouncilContextData {
   const signals = [hasProducts, hasLotes, hasCounts, hasConfigs].filter(Boolean).length;
   const dataCompleteness: CouncilContextData["dataCompleteness"] =
     signals >= 4 ? "alta" : signals >= 3 ? "media" : signals >= 2 ? "baixa" : "insuficiente";
+
+  // Cash flow analysis
+  const cashFlow = computeCashFlow(contasPagar ?? [], contasReceber ?? [], contasPagas ?? []);
 
   return {
     loading: false,
@@ -247,5 +426,6 @@ export function useCouncilContext(): CouncilContextData {
     lossRate,
     productionEfficiency,
     dataCompleteness,
+    cashFlow,
   };
 }
