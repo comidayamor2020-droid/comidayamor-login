@@ -214,7 +214,7 @@ function detectTargetMember(question: string): string | null {
 
 function isCashRelatedQuestion(question: string): boolean {
   const q = question.toLowerCase();
-  const triggers = ["caixa", "financ", "pagar", "receber", "déficit", "deficit", "folga", "compromisso", "vencid", "pagamento", "dinheiro", "gasto", "despesa", "custo", "aperto"];
+  const triggers = ["caixa", "financ", "pagar", "receber", "déficit", "deficit", "folga", "compromisso", "vencid", "pagamento", "dinheiro", "gasto", "despesa", "custo", "aperto", "dre", "margem", "lucro", "ebitda", "receita", "cpv", "resultado"];
   return triggers.some((t) => q.includes(t));
 }
 
