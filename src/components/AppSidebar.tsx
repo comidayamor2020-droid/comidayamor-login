@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
   LayoutDashboard, FileText, LogOut, Package, Factory, Store,
-  ClipboardList, ShoppingBag, Building2, Users,
+  ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
   BarChart3, Zap, ArrowLeftRight, CheckCircle, Calendar, X,
-  ChevronDown,
+  ChevronDown, Users,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,7 +37,7 @@ const GROUPS: NavGroup[] = [
     label: "Cadastros",
     items: [
       { title: "Produtos", url: "/produtos", icon: ShoppingBag },
-      { title: "Usuários", url: "/usuarios", icon: Users },
+      { title: "Usuários", url: "/usuarios", icon: UsersIcon },
       { title: "Clientes B2B", url: "/clientes-b2b", icon: Building2 },
     ],
   },
@@ -57,6 +57,12 @@ const GROUPS: NavGroup[] = [
       { title: "Conciliação", url: "/op/conciliacao", icon: ArrowLeftRight },
       { title: "Aprovações", url: "/op/aprovacoes", icon: CheckCircle },
       { title: "Programadas", url: "/op/programadas", icon: Calendar },
+    ],
+  },
+  {
+    label: "Estratégico",
+    items: [
+      { title: "Conselho", url: "/conselho", icon: Users },
     ],
   },
 ];

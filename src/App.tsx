@@ -29,6 +29,7 @@ const EstoqueLoja = lazy(() => import("./pages/op/EstoqueLoja"));
 const ConciliacaoOp = lazy(() => import("./pages/op/Conciliacao"));
 const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
+const Conselho = lazy(() => import("./pages/Conselho"));
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,9 @@ const App = () => (
               <Route path="/op/conciliacao" element={<R path="/op/conciliacao"><ConciliacaoOp /></R>} />
               <Route path="/op/aprovacoes" element={<R path="/op/aprovacoes"><AprovacoesOp /></R>} />
               <Route path="/op/programadas" element={<R path="/op/programadas"><ProducoesProgamadas /></R>} />
+
+              {/* Conselho */}
+              <Route path="/conselho" element={<R path="/conselho"><Conselho /></R>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
