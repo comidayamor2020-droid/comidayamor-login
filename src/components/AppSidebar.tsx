@@ -37,7 +37,7 @@ const GROUPS: NavGroup[] = [
     label: "Cadastros",
     items: [
       { title: "Produtos", url: "/produtos", icon: ShoppingBag },
-      { title: "Usuários", url: "/usuarios", icon: Users },
+      { title: "Usuários", url: "/usuarios", icon: UsersIcon },
       { title: "Clientes B2B", url: "/clientes-b2b", icon: Building2 },
     ],
   },
