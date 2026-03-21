@@ -163,14 +163,17 @@ function computeCashFlow(
   const in7Days = new Date(today);
   in7Days.setDate(in7Days.getDate() + 7);
 
-  // Estimate cash: received amounts minus paid amounts
-  const totalRecebido = contasReceber
-    .filter((c) => c.status === "recebido" || c.status === "pago")
-    .reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
-
-  const totalPago = contasPagas.reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
-
-  const caixaDisponivel = totalRecebido - totalPago;
+  // Use manual cash balance if available, otherwise estimate from receivables - payables
+  let caixaDisponivel: number;
+  if (caixaManualValor !== null && caixaManualValor !== undefined) {
+    caixaDisponivel = caixaManualValor;
+  } else {
+    const totalRecebido = contasReceber
+      .filter((c) => c.status === "recebido" || c.status === "pago")
+      .reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
+    const totalPago = contasPagas.reduce((sum, c) => sum + (Number(c.valor) || 0), 0);
+    caixaDisponivel = totalRecebido - totalPago;
+  }
 
   // Unpaid bills
   const unpaid = contasPagar.filter(
