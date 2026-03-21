@@ -334,6 +334,7 @@ export type Database = {
         Row: {
           categoria: string | null
           centro_custo: string | null
+          classificacao_dre: string | null
           data_criacao: string | null
           data_pagamento: string | null
           data_vencimento: string | null
@@ -343,11 +344,13 @@ export type Database = {
           id: string
           observacoes: string | null
           status: string | null
+          subcategoria_dre: string | null
           valor: number | null
         }
         Insert: {
           categoria?: string | null
           centro_custo?: string | null
+          classificacao_dre?: string | null
           data_criacao?: string | null
           data_pagamento?: string | null
           data_vencimento?: string | null
@@ -357,11 +360,13 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string | null
+          subcategoria_dre?: string | null
           valor?: number | null
         }
         Update: {
           categoria?: string | null
           centro_custo?: string | null
+          classificacao_dre?: string | null
           data_criacao?: string | null
           data_pagamento?: string | null
           data_vencimento?: string | null
@@ -371,6 +376,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string | null
+          subcategoria_dre?: string | null
           valor?: number | null
         }
         Relationships: []
@@ -423,6 +429,7 @@ export type Database = {
       fluxo_caixa_entradas: {
         Row: {
           categoria: string
+          classificacao_dre: string | null
           created_at: string
           criado_por: string | null
           data: string
@@ -430,10 +437,12 @@ export type Database = {
           id: string
           observacao: string | null
           origem: string
+          subcategoria_dre: string | null
           valor: number
         }
         Insert: {
           categoria?: string
+          classificacao_dre?: string | null
           created_at?: string
           criado_por?: string | null
           data?: string
@@ -441,10 +450,12 @@ export type Database = {
           id?: string
           observacao?: string | null
           origem?: string
+          subcategoria_dre?: string | null
           valor?: number
         }
         Update: {
           categoria?: string
+          classificacao_dre?: string | null
           created_at?: string
           criado_por?: string | null
           data?: string
@@ -452,6 +463,7 @@ export type Database = {
           id?: string
           observacao?: string | null
           origem?: string
+          subcategoria_dre?: string | null
           valor?: number
         }
         Relationships: [
