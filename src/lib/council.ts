@@ -186,6 +186,18 @@ function assessSeverity(ctx: CouncilContextData): Severity {
 
   if (ctx.productionEfficiency < 50 && ctx.totalProducts > 0) { if (level === "normal") level = "alerta"; reasons.push(`Eficiência de estoque em ${ctx.productionEfficiency}%`); }
 
+  // DRE assessment
+  const dre = ctx.dre;
+  if (dre && dre.receitaTotal > 0) {
+    const margemBrutaPct = (dre.margemBruta / dre.receitaTotal) * 100;
+    const ebitdaPct = (dre.ebitda / dre.receitaTotal) * 100;
+    if (dre.lucroLiquido < 0) { level = "critico"; reasons.push(`Lucro líquido negativo: ${fmtBRL(dre.lucroLiquido)}`); }
+    else if (ebitdaPct < 5) { if (level === "normal") level = "alerta"; reasons.push(`EBITDA apertado: ${ebitdaPct.toFixed(1)}% da receita`); }
+    if (margemBrutaPct < 40) { if (level === "normal") level = "atencao"; reasons.push(`Margem bruta pressionada: ${margemBrutaPct.toFixed(1)}%`); }
+    const cpvPct = (dre.cpv.total / dre.receitaTotal) * 100;
+    if (cpvPct > 50) { if (level === "normal") level = "alerta"; reasons.push(`CPV alto: ${cpvPct.toFixed(1)}% da receita`); }
+  }
+
   if (reasons.length === 0) reasons.push("Operação dentro dos parâmetros normais");
   return { level, reasons };
 }
