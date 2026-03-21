@@ -20,6 +20,7 @@ const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Compras = lazy(() => import("./pages/Compras"));
 const ContasPagar = lazy(() => import("./pages/ContasPagar"));
 const Producao = lazy(() => import("./pages/Producao"));
+const FluxoCaixa = lazy(() => import("./pages/FluxoCaixa"));
 const PortalB2B = lazy(() => import("./pages/PortalB2B"));
 const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
 
