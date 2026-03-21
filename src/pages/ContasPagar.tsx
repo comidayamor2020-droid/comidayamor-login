@@ -482,6 +482,39 @@ export default function ContasPagar() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Caixa Dialog */}
+      <Dialog open={caixaDialogOpen} onOpenChange={setCaixaDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atualizar Caixa Disponível</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const val = parseFloat(caixaValor.replace(",", "."));
+            if (isNaN(val)) { toast.error("Valor inválido"); return; }
+            updateCaixa.mutate({ valor: val, observacao: caixaObs, userId: profile?.id }, {
+              onSuccess: () => { toast.success("Caixa atualizado!"); setCaixaDialogOpen(false); },
+              onError: (err: Error) => toast.error(err.message),
+            });
+          }} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Valor atual do caixa (R$) *</Label>
+              <Input type="number" step="0.01" value={caixaValor} onChange={(e) => setCaixaValor(e.target.value)} placeholder="0,00" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Observação</Label>
+              <Input value={caixaObs} onChange={(e) => setCaixaObs(e.target.value)} placeholder="Ex: conferência de caixa manhã" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCaixaDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={updateCaixa.isPending}>
+                {updateCaixa.isPending ? "Salvando…" : "Atualizar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
