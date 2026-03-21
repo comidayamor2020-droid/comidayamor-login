@@ -303,8 +303,9 @@ export function useCouncilContext(): CouncilContextData {
   const { data: contasPagas, isLoading: l8 } = useContasPagas();
   const { data: caixaManual, isLoading: l9 } = useCaixaDisponivel();
   const { data: fluxoEntradas, isLoading: l10 } = useFluxoEntradas();
+  const { data: dreData, isLoading: l11 } = useDreData();
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9 || l10;
+  const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9 || l10 || l11;
 
   if (loading) {
     return {
