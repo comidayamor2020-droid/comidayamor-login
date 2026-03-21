@@ -158,11 +158,29 @@ function useContasPagas() {
   });
 }
 
+function useFluxoEntradas() {
+  return useQuery({
+    queryKey: ["council-fluxo-entradas"],
+    queryFn: async () => {
+      const from30 = new Date();
+      from30.setDate(from30.getDate() - 30);
+      const { data, error } = await supabase
+        .from("fluxo_caixa_entradas")
+        .select("valor, data")
+        .gte("data", from30.toISOString().split("T")[0]);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
 function computeCashFlow(
   contasPagar: { descricao: string; valor: number | null; data_vencimento: string | null; status: string | null; categoria: string | null; fornecedor: string | null; forma_pagamento: string | null }[],
   contasReceber: { valor: number | null; status: string | null }[],
   contasPagas: { valor: number | null }[],
   caixaManualValor: number | null,
+  entradasFluxo: { valor: number | null }[],
 ): CashFlowAnalysis {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
