@@ -748,6 +748,13 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
     if (ctx.belowMinimum.length > 0) {
       lines.push(`\n**Risco de receita:** ${ctx.belowMinimum.length} produto(s) podem gerar ruptura.`);
     }
+
+    // DRE analysis
+    if (ctx.dre) {
+      const dreAnalysis = generateCFODreAnalysis(ctx.dre);
+      if (dreAnalysis) lines.push(dreAnalysis);
+    }
+
     lines.push(`\nEficiência geral: **${ctx.productionEfficiency}%**. ${ctx.productionEfficiency >= 80 ? "Bom nível." : ctx.productionEfficiency >= 50 ? "Há margem para melhoria." : "Nível preocupante."}`);
 
     speeches.push({
