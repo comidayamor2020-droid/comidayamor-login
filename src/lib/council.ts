@@ -90,6 +90,35 @@ export const RESPONSE_SECTIONS = [
 export type CouncilResponse = Record<string, string>;
 
 // ────────────────────────────────────────────────
+// CHAT MESSAGE TYPES
+// ────────────────────────────────────────────────
+
+export interface CouncilMessage {
+  id: string;
+  role: "user" | "council";
+  content: string;
+  /** Only present for council messages */
+  structured?: CouncilResponse;
+  /** Whether this is a full structured response */
+  isStructured: boolean;
+  timestamp: Date;
+  quickActions?: string[];
+}
+
+// ────────────────────────────────────────────────
+// QUICK ACTION DEFINITIONS
+// ────────────────────────────────────────────────
+
+export const QUICK_ACTIONS = [
+  "Aprofundar visão financeira",
+  "Aprofundar visão operacional",
+  "Mostrar riscos",
+  "Sugerir plano prático",
+  "Resumir decisão",
+  "Mostrar dados faltantes",
+] as const;
+
+// ────────────────────────────────────────────────
 // CONFIDENCE LEVELS
 // ────────────────────────────────────────────────
 
@@ -557,4 +586,165 @@ export function generateV1Response(
     "\nFatores NÃO disponíveis: vendas, receita, custos, margens e dados financeiros do DRE.";
 
   return resp;
+}
+
+// ────────────────────────────────────────────────
+// DETECT IF USER WANTS STRUCTURED RESPONSE
+// ────────────────────────────────────────────────
+
+const STRUCTURED_TRIGGERS = [
+  "análise completa",
+  "analise completa",
+  "relatório",
+  "relatorio",
+  "análise estruturada",
+  "analise estruturada",
+  "visão de cada membro",
+  "visão de cada conselheiro",
+  "análise formal",
+  "analise formal",
+  "análise detalhada",
+  "analise detalhada",
+  "análise executiva",
+  "analise executiva",
+];
+
+function wantsStructured(question: string): boolean {
+  const q = question.toLowerCase();
+  return STRUCTURED_TRIGGERS.some((t) => q.includes(t));
+}
+
+// ────────────────────────────────────────────────
+// CONVERSATIONAL RESPONSE GENERATOR
+// ────────────────────────────────────────────────
+
+export function generateConversationalResponse(
+  ctx: CouncilContextData,
+  question: string,
+  history: CouncilMessage[],
+): CouncilMessage {
+  const q = question.toLowerCase();
+  const severity = assessSeverity(ctx);
+
+  // If user explicitly asks for full analysis, return structured
+  if (wantsStructured(question)) {
+    const structured = generateV1Response(ctx, question);
+    return {
+      id: crypto.randomUUID(),
+      role: "council",
+      content: "",
+      structured,
+      isStructured: true,
+      timestamp: new Date(),
+      quickActions: ["Aprofundar visão financeira", "Mostrar riscos", "Sugerir plano prático"],
+    };
+  }
+
+  const lines: string[] = [];
+  let actions: string[] = [];
+
+  // ── FINANCIAL DEEP-DIVE ──
+  if (q.includes("financ") || q.includes("margem") || q.includes("custo") || q.includes("cfo") || q.includes("dinheiro") || q.includes("receita")) {
+    lines.push("📊 **Visão Financeira (Claude — CFO IA)**\n");
+    if (ctx.todayLosses > 0) {
+      lines.push(`Hoje temos ${ctx.todayLosses} unidades perdidas (${ctx.lossRate}% da produção).`);
+      if (ctx.lossRate > 5) lines.push(`⚠️ Taxa acima do aceitável (5%). Cada ponto percentual reduzido impacta diretamente na margem.`);
+    }
+    if (ctx.overProduced.length > 0) lines.push(`\n${ctx.overProduced.length} produto(s) com estoque acima do ideal — capital parado.`);
+    if (ctx.belowMinimum.length > 0) lines.push(`\n🔴 ${ctx.belowMinimum.length} produto(s) em risco de ruptura — perda de venda.`);
+    if (ctx.todayLosses === 0 && ctx.overProduced.length === 0 && ctx.belowMinimum.length === 0) {
+      lines.push("✅ Sem alertas financeiros. Operação saudável.");
+    }
+    lines.push(`\nEficiência geral: **${ctx.productionEfficiency}%**`);
+    actions = ["Mostrar riscos", "Aprofundar visão operacional", "Sugerir plano prático"];
+
+  // ── OPERATIONAL DEEP-DIVE ──
+  } else if (q.includes("operac") || q.includes("produç") || q.includes("produc") || q.includes("estoque") || q.includes("lote") || q.includes("dia")) {
+    lines.push("🔧 **Visão Operacional**\n");
+    lines.push(`Hoje: **${ctx.todayProduced}** produzidos, **${ctx.todayLosses}** perdas, **${ctx.todayTastings}** degustações.`);
+    if (ctx.belowMinimum.length > 0) {
+      lines.push(`\n🔴 **${ctx.belowMinimum.length} abaixo do mínimo:**`);
+      ctx.belowMinimum.slice(0, 5).forEach((p) => lines.push(`  • ${p.name}: ${p.current} un (mín: ${p.minimum}, ideal: ${p.ideal})`));
+    }
+    if (ctx.underProduced.length > 0) lines.push(`\n📉 ${ctx.underProduced.length} abaixo do ideal.`);
+    if (ctx.divergences.length > 0) lines.push(`\n⚠️ ${ctx.divergences.length} divergência(s) de contagem.`);
+    if (ctx.pendingApprovals > 0) lines.push(`\n🔔 ${ctx.pendingApprovals} aprovação(ões) pendente(s).`);
+    actions = ["Aprofundar visão financeira", "Mostrar riscos", "Mostrar dados faltantes"];
+
+  // ── RISKS ──
+  } else if (q.includes("risco") || q.includes("perigo") || q.includes("alerta") || q.includes("cuidado")) {
+    lines.push("⚡ **Análise de Riscos (Grok — CIO Contrarian IA)**\n");
+    if (severity.level === "critico") lines.push("🔴 **STATUS CRÍTICO** — Ação imediata necessária.\n");
+    else if (severity.level === "alerta") lines.push("🟡 **Alertas identificados.**\n");
+    severity.reasons.forEach((r) => lines.push(`→ ${r}`));
+    if (ctx.divergences.filter((d) => Math.abs(d.diff) >= 3).length > 0) {
+      lines.push(`\n⚠️ Divergências grandes podem indicar problema de processo.`);
+    }
+    if (ctx.lossRate > 0) lines.push(`\nTaxa de perda: **${ctx.lossRate}%** — ${ctx.lossRate <= 2 ? "saudável" : ctx.lossRate <= 5 ? "aceitável" : "preocupante"}.`);
+    actions = ["Sugerir plano prático", "Aprofundar visão financeira", "Resumir decisão"];
+
+  // ── PRACTICAL PLAN ──
+  } else if (q.includes("plano") || q.includes("prático") || q.includes("pratico") || q.includes("ação") || q.includes("acao") || q.includes("fazer") || q.includes("próximo") || q.includes("proximo")) {
+    lines.push("💡 **Plano Prático (Manus — CTO Executor IA)**\n");
+    const steps: string[] = [];
+    if (ctx.belowMinimum.length > 0) steps.push(`Produzir os ${ctx.belowMinimum.length} produto(s) abaixo do mínimo`);
+    if (ctx.pendingApprovals > 0) steps.push(`Aprovar as ${ctx.pendingApprovals} solicitação(ões) pendente(s)`);
+    if (ctx.divergences.length > 0) steps.push(`Investigar ${ctx.divergences.length} divergência(s)`);
+    if (ctx.lossRate > 5) steps.push(`Auditar processo produtivo (perda em ${ctx.lossRate}%)`);
+    if (ctx.underProduced.length > 3) steps.push(`Alinhar produção para ${ctx.underProduced.length} itens abaixo do ideal`);
+    if (steps.length === 0) steps.push("Manter monitoramento e focar em otimizações");
+    steps.forEach((s, i) => lines.push(`**${i + 1}.** ${s}`));
+    actions = ["Mostrar riscos", "Aprofundar visão financeira", "Mostrar dados faltantes"];
+
+  // ── DECISION SUMMARY ──
+  } else if (q.includes("resum") || q.includes("decisão") || q.includes("decisao") || q.includes("conclu")) {
+    lines.push("🧠 **Resumo Executivo (ChatGPT — CEO Auxiliar IA)**\n");
+    const emoji = severity.level === "critico" ? "🔴" : severity.level === "alerta" ? "🟡" : severity.level === "atencao" ? "🟠" : "🟢";
+    lines.push(`${emoji} **Status:** ${severity.level.toUpperCase()}\n`);
+    severity.reasons.forEach((r) => lines.push(`  → ${r}`));
+    lines.push(`\n**Números:** ${ctx.todayProduced} produzidos, ${ctx.todayLosses} perdas, eficiência ${ctx.productionEfficiency}%`);
+    if (ctx.belowMinimum.length > 0) lines.push(`\n⚡ **Prioridade:** regularizar ${ctx.belowMinimum.length} produto(s) abaixo do mínimo.`);
+    actions = ["Sugerir plano prático", "Mostrar riscos", "Aprofundar visão operacional"];
+
+  // ── MISSING DATA ──
+  } else if (q.includes("falta") || q.includes("dado") || q.includes("informaç") || q.includes("informac") || q.includes("completo")) {
+    lines.push("❓ **Dados Faltantes**\n");
+    lines.push(`Completude atual: **${ctx.dataCompleteness}**\n`);
+    const missing: string[] = [];
+    if (ctx.dataCompleteness !== "alta") missing.push("Configuração completa de estoque mínimo e ideal");
+    missing.push("Dados de vendas por produto", "Custo unitário dos produtos", "Histórico de produção e perdas");
+    if (ctx.divergences.length > 0) missing.push("Histórico de divergências");
+    missing.forEach((m) => lines.push(`• ${m}`));
+    actions = ["Aprofundar visão operacional", "Resumir decisão"];
+
+  // ── GENERIC ──
+  } else {
+    const emoji = severity.level === "critico" ? "🔴" : severity.level === "alerta" ? "🟡" : severity.level === "atencao" ? "🟠" : "🟢";
+    lines.push(`${emoji} **${severity.level === "normal" ? "Operação estável" : "Atenção necessária"}**\n`);
+    lines.push(`Hoje: **${ctx.todayProduced}** produzidos | **${ctx.todayLosses}** perdas (${ctx.lossRate}%) | **${ctx.todayTastings}** degustações | Eficiência: **${ctx.productionEfficiency}%**\n`);
+    if (ctx.belowMinimum.length > 0) {
+      lines.push(`🔴 **${ctx.belowMinimum.length} produto(s) abaixo do mínimo:**`);
+      ctx.belowMinimum.slice(0, 3).forEach((p) => lines.push(`  • ${p.name}: ${p.current} un (mín: ${p.minimum})`));
+      if (ctx.belowMinimum.length > 3) lines.push(`  ...e mais ${ctx.belowMinimum.length - 3}.`);
+      lines.push("");
+    }
+    if (ctx.divergences.length > 0) lines.push(`⚠️ ${ctx.divergences.length} divergência(s) de contagem.`);
+    if (ctx.pendingApprovals > 0) lines.push(`🔔 ${ctx.pendingApprovals} aprovação(ões) pendente(s).`);
+    if (ctx.overProduced.length > 0) lines.push(`📈 ${ctx.overProduced.length} produto(s) acima do ideal.`);
+    if (severity.level !== "normal") {
+      lines.push("\n💡 **Sugestão:** " + (ctx.belowMinimum.length > 0 ? "Priorizar produção dos itens críticos." : ctx.pendingApprovals > 0 ? "Processar aprovações pendentes." : "Investigar divergências."));
+    } else {
+      lines.push("\n✅ Operação dentro dos parâmetros. Continue monitorando.");
+    }
+    actions = ["Aprofundar visão financeira", "Aprofundar visão operacional", "Mostrar riscos", "Sugerir plano prático"];
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    role: "council",
+    content: lines.join("\n"),
+    isStructured: false,
+    timestamp: new Date(),
+    quickActions: actions,
+  };
 }
