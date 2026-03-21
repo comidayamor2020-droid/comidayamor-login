@@ -420,6 +420,50 @@ export type Database = {
         }
         Relationships: []
       }
+      fluxo_caixa_entradas: {
+        Row: {
+          categoria: string
+          created_at: string
+          criado_por: string | null
+          data: string
+          descricao: string
+          id: string
+          observacao: string | null
+          origem: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          descricao: string
+          id?: string
+          observacao?: string | null
+          origem?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          observacao?: string | null
+          origem?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fluxo_caixa_entradas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedores: {
         Row: {
           categoria_fornecimento: string | null
