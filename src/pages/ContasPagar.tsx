@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { CLASSIFICACOES_SAIDA, SUBCATEGORIAS } from "@/lib/dre-constants";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
