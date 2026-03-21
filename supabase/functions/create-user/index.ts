@@ -39,13 +39,13 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile } = await anonClient
       .from("users")
-      .select("role")
+      .select("role, is_active")
       .eq("auth_user_id", caller.id)
       .single();
 
-    if (callerProfile?.role !== "admin") {
+    if (callerProfile?.role !== "admin" || !callerProfile?.is_active) {
       return new Response(
-        JSON.stringify({ error: "Apenas administradores podem criar usuários" }),
+        JSON.stringify({ error: "Apenas administradores ativos podem criar usuários" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
