@@ -808,6 +808,15 @@ function generateFullDebate(ctx: CouncilContextData, question: string): CouncilM
       hasContention = true;
     }
 
+    // DRE confrontation
+    if (ctx.dre) {
+      const dreConfront = generateGrokDreConfrontation(ctx.dre);
+      if (dreConfront) {
+        lines.push(`\n${dreConfront}`);
+        hasContention = true;
+      }
+    }
+
     if (ctx.divergences.length > 0) {
       const big = ctx.divergences.filter((d) => Math.abs(d.diff) >= 3);
       lines.push(`\n**${ctx.divergences.length} divergência(s) de contagem.** ${big.length > 0 ? `${big.length} com diferença ≥ 3 un — pode ser problema de processo.` : "Pequenas, mas a recorrência importa."}`);
