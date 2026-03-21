@@ -81,6 +81,8 @@ interface FormState {
   data_pagamento: string;
   valor_pago: string;
   obs_pagamento: string;
+  classificacao_dre: string;
+  subcategoria_dre: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -88,8 +90,8 @@ const EMPTY_FORM: FormState = {
   forma_pagamento: "", categoria: "", fornecedor: "", observacoes: "",
   centro_custo: "", parcelado: false, qtd_parcelas: "2", chave_pix: "",
   numero_boleto: "", data_pagamento: "", valor_pago: "", obs_pagamento: "",
+  classificacao_dre: "", subcategoria_dre: "",
 };
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
