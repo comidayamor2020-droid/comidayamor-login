@@ -145,6 +145,8 @@ export default function ContasPagar() {
         centro_custo: form.centro_custo || null,
         data_pagamento: form.status === "Pago" && form.data_pagamento ? form.data_pagamento : null,
         observacoes: buildObs(),
+        classificacao_dre: form.classificacao_dre,
+        subcategoria_dre: form.subcategoria_dre,
       };
 
       if (editingId) {
