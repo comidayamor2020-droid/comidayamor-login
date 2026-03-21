@@ -62,6 +62,14 @@ export interface ContaPagar {
   forma_pagamento: string | null;
 }
 
+export interface FluxoResumo {
+  entradasPeriodo: number;
+  saidasPeriodo: number;
+  saldoFinal: number;
+  mediaDiariaSaidas: number;
+  projecao7d: number;
+}
+
 export interface CashFlowAnalysis {
   /** Estimated available cash (received - paid) */
   caixaDisponivel: number;
