@@ -573,6 +573,12 @@ function generateMemberFollowUp(ctx: CouncilContextData, memberId: string, quest
       // Cash analysis first (priority)
       lines.push(cfoAnalysis.content);
 
+      // DRE analysis
+      if (ctx.dre) {
+        const dreAnalysis = generateCFODreAnalysis(ctx.dre);
+        if (dreAnalysis) lines.push(dreAnalysis);
+      }
+
       // Then operational financial impacts
       if (ctx.todayLosses > 0) {
         lines.push(`\n**Perdas operacionais:** ${ctx.todayLosses} un (${ctx.lossRate}%). ${ctx.lossRate > 5 ? "⚠️ Acima do aceitável — corrói margem diretamente." : "Dentro do tolerável."}`);
