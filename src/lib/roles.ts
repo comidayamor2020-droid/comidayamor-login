@@ -4,10 +4,12 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
   admin: [
     "/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
+    "/conselho",
   ],
   gestao: [
     "/", "/dre", "/produtos", "/clientes-b2b", "/usuarios", "/compras", "/producao", "/b2b", "/b2b/pedidos",
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
+    "/conselho",
   ],
   gerente_operacional: [
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",

@@ -59,6 +59,12 @@ const GROUPS: NavGroup[] = [
       { title: "Programadas", url: "/op/programadas", icon: Calendar },
     ],
   },
+  {
+    label: "Estratégico",
+    items: [
+      { title: "Conselho", url: "/conselho", icon: Users },
+    ],
+  },
 ];
 
 interface AppSidebarProps {
