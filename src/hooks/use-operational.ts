@@ -411,3 +411,93 @@ export function useProduceScheduledItem() {
     },
   });
 }
+
+/* ──────── stock adjustments ──────── */
+
+export const MOTIVOS_AJUSTE = [
+  { value: "ajuste_inicial_implantacao", label: "Ajuste inicial de implantação" },
+  { value: "correcao_apos_testes", label: "Correção após testes" },
+  { value: "contagem_incorreta_anterior", label: "Contagem incorreta anterior" },
+  { value: "perda_nao_registrada", label: "Perda não registrada" },
+  { value: "sobra_nao_registrada", label: "Sobra não registrada" },
+  { value: "outro", label: "Outro" },
+] as const;
+
+export function useAdjustStock() {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      produto_id: string;
+      tipo_ajuste: "positivo" | "negativo" | "zerar";
+      quantidade: number;
+      motivo: string;
+      observacao?: string;
+    }) => {
+      const { data: existing } = await supabase
+        .from("op_estoque_produtos")
+        .select("estoque_atual")
+        .eq("produto_id", input.produto_id)
+        .maybeSingle();
+      const anterior = existing?.estoque_atual ?? 0;
+      let final_qty: number;
+      if (input.tipo_ajuste === "zerar") final_qty = 0;
+      else if (input.tipo_ajuste === "positivo") final_qty = anterior + input.quantidade;
+      else final_qty = Math.max(0, anterior - input.quantidade);
+
+      const { error: e1 } = await supabase.from("op_ajustes_estoque" as any).insert({
+        produto_id: input.produto_id,
+        tipo_ajuste: input.tipo_ajuste,
+        quantidade_anterior: anterior,
+        quantidade_ajustada: input.quantidade,
+        quantidade_final: final_qty,
+        motivo: input.motivo,
+        observacao: input.observacao ?? null,
+        ajustado_por: profile?.id ?? null,
+      });
+      if (e1) throw e1;
+
+      await supabase
+        .from("op_estoque_produtos")
+        .upsert(
+          { produto_id: input.produto_id, estoque_atual: final_qty, updated_at: new Date().toISOString() },
+          { onConflict: "produto_id" },
+        );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-products"] });
+    },
+  });
+}
+
+export function useResetAllStock() {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async () => {
+      const { data: estoques } = await supabase
+        .from("op_estoque_produtos")
+        .select("produto_id, estoque_atual");
+      const items = (estoques ?? []).filter((e) => e.estoque_atual > 0);
+      for (const item of items) {
+        await supabase.from("op_ajustes_estoque" as any).insert({
+          produto_id: item.produto_id,
+          tipo_ajuste: "zerar",
+          quantidade_anterior: item.estoque_atual,
+          quantidade_ajustada: item.estoque_atual,
+          quantidade_final: 0,
+          motivo: "reset_inicial_implantacao",
+          ajustado_por: profile?.id ?? null,
+        });
+        await supabase
+          .from("op_estoque_produtos")
+          .update({ estoque_atual: 0, updated_at: new Date().toISOString() })
+          .eq("produto_id", item.produto_id);
+      }
+      return items.length;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-products"] });
+    },
+  });
+}
