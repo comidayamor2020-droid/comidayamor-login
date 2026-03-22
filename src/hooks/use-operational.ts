@@ -502,3 +502,95 @@ export function useResetAllStock() {
     },
   });
 }
+
+/* ──────── master delete hooks ──────── */
+
+export function useDeleteScheduledProduction() {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async (input: { id: string; nome: string }) => {
+      // Delete items first
+      const { error: e1 } = await supabase
+        .from("op_producoes_programadas_itens")
+        .delete()
+        .eq("programacao_id", input.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase
+        .from("op_producoes_programadas")
+        .delete()
+        .eq("id", input.id);
+      if (e2) throw e2;
+      await logAudit({
+        user_id: profile?.id,
+        user_name: profile?.name,
+        action_type: "delete",
+        entity_type: "scheduled_production",
+        entity_id: input.id,
+        details: { nome: input.nome },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-scheduled"] });
+    },
+  });
+}
+
+export function useDeleteScheduledItem() {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async (input: { id: string; programacao_id: string; produto_nome?: string }) => {
+      const { error } = await supabase
+        .from("op_producoes_programadas_itens")
+        .delete()
+        .eq("id", input.id);
+      if (error) throw error;
+      await logAudit({
+        user_id: profile?.id,
+        user_name: profile?.name,
+        action_type: "delete",
+        entity_type: "scheduled_item",
+        entity_id: input.id,
+        details: { programacao_id: input.programacao_id, produto: input.produto_nome },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-scheduled"] });
+    },
+  });
+}
+
+export function useUpdateScheduledProduction() {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      nome_programacao?: string;
+      tipo?: string;
+      prazo_conclusao?: string;
+      prioridade?: string;
+      status?: string;
+      observacao?: string;
+    }) => {
+      const { id, ...updates } = input;
+      const { error } = await supabase
+        .from("op_producoes_programadas")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+      await logAudit({
+        user_id: profile?.id,
+        user_name: profile?.name,
+        action_type: "update",
+        entity_type: "scheduled_production",
+        entity_id: id,
+        details: updates,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-scheduled"] });
+    },
+  });
+}
