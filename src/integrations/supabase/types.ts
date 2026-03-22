@@ -650,6 +650,53 @@ export type Database = {
         }
         Relationships: []
       }
+      op_ajustes_estoque: {
+        Row: {
+          ajustado_por: string | null
+          created_at: string
+          id: string
+          motivo: string
+          observacao: string | null
+          produto_id: string
+          quantidade_ajustada: number
+          quantidade_anterior: number
+          quantidade_final: number
+          tipo_ajuste: string
+        }
+        Insert: {
+          ajustado_por?: string | null
+          created_at?: string
+          id?: string
+          motivo: string
+          observacao?: string | null
+          produto_id: string
+          quantidade_ajustada?: number
+          quantidade_anterior?: number
+          quantidade_final?: number
+          tipo_ajuste: string
+        }
+        Update: {
+          ajustado_por?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string
+          observacao?: string | null
+          produto_id?: string
+          quantidade_ajustada?: number
+          quantidade_anterior?: number
+          quantidade_final?: number
+          tipo_ajuste?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "op_ajustes_estoque_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       op_config_produtos: {
         Row: {
           ativo: boolean
