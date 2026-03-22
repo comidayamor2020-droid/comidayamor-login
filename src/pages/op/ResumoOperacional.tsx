@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   useOpProducts,
   useTodayLotes,
@@ -7,14 +9,25 @@ import {
   useTodayCounts,
   useScheduledProductions,
 } from "@/hooks/use-operational";
-import { AlertTriangle, ArrowDown, Package, TrendingUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { AjusteEstoqueDialog } from "@/components/op/AjusteEstoqueDialog";
+import { ResetEstoqueDialog } from "@/components/op/ResetEstoqueDialog";
+import { AlertTriangle, ArrowDown, Package, TrendingUp, Settings2, RotateCcw } from "lucide-react";
+
+const ROLES_AJUSTE = ["admin", "gestao"];
 
 export default function ResumoOperacional() {
+  const { profile } = useAuth();
   const { data: products, isLoading: l1 } = useOpProducts();
   const { data: lotes, isLoading: l2 } = useTodayLotes();
   const { data: occurrences, isLoading: l3 } = useOccurrences();
   const { data: counts, isLoading: l4 } = useTodayCounts();
   const { data: scheduled, isLoading: l5 } = useScheduledProductions();
+
+  const [ajusteOpen, setAjusteOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+
+  const canAdjust = ROLES_AJUSTE.includes(profile?.role ?? "");
 
   if (l1 || l2 || l3 || l4 || l5) {
     return (
@@ -59,7 +72,21 @@ export default function ResumoOperacional() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold text-foreground">Resumo Operacional</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-foreground">Resumo Operacional</h1>
+          {canAdjust && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAjusteOpen(true)}>
+                <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                Ajustar Estoque
+              </Button>
+              <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setResetOpen(true)}>
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                Zerar Tudo
+              </Button>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <SummaryCard title="Produzido" value={totalProduzido} icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} />
@@ -114,6 +141,9 @@ export default function ResumoOperacional() {
           </Card>
         )}
       </div>
+
+      <AjusteEstoqueDialog open={ajusteOpen} onOpenChange={setAjusteOpen} />
+      <ResetEstoqueDialog open={resetOpen} onOpenChange={setResetOpen} />
     </DashboardLayout>
   );
 }
