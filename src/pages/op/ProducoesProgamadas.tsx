@@ -30,7 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelado: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
 };
 
-const MASTER_ROLES = ["admin", "gestao"];
+const MASTER_ROLES = ["admin", "gestao", "gerente_operacional"];
 
 export default function ProducoesProgamadas() {
   const { profile } = useAuth();
