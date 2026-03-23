@@ -156,16 +156,11 @@ export default function ProducaoDia() {
       toast.error(`Quantidade não pode ultrapassar o total (${editItem.quantidade_total})`);
       return;
     }
-    let status = editStatus;
-    if (produzida >= editItem.quantidade_total) status = "concluido";
-    else if (produzida > 0) status = "em_producao";
-    else status = "planejado";
     try {
       await updateItem.mutateAsync({
         id: editItem.id,
         quantidade_produzida: produzida,
         quantidade_total: editItem.quantidade_total,
-        status,
         programacao_id: editItem.programacao_id,
       });
       toast.success("Item atualizado!");
