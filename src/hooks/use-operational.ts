@@ -341,13 +341,19 @@ export function useUpdateScheduledItem() {
       id: string;
       quantidade_produzida: number;
       quantidade_total: number;
-      status?: string;
       programacao_id: string;
     }) => {
-      const status = input.status ?? resolveItemStatus(input.quantidade_produzida, input.quantidade_total);
+      // Clamp produced to total
+      const produzida = Math.min(input.quantidade_produzida, input.quantidade_total);
+      const status = resolveItemStatus(produzida, input.quantidade_total);
+
       const { error } = await supabase
         .from("op_producoes_programadas_itens")
-        .update({ quantidade_produzida: input.quantidade_produzida, status })
+        .update({
+          quantidade_produzida: produzida,
+          status,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", input.id);
       if (error) {
         console.error("Erro ao atualizar item:", error);
@@ -365,18 +371,11 @@ export function useUpdateScheduledItem() {
       }
       const items = allItems ?? [];
       const allDone = items.length > 0 && items.every((i) => i.status === "concluido");
-      const hasInProgress = items.some((i) => i.status === "em_producao");
-      let progStatus: string;
-      if (allDone) {
-        progStatus = "concluido";
-      } else if (hasInProgress || items.some((i) => i.status === "concluido")) {
-        progStatus = "em_producao";
-      } else {
-        progStatus = "planejado";
-      }
+      const progStatus = allDone ? "concluido" : "em_producao";
+
       const { error: progErr } = await supabase
         .from("op_producoes_programadas")
-        .update({ status: progStatus })
+        .update({ status: progStatus, updated_at: new Date().toISOString() })
         .eq("id", input.programacao_id);
       if (progErr) console.error("Erro ao atualizar status da programação:", progErr);
     },
