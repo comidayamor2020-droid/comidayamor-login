@@ -498,21 +498,22 @@ export default function ProducaoDia() {
                     {Math.max(0, editItem.quantidade_total - (Number(editQty) || 0))}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Status (automático)</p>
-                  {(() => {
-                    const q = Number(editQty) || 0;
-                    const t = editItem.quantidade_total;
-                    const autoStatus = q >= t ? "concluido" : q > 0 ? "em_producao" : "planejado";
-                    const label = autoStatus === "concluido" ? "Concluído" : autoStatus === "em_producao" ? "Em Produção" : "Planejado";
-                    const badgeClass = autoStatus === "concluido"
-                      ? "bg-emerald-600 text-white border-emerald-600"
-                      : autoStatus === "em_producao"
-                      ? "bg-primary text-primary-foreground"
-                      : "";
-                    return <Badge variant={autoStatus === "planejado" ? "secondary" : "default"} className={`text-xs ${badgeClass}`}>{label}</Badge>;
-                  })()}
-                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Status (automático)</p>
+                {(() => {
+                  const q = Number(editQty) || 0;
+                  const t = editItem.quantidade_total;
+                  const autoStatus = q >= t ? "concluido" : q > 0 ? "em_producao" : "planejado";
+                  const label = autoStatus === "concluido" ? "Concluído" : autoStatus === "em_producao" ? "Em Produção" : "Planejado";
+                  const badgeClass = autoStatus === "concluido"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : autoStatus === "em_producao"
+                    ? "bg-primary text-primary-foreground"
+                    : "";
+                  return <Badge variant={autoStatus === "planejado" ? "secondary" : "default"} className={`text-xs ${badgeClass}`}>{label}</Badge>;
+                })()}
+              </div>
             </div>
           )}
           <DialogFooter>
