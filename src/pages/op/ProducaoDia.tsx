@@ -138,10 +138,15 @@ export default function ProducaoDia() {
   };
 
   // ── Pedidos Programados ──
-  const openEdit = (item: EditingItem) => {
-    setEditItem(item);
+  const openEdit = (item: any) => {
+    setEditItem({
+      id: item.id,
+      produto_id: item.produto_id,
+      quantidade_total: item.quantidade_total,
+      quantidade_produzida: item.quantidade_produzida,
+      programacao_id: item.programacao_id,
+    });
     setEditQty(String(item.quantidade_produzida));
-    setEditStatus(item.status);
   };
 
   const handleSaveEdit = async () => {
