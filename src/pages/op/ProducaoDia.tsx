@@ -14,13 +14,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   useOpProducts,
   useTodayLotes,
   useTodayCounts,
@@ -37,7 +30,6 @@ type EditingItem = {
   produto_id: string;
   quantidade_total: number;
   quantidade_produzida: number;
-  status: string;
   programacao_id: string;
 };
 
@@ -55,7 +47,6 @@ export default function ProducaoDia() {
 
   const [editItem, setEditItem] = useState<EditingItem | null>(null);
   const [editQty, setEditQty] = useState("");
-  const [editStatus, setEditStatus] = useState("");
 
   const idealField = getIdealField();
 
@@ -139,10 +130,15 @@ export default function ProducaoDia() {
   };
 
   // ── Pedidos Programados ──
-  const openEdit = (item: EditingItem) => {
-    setEditItem(item);
+  const openEdit = (item: any) => {
+    setEditItem({
+      id: item.id,
+      produto_id: item.produto_id,
+      quantidade_total: item.quantidade_total,
+      quantidade_produzida: item.quantidade_produzida,
+      programacao_id: item.programacao_id,
+    });
     setEditQty(String(item.quantidade_produzida));
-    setEditStatus(item.status);
   };
 
   const handleSaveEdit = async () => {
@@ -156,16 +152,11 @@ export default function ProducaoDia() {
       toast.error(`Quantidade não pode ultrapassar o total (${editItem.quantidade_total})`);
       return;
     }
-    let status = editStatus;
-    if (produzida >= editItem.quantidade_total) status = "concluido";
-    else if (produzida > 0) status = "em_producao";
-    else status = "planejado";
     try {
       await updateItem.mutateAsync({
         id: editItem.id,
         quantidade_produzida: produzida,
         quantidade_total: editItem.quantidade_total,
-        status,
         programacao_id: editItem.programacao_id,
       });
       toast.success("Item atualizado!");
@@ -502,16 +493,19 @@ export default function ProducaoDia() {
                 </div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Status</p>
-                <Select value={editStatus} onValueChange={setEditStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="planejado">Planejado</SelectItem>
-                    <SelectItem value="em_producao">Em Produção</SelectItem>
-                    <SelectItem value="concluido">Concluído</SelectItem>
-                    <SelectItem value="cancelado">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-xs text-muted-foreground mb-1">Status (automático)</p>
+                {(() => {
+                  const q = Number(editQty) || 0;
+                  const t = editItem.quantidade_total;
+                  const autoStatus = q >= t ? "concluido" : q > 0 ? "em_producao" : "planejado";
+                  const label = autoStatus === "concluido" ? "Concluído" : autoStatus === "em_producao" ? "Em Produção" : "Planejado";
+                  const badgeClass = autoStatus === "concluido"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : autoStatus === "em_producao"
+                    ? "bg-primary text-primary-foreground"
+                    : "";
+                  return <Badge variant={autoStatus === "planejado" ? "secondary" : "default"} className={`text-xs ${badgeClass}`}>{label}</Badge>;
+                })()}
               </div>
             </div>
           )}
