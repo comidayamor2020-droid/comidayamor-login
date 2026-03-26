@@ -170,6 +170,11 @@ export default function ProducoesProgamadas() {
                     </div>
                   </div>
                 </CardHeader>
+                {s.observacao && (
+                  <div className="mx-4 mb-2 text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 whitespace-pre-wrap">
+                    <span className="font-medium text-foreground">Observação:</span> {s.observacao}
+                  </div>
+                )}
                 <CardContent className="space-y-2 p-4 pt-0">
                   {s.itens.map((item) => (
                     <div key={item.id} className="flex items-center justify-between rounded bg-muted/50 p-2 text-sm">
