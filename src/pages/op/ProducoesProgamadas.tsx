@@ -66,6 +66,9 @@ export default function ProducoesProgamadas() {
 
   const productMap = new Map((products ?? []).map((p) => [p.id, p.nome]));
 
+  const openOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status !== "concluido"), [scheduled]);
+  const completedOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status === "concluido"), [scheduled]);
+
   const handleCreate = async () => {
     if (!form.nome_programacao) { toast.error("Nome da programação é obrigatório"); return; }
     if (!form.prazo_conclusao) { toast.error("Prazo de conclusão é obrigatório"); return; }
