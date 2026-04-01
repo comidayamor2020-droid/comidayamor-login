@@ -59,15 +59,13 @@ export default function ProducoesProgamadas() {
 
   // Delete confirmations
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "production" | "item"; id: string; nome: string; programacao_id?: string } | null>(null);
+  const productMap = useMemo(() => new Map((products ?? []).map((p) => [p.id, p.nome])), [products]);
+  const openOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status !== "concluido"), [scheduled]);
+  const completedOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status === "concluido"), [scheduled]);
 
   if (isLoading) {
     return <DashboardLayout><div className="flex justify-center p-12"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" /></div></DashboardLayout>;
   }
-
-  const productMap = new Map((products ?? []).map((p) => [p.id, p.nome]));
-
-  const openOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status !== "concluido"), [scheduled]);
-  const completedOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status === "concluido"), [scheduled]);
 
   const handleCreate = async () => {
     if (!form.nome_programacao) { toast.error("Nome da programação é obrigatório"); return; }
