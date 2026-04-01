@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,12 +59,13 @@ export default function ProducoesProgamadas() {
 
   // Delete confirmations
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "production" | "item"; id: string; nome: string; programacao_id?: string } | null>(null);
+  const productMap = useMemo(() => new Map((products ?? []).map((p) => [p.id, p.nome])), [products]);
+  const openOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status !== "concluido"), [scheduled]);
+  const completedOrders = useMemo(() => (scheduled ?? []).filter((s) => s.status === "concluido"), [scheduled]);
 
   if (isLoading) {
     return <DashboardLayout><div className="flex justify-center p-12"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" /></div></DashboardLayout>;
   }
-
-  const productMap = new Map((products ?? []).map((p) => [p.id, p.nome]));
 
   const handleCreate = async () => {
     if (!form.nome_programacao) { toast.error("Nome da programação é obrigatório"); return; }
@@ -131,6 +133,67 @@ export default function ProducoesProgamadas() {
     } catch { toast.error("Erro ao excluir"); }
   };
 
+  const renderCard = (s: any) => (
+    <Card key={s.id}>
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-sm">{s.nome_programacao}</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Prazo: {s.prazo_conclusao} | {s.tipo} | {s.prioridade}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Badge className={STATUS_COLORS[s.status] ?? ""}>{s.status}</Badge>
+            {isMaster && (
+              <>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(s)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ type: "production", id: s.id, nome: s.nome_programacao })}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      {s.observacao && (
+        <div className="mx-4 mb-2 text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 whitespace-pre-wrap">
+          <span className="font-medium text-foreground">Observação:</span> {s.observacao}
+        </div>
+      )}
+      <CardContent className="space-y-2 p-4 pt-0">
+        {s.itens.map((item: any) => (
+          <div key={item.id} className="flex items-center justify-between rounded bg-muted/50 p-2 text-sm">
+            <div className="flex-1">
+              <p className="font-medium">{productMap.get(item.produto_id) ?? "—"}</p>
+              <p className="text-xs text-muted-foreground">
+                {item.quantidade_produzida}/{item.quantidade_total} ({item.quantidade_pendente} pend.)
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="number" className="w-20"
+                defaultValue={item.quantidade_produzida}
+                onBlur={(e) => {
+                  const v = Number(e.target.value);
+                  if (v !== item.quantidade_produzida) handleUpdateProgress(item, v);
+                }}
+              />
+              {isMaster && (
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteConfirm({ type: "item", id: item.id, nome: productMap.get(item.produto_id) ?? "item", programacao_id: item.programacao_id })}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -141,72 +204,32 @@ export default function ProducoesProgamadas() {
           </Button>
         </div>
 
-        {(scheduled ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma programação.</p>
-        ) : (
-          <div className="space-y-3">
-            {(scheduled ?? []).map((s) => (
-              <Card key={s.id}>
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-sm">{s.nome_programacao}</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        Prazo: {s.prazo_conclusao} | {s.tipo} | {s.prioridade}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Badge className={STATUS_COLORS[s.status] ?? ""}>{s.status}</Badge>
-                      {isMaster && (
-                        <>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(s)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ type: "production", id: s.id, nome: s.nome_programacao })}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                {s.observacao && (
-                  <div className="mx-4 mb-2 text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 whitespace-pre-wrap">
-                    <span className="font-medium text-foreground">Observação:</span> {s.observacao}
-                  </div>
-                )}
-                <CardContent className="space-y-2 p-4 pt-0">
-                  {s.itens.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between rounded bg-muted/50 p-2 text-sm">
-                      <div className="flex-1">
-                        <p className="font-medium">{productMap.get(item.produto_id) ?? "—"}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.quantidade_produzida}/{item.quantidade_total} ({item.quantidade_pendente} pend.)
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Input
-                          type="number" className="w-20"
-                          defaultValue={item.quantidade_produzida}
-                          onBlur={(e) => {
-                            const v = Number(e.target.value);
-                            if (v !== item.quantidade_produzida) handleUpdateProgress(item, v);
-                          }}
-                        />
-                        {isMaster && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteConfirm({ type: "item", id: item.id, nome: productMap.get(item.produto_id) ?? "item", programacao_id: item.programacao_id })}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="abertos" className="w-full">
+          <TabsList>
+            <TabsTrigger value="abertos">Abertos ({openOrders.length})</TabsTrigger>
+            <TabsTrigger value="concluidos">Concluídos ({completedOrders.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="abertos">
+            {openOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">Nenhum pedido em aberto.</p>
+            ) : (
+              <div className="space-y-3">
+                {openOrders.map((s) => renderCard(s))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="concluidos">
+            {completedOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">Nenhum pedido concluído.</p>
+            ) : (
+              <div className="space-y-3">
+                {completedOrders.map((s) => renderCard(s))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Create Dialog */}
