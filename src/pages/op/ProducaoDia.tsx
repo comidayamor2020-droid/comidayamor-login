@@ -22,6 +22,7 @@ import {
   useUpdateScheduledItem,
   getIdealField,
 } from "@/hooks/use-operational";
+import { getIdealForToday } from "@/lib/operational";
 import { toast } from "sonner";
 import { Package, ClipboardList, Pencil, CheckCircle2, Calendar, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
@@ -48,7 +49,7 @@ export default function ProducaoDia() {
   const [editItem, setEditItem] = useState<EditingItem | null>(null);
   const [editQty, setEditQty] = useState("");
 
-  const idealField = getIdealField();
+  const idealField = getIdealField(new Date());
 
   if (l1 || l2) {
     return (
@@ -77,13 +78,12 @@ export default function ProducaoDia() {
 
   // Compute daily data per product
   const dailyData = (products ?? []).map((p) => {
-    const config = p.config as Record<string, unknown> | null;
-    const ideal = config ? Number(config[idealField] ?? 0) : 0;
+    const ideal = getIdealForToday(p.config, new Date());
     const estoqueContado = countsMap.get(p.id);
     const hasCount = estoqueContado !== undefined;
-    const contado = estoqueContado ?? p.estoque_atual;
+    const contado = Number(estoqueContado ?? p.estoque_atual ?? 0);
     const proposto = Math.max(0, ideal - contado);
-    const produzido = lotesMap.get(p.id) ?? 0;
+    const produzido = Number(lotesMap.get(p.id) ?? 0);
     const diferenca = produzido - proposto;
 
     let status: "nao_precisa" | "falta" | "atingido" | "excesso";
@@ -93,7 +93,37 @@ export default function ProducaoDia() {
     else status = "excesso";
 
     if (import.meta.env.DEV) {
-      console.log(`[ProducaoDia] ${p.nome}: field=${idealField}, ideal=${ideal}, contado=${contado}, proposto=${proposto}, produzido=${produzido}`);
+      console.log("[ProducaoDia] product-debug", {
+        productId: p.id,
+        productName: p.nome,
+        ativo_no_operacional: p.config?.ativo,
+        weekdayDetected: idealField,
+        rawWeekdayFields: p.config
+          ? {
+              estoque_ideal_seg: p.config.estoque_ideal_seg,
+              estoque_ideal_ter: p.config.estoque_ideal_ter,
+              estoque_ideal_qua: p.config.estoque_ideal_qua,
+              estoque_ideal_qui: p.config.estoque_ideal_qui,
+              estoque_ideal_sex: p.config.estoque_ideal_sex,
+              estoque_ideal_sab: p.config.estoque_ideal_sab,
+              estoque_ideal_dom: p.config.estoque_ideal_dom,
+            }
+          : null,
+        normalizedWeekdayValues: p.config?.idealByDay ?? null,
+        idealSelectedForToday: ideal,
+        estoque_loja: contado,
+        proposto,
+        produzido,
+      });
+
+      if (p.config && p.config.ativo && !(idealField in p.config.idealByDay)) {
+        console.warn("[ProducaoDia] Failed to resolve ideal field", {
+          productId: p.id,
+          productName: p.nome,
+          idealField,
+          config: p.config,
+        });
+      }
     }
 
     return { ...p, ideal, contado, hasCount, proposto, produzido, diferenca, status };

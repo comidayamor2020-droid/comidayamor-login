@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/format";
+import { buildOperationalConfigPayload } from "@/lib/operational";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -142,10 +143,17 @@ export default function Produtos() {
   const saveOpConfig = useMutation({
     mutationFn: async () => {
       if (!opEditingId) return;
+      const payload = buildOperationalConfigPayload(opForm);
+      if (import.meta.env.DEV) {
+        console.log("[Produtos] saving operational config", {
+          produto_id: opEditingId,
+          payload,
+        });
+      }
       const { error } = await supabase
         .from("op_config_produtos")
         .upsert(
-          { produto_id: opEditingId, ...opForm, updated_at: new Date().toISOString() } as never,
+          { produto_id: opEditingId, ...payload, updated_at: new Date().toISOString() } as never,
           { onConflict: "produto_id" },
         );
       if (error) throw error;
@@ -153,6 +161,8 @@ export default function Produtos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["op-configs-all"] });
       queryClient.invalidateQueries({ queryKey: ["op-products"] });
+      queryClient.invalidateQueries({ queryKey: ["op-counts-today"] });
+      queryClient.invalidateQueries({ queryKey: ["op-lotes-today"] });
       toast.success("Configuração operacional salva!");
       setOpDialogOpen(false);
     },
