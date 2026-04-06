@@ -29,7 +29,8 @@ export function useOpProducts() {
       if (r2.error) throw r2.error;
       if (r3.error) throw r3.error;
 
-      const configMap = new Map((r2.data ?? []).map((c) => [c.produto_id, normalizeOperationalConfig(c)]));
+      const configRows = ((r2.data ?? []) as Record<string, unknown>[]);
+      const configMap = new Map(configRows.map((c) => [String(c.produto_id), normalizeOperationalConfig(c)]));
       const estoqueMap = new Map((r3.data ?? []).map((e) => [e.produto_id, e]));
 
       return (r1.data ?? [])
