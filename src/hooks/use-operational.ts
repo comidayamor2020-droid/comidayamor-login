@@ -265,16 +265,26 @@ export function useUpdateProductConfig() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { produto_id: string; config: Record<string, unknown> }) => {
+      const payload = buildOperationalConfigPayload(input.config);
+      if (import.meta.env.DEV) {
+        console.log("[useUpdateProductConfig] saving payload", {
+          produto_id: input.produto_id,
+          payload,
+        });
+      }
+
       const { error } = await supabase
         .from("op_config_produtos")
         .upsert(
-          { produto_id: input.produto_id, ...input.config, updated_at: new Date().toISOString() } as never,
+          { produto_id: input.produto_id, ...payload, updated_at: new Date().toISOString() } as never,
           { onConflict: "produto_id" },
         );
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-products"] });
+      qc.invalidateQueries({ queryKey: ["op-counts-today"] });
+      qc.invalidateQueries({ queryKey: ["op-lotes-today"] });
     },
   });
 }
