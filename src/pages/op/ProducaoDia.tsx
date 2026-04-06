@@ -49,7 +49,7 @@ export default function ProducaoDia() {
   const [editItem, setEditItem] = useState<EditingItem | null>(null);
   const [editQty, setEditQty] = useState("");
 
-  const idealField = getIdealField();
+  const idealField = getIdealField(new Date());
 
   if (l1 || l2) {
     return (
