@@ -29,11 +29,13 @@ export function useOpProducts() {
       ]);
       const configMap = new Map((r2.data ?? []).map((c) => [c.produto_id, c]));
       const estoqueMap = new Map((r3.data ?? []).map((e) => [e.produto_id, e]));
-      return (r1.data ?? []).map((p) => ({
-        ...p,
-        config: configMap.get(p.id) ?? null,
-        estoque_atual: estoqueMap.get(p.id)?.estoque_atual ?? 0,
-      }));
+      return (r1.data ?? [])
+        .map((p) => ({
+          ...p,
+          config: configMap.get(p.id) ?? null,
+          estoque_atual: estoqueMap.get(p.id)?.estoque_atual ?? 0,
+        }))
+        .filter((p) => p.config && (p.config as Record<string, unknown>).ativo === true);
     },
   });
 }

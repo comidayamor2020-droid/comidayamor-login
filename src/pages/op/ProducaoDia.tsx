@@ -77,7 +77,8 @@ export default function ProducaoDia() {
 
   // Compute daily data per product
   const dailyData = (products ?? []).map((p) => {
-    const ideal = p.config ? Number((p.config as Record<string, unknown>)[idealField] ?? 0) : 0;
+    const config = p.config as Record<string, unknown> | null;
+    const ideal = config ? Number(config[idealField] ?? 0) : 0;
     const estoqueContado = countsMap.get(p.id);
     const hasCount = estoqueContado !== undefined;
     const contado = estoqueContado ?? p.estoque_atual;
@@ -90,6 +91,10 @@ export default function ProducaoDia() {
     else if (produzido < proposto) status = "falta";
     else if (produzido === proposto) status = "atingido";
     else status = "excesso";
+
+    if (import.meta.env.DEV) {
+      console.log(`[ProducaoDia] ${p.nome}: field=${idealField}, ideal=${ideal}, contado=${contado}, proposto=${proposto}, produzido=${produzido}`);
+    }
 
     return { ...p, ideal, contado, hasCount, proposto, produzido, diferenca, status };
   });
