@@ -2,19 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { logAudit } from "@/lib/audit";
+import {
+  buildOperationalConfigPayload,
+  getIdealField,
+  getLocalDateString,
+  normalizeOperationalConfig,
+  OPERATIONAL_CONFIG_SELECT,
+} from "@/lib/operational";
 
-const today = () => new Date().toISOString().split("T")[0];
+export { getIdealField, getLocalDateString, normalizeOperationalConfig } from "@/lib/operational";
 
-const DAY_FIELDS = [
-  "estoque_ideal_dom", "estoque_ideal_seg", "estoque_ideal_ter",
-  "estoque_ideal_qua", "estoque_ideal_qui", "estoque_ideal_sex", "estoque_ideal_sab",
-] as const;
-
-export type DayField = (typeof DAY_FIELDS)[number];
-
-export function getIdealField(date?: Date): DayField {
-  return DAY_FIELDS[(date ?? new Date()).getDay()];
-}
+const today = () => getLocalDateString();
 
 /* ──────── queries ──────── */
 
@@ -24,18 +22,23 @@ export function useOpProducts() {
     queryFn: async () => {
       const [r1, r2, r3] = await Promise.all([
         supabase.from("produtos").select("id, nome, categoria, ativo").eq("ativo", true).order("nome"),
-        supabase.from("op_config_produtos").select("*"),
-        supabase.from("op_estoque_produtos").select("*"),
+        supabase.from("op_config_produtos").select(OPERATIONAL_CONFIG_SELECT),
+        supabase.from("op_estoque_produtos").select("produto_id, estoque_atual, updated_at"),
       ]);
-      const configMap = new Map((r2.data ?? []).map((c) => [c.produto_id, c]));
+      if (r1.error) throw r1.error;
+      if (r2.error) throw r2.error;
+      if (r3.error) throw r3.error;
+
+      const configMap = new Map((r2.data ?? []).map((c) => [c.produto_id, normalizeOperationalConfig(c)]));
       const estoqueMap = new Map((r3.data ?? []).map((e) => [e.produto_id, e]));
+
       return (r1.data ?? [])
         .map((p) => ({
           ...p,
           config: configMap.get(p.id) ?? null,
-          estoque_atual: estoqueMap.get(p.id)?.estoque_atual ?? 0,
+          estoque_atual: Number(estoqueMap.get(p.id)?.estoque_atual ?? 0),
         }))
-        .filter((p) => p.config && (p.config as Record<string, unknown>).ativo === true);
+        .filter((p) => p.config?.ativo === true);
     },
   });
 }

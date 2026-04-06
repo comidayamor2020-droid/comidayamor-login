@@ -22,6 +22,7 @@ import {
   useUpdateScheduledItem,
   getIdealField,
 } from "@/hooks/use-operational";
+import { getIdealForToday } from "@/lib/operational";
 import { toast } from "sonner";
 import { Package, ClipboardList, Pencil, CheckCircle2, Calendar, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
