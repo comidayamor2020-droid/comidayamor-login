@@ -18,8 +18,6 @@ export default function Dashboard() {
   const { data: caixa } = useCaixaDisponivel();
   const ctx = useCouncilContext();
   const navigate = useNavigate();
-  const ctx = useCouncilContext();
-  const navigate = useNavigate();
 
   const cf = ctx.cashFlow;
   const severity = ctx.loading ? null : assessDashboardSeverity(ctx);
