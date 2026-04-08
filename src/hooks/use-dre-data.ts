@@ -7,6 +7,29 @@ import {
   type DreBlock,
 } from "@/lib/dre-constants";
 
+// ── Legacy flat result (used by Dashboard, Council) ──
+
+export interface DreSection {
+  label: string;
+  key: string;
+  items: { subcategoria: string; valor: number }[];
+  total: number;
+}
+
+export interface DreResult {
+  receitasOp: DreSection;
+  receitasNaoOp: DreSection;
+  receitaTotal: number;
+  cpv: DreSection;
+  margemBruta: number;
+  despesasVar: DreSection;
+  margemContribuicao: number;
+  custosFixos: DreSection;
+  ebitda: number;
+  impostos: DreSection;
+  lucroLiquido: number;
+}
+
 // ── Types ──
 
 interface RawRow {
