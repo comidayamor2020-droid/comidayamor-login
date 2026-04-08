@@ -24,10 +24,10 @@ export default function Dashboard() {
 
   // Alert level styling
   const alertStyles = {
-    normal: { border: "border-emerald-300", bg: "bg-emerald-500/5", text: "text-emerald-700", label: "Operação estável" },
-    atencao: { border: "border-yellow-400", bg: "bg-yellow-500/5", text: "text-yellow-700", label: "Atenção — monitorar" },
-    alerta: { border: "border-orange-400", bg: "bg-orange-500/5", text: "text-orange-700", label: "Alerta — ação necessária" },
-    critico: { border: "border-red-400", bg: "bg-red-500/5", text: "text-red-700", label: "Crítico — ação imediata" },
+    normal: { border: "border-success/30", bg: "bg-success/5", text: "text-success", label: "Operação estável" },
+    atencao: { border: "border-caramelo/50", bg: "bg-caramelo/5", text: "text-caramelo", label: "Atenção — monitorar" },
+    alerta: { border: "border-caramelo", bg: "bg-caramelo/10", text: "text-caramelo", label: "Alerta — ação necessária" },
+    critico: { border: "border-destructive", bg: "bg-destructive/10", text: "text-destructive", label: "Crítico — ação imediata" },
   };
 
   const alertLevel = severity?.level ?? "normal";
