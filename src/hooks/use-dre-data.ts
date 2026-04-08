@@ -208,3 +208,57 @@ export function useDreData(from?: string, to?: string) {
     staleTime: 30_000,
   });
 }
+
+// ── Flatten monthly result into a single-period DreResult for Dashboard/Council ──
+
+function sumAll(rec: Record<string, number>): number {
+  return Object.values(rec).reduce((a, b) => a + b, 0);
+}
+
+function blockToSection(bd: DreBlockData): DreSection {
+  const items: { subcategoria: string; valor: number }[] = [];
+  for (const [sub, months] of Object.entries(bd.subValues)) {
+    const total = Object.values(months).reduce((a, b) => a + b, 0);
+    if (total > 0) items.push({ subcategoria: sub, valor: total });
+  }
+  items.sort((a, b) => b.valor - a.valor);
+  return { label: bd.block.label, key: bd.block.id, items, total: sumAll(bd.totals) };
+}
+
+export function toFlatDreResult(data: DreMonthlyResult): DreResult {
+  // Merge receita blocks into op and non-op
+  const opBlocks = data.receitaBlocks.filter((b) => b.block.classificacao === "receita_operacional");
+  const naoOpBlocks = data.receitaBlocks.filter((b) => b.block.classificacao === "receita_nao_operacional");
+
+  const mergeBlocks = (blocks: DreBlockData[], label: string, key: string): DreSection => {
+    const items: { subcategoria: string; valor: number }[] = [];
+    for (const bd of blocks) {
+      for (const [sub, months] of Object.entries(bd.subValues)) {
+        const total = Object.values(months).reduce((a, b) => a + b, 0);
+        if (total > 0) items.push({ subcategoria: sub, valor: total });
+      }
+    }
+    items.sort((a, b) => b.valor - a.valor);
+    const total = items.reduce((s, i) => s + i.valor, 0);
+    return { label, key, items, total };
+  };
+
+  const receitasOp = mergeBlocks(opBlocks, "Receitas Operacionais", "receita_operacional");
+  const receitasNaoOp = mergeBlocks(naoOpBlocks, "Receitas Não Operacionais", "receita_nao_operacional");
+  const receitaTotal = receitasOp.total + receitasNaoOp.total;
+
+  const cpv = blockToSection(data.despesaBlocks.cpv);
+  const margemBruta = receitaTotal - cpv.total;
+  const despesasVar = blockToSection(data.despesaBlocks.despVar);
+  const margemContribuicao = margemBruta - despesasVar.total;
+  const custosFixos = blockToSection(data.despesaBlocks.custoFixo);
+  const ebitda = margemContribuicao - custosFixos.total;
+  const impostos = blockToSection(data.despesaBlocks.imposto);
+  const lucroLiquido = ebitda - impostos.total;
+
+  return {
+    receitasOp, receitasNaoOp, receitaTotal,
+    cpv, margemBruta, despesasVar, margemContribuicao,
+    custosFixos, ebitda, impostos, lucroLiquido,
+  };
+}
