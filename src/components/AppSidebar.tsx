@@ -91,23 +91,28 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
 
   if (loading || !profile) {
     return (
-      <aside className="flex h-screen w-60 flex-col border-r border-border bg-sidebar">
-        <div className="flex h-14 items-center gap-2 border-b border-border px-5">
-          <span className="text-lg font-semibold tracking-tight text-foreground">Comida y Amor</span>
+      <aside className="flex h-screen w-60 flex-col bg-sidebar">
+        <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-5">
+          <span className="font-display text-lg font-semibold tracking-tight text-sidebar-accent-foreground">
+            Comida y Amor
+          </span>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-sidebar-foreground border-t-sidebar-primary" />
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-border bg-sidebar">
-      <div className="flex h-14 items-center justify-between border-b border-border px-5">
-        <span className="text-lg font-semibold tracking-tight text-foreground">Comida y Amor</span>
+    <aside className="flex h-screen w-60 flex-col bg-sidebar">
+      {/* Brand header */}
+      <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-5">
+        <span className="font-display text-lg font-semibold tracking-tight text-sidebar-accent-foreground">
+          Comida y Amor
+        </span>
         {onClose && (
-          <button onClick={onClose} className="text-muted-foreground md:hidden">
+          <button onClick={onClose} className="text-sidebar-foreground md:hidden">
             <X className="h-5 w-5" />
           </button>
         )}
@@ -122,8 +127,8 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
                 key={item.url}
                 to={item.url}
                 end
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
-                activeClassName="bg-sidebar-accent text-foreground"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/20 hover:text-sidebar-foreground"
+                activeClassName="bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-accent"
                 onClick={onClose}
               >
                 <item.icon className="h-4 w-4" />
@@ -139,11 +144,11 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
         ))}
       </div>
 
-      <div className="border-t border-border p-3">
-        <div className="mb-2 truncate px-3 text-xs text-muted-foreground">{displayName}</div>
+      <div className="border-t border-sidebar-border p-3">
+        <div className="mb-2 truncate px-3 text-xs text-sidebar-foreground/60">{displayName}</div>
         <button
           onClick={signOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/20 hover:text-sidebar-foreground"
         >
           <LogOut className="h-4 w-4" />
           <span>Sair</span>
@@ -198,7 +203,7 @@ function CollapsibleGroup({
     <div className="mt-1">
       <button
         onClick={toggle}
-        className="flex w-full items-center justify-between px-5 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+        className="flex w-full items-center justify-between px-5 py-2 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors"
       >
         <span>{label}</span>
         <ChevronDown className={`h-3 w-3 transition-transform ${open ? "" : "-rotate-90"}`} />
@@ -210,8 +215,8 @@ function CollapsibleGroup({
               key={item.url}
               to={item.url}
               end
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
-              activeClassName="bg-sidebar-accent text-foreground"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/20 hover:text-sidebar-foreground"
+              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-accent"
               onClick={onClose}
             >
               <item.icon className="h-4 w-4" />

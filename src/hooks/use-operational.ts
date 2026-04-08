@@ -238,14 +238,14 @@ export function useApproveOccurrence() {
       status: "aprovado" | "reprovado";
       quantidade_aprovada?: number;
     }) => {
-      const update: Record<string, unknown> = {
+      const update = {
         status: input.status,
         aprovado_por: profile?.id ?? null,
         aprovado_em: new Date().toISOString(),
+        ...(input.status === "aprovado" && input.quantidade_aprovada != null
+          ? { quantidade_aprovada: input.quantidade_aprovada }
+          : {}),
       };
-      if (input.status === "aprovado" && input.quantidade_aprovada != null) {
-        update.quantidade_aprovada = input.quantidade_aprovada;
-      }
       const { error } = await supabase
         .from("op_solicitacoes_ocorrencia")
         .update(update)
