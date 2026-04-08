@@ -1,16 +1,16 @@
 import { useState, useMemo } from "react";
 import { formatBRL, formatPercent } from "@/lib/format";
-import { useDreData, type DreSection } from "@/hooks/use-dre-data";
+import { useDreData, type DreMonthlyResult, type DreBlockData, type MonthKey } from "@/hooks/use-dre-data";
 import { getSubcategoriaLabel } from "@/lib/dre-constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ChevronDown, ChevronRight, Calendar } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type Periodo = "mes_atual" | "mes_anterior" | "custom";
+type Periodo = "mes_atual" | "mes_anterior" | "3meses" | "6meses" | "12meses" | "custom";
 
 function usePeriodo() {
-  const [periodo, setPeriodo] = useState<Periodo>("mes_atual");
+  const [periodo, setPeriodo] = useState<Periodo>("3meses");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
@@ -23,6 +23,15 @@ function usePeriodo() {
       const prev = subMonths(now, 1);
       return { from: format(startOfMonth(prev), "yyyy-MM-dd"), to: format(endOfMonth(prev), "yyyy-MM-dd") };
     }
+    if (periodo === "3meses") {
+      return { from: format(startOfMonth(subMonths(now, 2)), "yyyy-MM-dd"), to: format(endOfMonth(now), "yyyy-MM-dd") };
+    }
+    if (periodo === "6meses") {
+      return { from: format(startOfMonth(subMonths(now, 5)), "yyyy-MM-dd"), to: format(endOfMonth(now), "yyyy-MM-dd") };
+    }
+    if (periodo === "12meses") {
+      return { from: format(startOfMonth(subMonths(now, 11)), "yyyy-MM-dd"), to: format(endOfMonth(now), "yyyy-MM-dd") };
+    }
     return { from: customFrom || undefined, to: customTo || undefined };
   }, [periodo, customFrom, customTo]);
 
@@ -34,26 +43,28 @@ function pct(value: number, total: number) {
   return (value / total) * 100;
 }
 
+function val(rec: Record<string, number>, month: string): number {
+  return rec[month] ?? 0;
+}
+
+function sumAllMonths(rec: Record<string, number>): number {
+  return Object.values(rec).reduce((a, b) => a + b, 0);
+}
+
 export default function DRE() {
   const p = usePeriodo();
   const { data, isLoading, isError } = useDreData(p.from, p.to);
-
-  const periodoLabel = p.periodo === "mes_atual"
-    ? format(new Date(), "MMMM yyyy", { locale: ptBR })
-    : p.periodo === "mes_anterior"
-    ? format(subMonths(new Date(), 1), "MMMM yyyy", { locale: ptBR })
-    : "Período personalizado";
 
   return (
     <DashboardLayout>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">DRE Gerencial</h1>
-          <p className="mt-1 text-sm text-muted-foreground capitalize">
-            Demonstração do Resultado — {periodoLabel}
+          <p className="mt-1 text-sm text-muted-foreground">
+            Demonstração do Resultado — Visão mensal
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <select
             value={p.periodo}
@@ -62,6 +73,9 @@ export default function DRE() {
           >
             <option value="mes_atual">Mês atual</option>
             <option value="mes_anterior">Mês anterior</option>
+            <option value="3meses">Últimos 3 meses</option>
+            <option value="6meses">Últimos 6 meses</option>
+            <option value="12meses">Últimos 12 meses</option>
             <option value="custom">Personalizado</option>
           </select>
           {p.periodo === "custom" && (
@@ -85,44 +99,10 @@ export default function DRE() {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
         </div>
       ) : data ? (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Indicador</th>
-                <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Valor (R$)</th>
-                <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">% Receita</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Receitas Operacionais */}
-              <SectionBlock section={data.receitasOp} receitaTotal={data.receitaTotal} positive />
-              {/* Receitas Não Operacionais */}
-              <SectionBlock section={data.receitasNaoOp} receitaTotal={data.receitaTotal} positive />
-              {/* Receita Total */}
-              <TotalRow label="Receita Total" value={data.receitaTotal} percent={100} bold accent="primary" />
-
-              {/* CPV */}
-              <SectionBlock section={data.cpv} receitaTotal={data.receitaTotal} negative />
-              <TotalRow label="(=) Margem Bruta" value={data.margemBruta} percent={pct(data.margemBruta, data.receitaTotal)} bold accent="success" />
-
-              {/* Despesas Variáveis */}
-              <SectionBlock section={data.despesasVar} receitaTotal={data.receitaTotal} negative />
-              <TotalRow label="(=) Margem de Contribuição" value={data.margemContribuicao} percent={pct(data.margemContribuicao, data.receitaTotal)} bold accent="success" />
-
-              {/* Custos Fixos */}
-              <SectionBlock section={data.custosFixos} receitaTotal={data.receitaTotal} negative />
-              <TotalRow label="(=) EBITDA" value={data.ebitda} percent={pct(data.ebitda, data.receitaTotal)} bold accent={data.ebitda >= 0 ? "success" : "destructive"} />
-
-              {/* Impostos */}
-              <SectionBlock section={data.impostos} receitaTotal={data.receitaTotal} negative />
-              <TotalRow label="(=) Lucro Líquido" value={data.lucroLiquido} percent={pct(data.lucroLiquido, data.receitaTotal)} bold accent={data.lucroLiquido >= 0 ? "success" : "destructive"} />
-            </tbody>
-          </table>
-        </div>
+        <DreTable data={data} />
       ) : null}
 
-      {data && !isLoading && data.receitaTotal === 0 && (
+      {data && !isLoading && data.months.length === 0 && (
         <div className="mt-6 rounded-lg border border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
           Nenhum lançamento com classificação DRE encontrado neste período.
           <br />
@@ -133,64 +113,191 @@ export default function DRE() {
   );
 }
 
-function SectionBlock({ section, receitaTotal, positive, negative }: { section: DreSection; receitaTotal: number; positive?: boolean; negative?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const prefix = negative ? "(-) " : "";
-  const sectionKey = section.key;
+// ── DRE Table ──
 
-  if (section.total === 0 && section.items.length === 0) {
-    return (
-      <tr className="border-b border-border">
-        <td className="px-5 py-2.5 font-medium text-muted-foreground">{prefix}{section.label}</td>
-        <td className="px-5 py-2.5 text-right tabular-nums text-muted-foreground">R$ 0,00</td>
-        <td className="px-5 py-2.5 text-right tabular-nums text-muted-foreground">0,00%</td>
-      </tr>
-    );
-  }
+function DreTable({ data }: { data: DreMonthlyResult }) {
+  const { months, receitaBlocks, receitaTotal, despesaBlocks } = data;
+  const { cpv, margemBruta, despVar, margemContrib, custoFixo, ebitda, imposto, lucroLiquido } = despesaBlocks;
+
+  if (months.length === 0) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-warm">
+      <table className="w-full text-sm min-w-[600px]">
+        <thead>
+          <tr className="bg-bordo-escuro text-quase-branco">
+            <th className="sticky left-0 z-10 bg-bordo-escuro px-4 py-3 text-left text-xs font-medium uppercase tracking-wider min-w-[240px]">
+              Indicador
+            </th>
+            {months.map((m) => (
+              <th key={m.key} className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider min-w-[120px]">
+                {m.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {/* ─── RECEITAS ─── */}
+          <SectionHeader label="RECEITAS" colSpan={months.length + 1} />
+
+          {receitaBlocks.map((block) => (
+            <BlockRows key={block.block.id} block={block} months={months} receitaTotal={receitaTotal} positive />
+          ))}
+
+          <TotalRow
+            label="= RECEITA TOTAL"
+            values={receitaTotal}
+            months={months}
+            receitaTotal={receitaTotal}
+            accent="primary"
+          />
+
+          {/* ─── DESPESAS ─── */}
+          <SectionHeader label="DESPESAS" colSpan={months.length + 1} />
+
+          <BlockRows block={cpv} months={months} receitaTotal={receitaTotal} negative prefix="(-) " />
+          <TotalRow label="= MARGEM BRUTA" values={margemBruta} months={months} receitaTotal={receitaTotal} accent="success" showPct />
+
+          <BlockRows block={despVar} months={months} receitaTotal={receitaTotal} negative prefix="(-) " />
+          <TotalRow label="= MARGEM DE CONTRIBUIÇÃO" values={margemContrib} months={months} receitaTotal={receitaTotal} accent="success" showPct />
+
+          <BlockRows block={custoFixo} months={months} receitaTotal={receitaTotal} negative prefix="(-) " />
+          <TotalRow label="= EBITDA" values={ebitda} months={months} receitaTotal={receitaTotal} accent="dynamic" showPct />
+
+          <BlockRows block={imposto} months={months} receitaTotal={receitaTotal} negative prefix="(-) " />
+          <TotalRow label="= LUCRO LÍQUIDO" values={lucroLiquido} months={months} receitaTotal={receitaTotal} accent="dynamic" showPct />
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Section Header ──
+
+function SectionHeader({ label, colSpan }: { label: string; colSpan: number }) {
+  return (
+    <tr className="bg-muted/40">
+      <td colSpan={colSpan} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </td>
+    </tr>
+  );
+}
+
+// ── Block Rows (expandable group) ──
+
+function BlockRows({
+  block,
+  months,
+  receitaTotal,
+  positive,
+  negative,
+  prefix = "",
+}: {
+  block: DreBlockData;
+  months: MonthKey[];
+  receitaTotal: Record<string, number>;
+  positive?: boolean;
+  negative?: boolean;
+  prefix?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const blockTotal = sumAllMonths(block.totals);
 
   return (
     <>
       <tr
-        className="border-b border-border cursor-pointer hover:bg-muted/30 transition-colors"
+        className="border-b border-border/50 cursor-pointer hover:bg-muted/20 transition-colors"
         onClick={() => setOpen(!open)}
       >
-        <td className="px-5 py-2.5 font-medium text-foreground flex items-center gap-2">
-          {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
-          {prefix}{section.label}
+        <td className="sticky left-0 z-10 bg-card px-4 py-2.5 font-medium text-foreground">
+          <span className="flex items-center gap-2">
+            {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+            {prefix}{block.block.id} {block.block.label}
+          </span>
         </td>
-        <td className={`px-5 py-2.5 text-right tabular-nums font-medium ${negative ? "text-destructive" : "text-foreground"}`}>
-          {negative ? `- ${formatBRL(section.total)}` : formatBRL(section.total)}
-        </td>
-        <td className={`px-5 py-2.5 text-right tabular-nums ${negative ? "text-destructive" : "text-muted-foreground"}`}>
-          {formatPercent(pct(section.total, receitaTotal))}
-        </td>
+        {months.map((m) => {
+          const v = val(block.totals, m.key);
+          return (
+            <td key={m.key} className={`px-4 py-2.5 text-right tabular-nums font-medium ${negative ? "text-destructive" : "text-foreground"}`}>
+              {v === 0 ? "—" : negative ? `- ${formatBRL(v)}` : formatBRL(v)}
+            </td>
+          );
+        })}
       </tr>
-      {open && section.items.map((item) => (
-        <tr key={item.subcategoria} className="border-b border-border/50 bg-muted/10">
-          <td className="pl-12 pr-5 py-2 text-muted-foreground text-xs">{getSubcategoriaLabel(sectionKey, item.subcategoria)}</td>
-          <td className={`px-5 py-2 text-right tabular-nums text-xs ${negative ? "text-destructive/80" : "text-foreground/80"}`}>
-            {negative ? `- ${formatBRL(item.valor)}` : formatBRL(item.valor)}
-          </td>
-          <td className="px-5 py-2 text-right tabular-nums text-xs text-muted-foreground">
-            {formatPercent(pct(item.valor, receitaTotal))}
-          </td>
-        </tr>
-      ))}
+      {open && block.block.subcategorias.map((sub) => {
+        const subMonths = block.subValues[sub] ?? {};
+        const hasData = Object.values(subMonths).some((v) => v > 0);
+        const subLabel = getSubcategoriaLabel(block.block.classificacao, sub);
+
+        return (
+          <tr key={sub} className="border-b border-border/30 bg-muted/10">
+            <td className="sticky left-0 z-10 bg-muted/10 pl-12 pr-4 py-1.5 text-xs text-muted-foreground">
+              {subLabel}
+            </td>
+            {months.map((m) => {
+              const v = val(subMonths, m.key);
+              return (
+                <td key={m.key} className={`px-4 py-1.5 text-right tabular-nums text-xs ${negative ? "text-destructive/70" : "text-foreground/70"}`}>
+                  {v === 0 ? "—" : negative ? `- ${formatBRL(v)}` : formatBRL(v)}
+                </td>
+              );
+            })}
+          </tr>
+        );
+      })}
     </>
   );
 }
 
-function TotalRow({ label, value, percent, bold, accent }: { label: string; value: number; percent: number; bold?: boolean; accent?: string }) {
-  const colorClass = accent === "destructive" ? "text-destructive" : accent === "success" ? "text-emerald-600 dark:text-emerald-400" : "text-foreground";
+// ── Total/Margin Row ──
+
+function TotalRow({
+  label,
+  values,
+  months,
+  receitaTotal,
+  accent,
+  showPct,
+}: {
+  label: string;
+  values: Record<string, number>;
+  months: MonthKey[];
+  receitaTotal: Record<string, number>;
+  accent: "primary" | "success" | "dynamic";
+  showPct?: boolean;
+}) {
   return (
-    <tr className="border-b border-border bg-muted/20">
-      <td className={`px-5 py-3 ${bold ? "font-semibold" : "font-medium"} text-foreground`}>{label}</td>
-      <td className={`px-5 py-3 text-right tabular-nums ${bold ? "font-semibold" : "font-medium"} ${colorClass}`}>
-        {formatBRL(value)}
+    <tr className="border-b border-border bg-accent/20">
+      <td className="sticky left-0 z-10 bg-accent/20 px-4 py-3 font-bold text-foreground">
+        {label}
       </td>
-      <td className={`px-5 py-3 text-right tabular-nums ${bold ? "font-semibold" : ""} ${colorClass}`}>
-        {formatPercent(percent)}
-      </td>
+      {months.map((m) => {
+        const v = val(values, m.key);
+        const rt = val(receitaTotal, m.key);
+        const p = pct(v, rt);
+        const isNegative = v < 0;
+
+        let colorClass = "text-foreground";
+        if (accent === "dynamic") {
+          colorClass = isNegative ? "text-destructive" : "text-success";
+        } else if (accent === "success") {
+          colorClass = isNegative ? "text-destructive" : "text-success";
+        } else {
+          colorClass = "text-foreground";
+        }
+
+        return (
+          <td key={m.key} className={`px-4 py-3 text-right tabular-nums font-bold ${colorClass} ${isNegative && accent === "dynamic" ? "bg-destructive/5" : ""}`}>
+            {formatBRL(v)}
+            {showPct && rt > 0 && (
+              <span className="block text-[10px] font-normal text-muted-foreground">
+                ({formatPercent(p)})
+              </span>
+            )}
+          </td>
+        );
+      })}
     </tr>
   );
 }
