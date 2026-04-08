@@ -1,5 +1,5 @@
 import { formatBRL, formatPercent } from "@/lib/format";
-import { useDreData } from "@/hooks/use-dre-data";
+import { useDreData, toFlatDreResult } from "@/hooks/use-dre-data";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import { useCouncilContext } from "@/hooks/use-council-context";
@@ -10,10 +10,14 @@ import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 export default function Dashboard() {
-  const { data: dreData, isError } = useDreData();
+  const { data: dreRaw, isError } = useDreData();
+  const dreData = useMemo(() => dreRaw ? toFlatDreResult(dreRaw) : null, [dreRaw]);
   const { data: caixa } = useCaixaDisponivel();
+  const ctx = useCouncilContext();
+  const navigate = useNavigate();
   const ctx = useCouncilContext();
   const navigate = useNavigate();
 
