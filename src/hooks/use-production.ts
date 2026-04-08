@@ -44,30 +44,40 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: async ({ orderId, status, estimated_delivery_date, estimated_delivery_start, estimated_delivery_end }: StatusUpdatePayload) => {
       const now = new Date().toISOString();
-      const update: Record<string, any> = { status };
+
+      const timestamps: Partial<{
+        accepted_at: string;
+        production_started_at: string;
+        ready_at: string;
+        estimated_delivery_date: string;
+        estimated_delivery_start: string;
+        estimated_delivery_end: string;
+        delivered_at: string;
+        cancelled_at: string;
+      }> = {};
 
       switch (status) {
         case "pedido_aceito":
-          update.accepted_at = now;
+          timestamps.accepted_at = now;
           break;
         case "em_producao":
-          update.production_started_at = now;
+          timestamps.production_started_at = now;
           break;
         case "pedido_pronto":
-          update.ready_at = now;
-          update.estimated_delivery_date = estimated_delivery_date;
-          update.estimated_delivery_start = estimated_delivery_start;
-          update.estimated_delivery_end = estimated_delivery_end;
+          timestamps.ready_at = now;
+          timestamps.estimated_delivery_date = estimated_delivery_date;
+          timestamps.estimated_delivery_start = estimated_delivery_start;
+          timestamps.estimated_delivery_end = estimated_delivery_end;
           break;
         case "entregue":
-          update.delivered_at = now;
+          timestamps.delivered_at = now;
           break;
         case "cancelado":
-          update.cancelled_at = now;
+          timestamps.cancelled_at = now;
           break;
       }
 
-      const { error } = await supabase.from("b2b_orders").update(update).eq("id", orderId);
+      const { error } = await supabase.from("b2b_orders").update({ status, ...timestamps }).eq("id", orderId);
       if (error) throw error;
     },
     onSuccess: () => {
