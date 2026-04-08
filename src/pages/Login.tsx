@@ -37,7 +37,6 @@ export default function Login() {
     if (error) {
       setError("E-mail ou senha inválidos. Tente novamente.");
     } else if (data.user) {
-      // Track last login
       await supabase
         .from("users")
         .update({ last_login_at: new Date().toISOString() })
@@ -48,12 +47,12 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm space-y-6 rounded-xl bg-card p-8 shadow-warm-lg">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
             Comida y Amor
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             Entre para acessar o painel de gestão
           </p>
         </div>
@@ -68,6 +67,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="border-accent focus:border-primary"
             />
           </div>
           <div className="space-y-2">
@@ -79,6 +79,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="border-accent focus:border-primary"
             />
           </div>
 
