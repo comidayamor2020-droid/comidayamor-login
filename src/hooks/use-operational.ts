@@ -213,7 +213,7 @@ export function useSubmitCount() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["op-counts-today"] });
+      qc.invalidateQueries({ queryKey: ["op-counts-latest"] });
     },
   });
 }
