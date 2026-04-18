@@ -364,7 +364,7 @@ export default function ProducaoDia() {
                     {!item.hasCount && (
                       <div className="mt-2 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
                         <AlertCircle className="h-3 w-3" />
-                        <span>Sem contagem hoje — usando estoque do sistema</span>
+                        <span>Sem contagem registrada — usando estoque do sistema</span>
                       </div>
                     )}
 
