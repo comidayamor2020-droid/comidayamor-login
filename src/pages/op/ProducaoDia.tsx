@@ -61,9 +61,9 @@ export default function ProducaoDia() {
     );
   }
 
-  // Map product counts from Estoque da Loja (today)
+  // Map latest store stock count per product (latest historical, not just today)
   const countsMap = new Map(
-    (todayCounts ?? []).map((c) => [c.produto_id, Number(c.estoque_contado)])
+    (todayCounts ?? []).map((c) => [c.produto_id, c])
   );
 
   // Map produced today (completed lotes)
@@ -79,9 +79,9 @@ export default function ProducaoDia() {
   // Compute daily data per product
   const dailyData = (products ?? []).map((p) => {
     const ideal = getIdealForToday(p.config, new Date());
-    const estoqueContado = countsMap.get(p.id);
-    const hasCount = estoqueContado !== undefined;
-    const contado = Number(estoqueContado ?? p.estoque_atual ?? 0);
+    const latestCount = countsMap.get(p.id) as { estoque_contado?: number; created_at?: string; data_contagem?: string } | undefined;
+    const hasCount = latestCount !== undefined;
+    const contado = hasCount ? Number(latestCount?.estoque_contado ?? 0) : Number(p.estoque_atual ?? 0);
     const proposto = Math.max(0, ideal - contado);
     const produzido = Number(lotesMap.get(p.id) ?? 0);
     const diferenca = produzido - proposto;
