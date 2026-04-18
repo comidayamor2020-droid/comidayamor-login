@@ -112,6 +112,9 @@ export default function ProducaoDia() {
         normalizedWeekdayValues: p.config?.idealByDay ?? null,
         idealSelectedForToday: ideal,
         estoque_loja: contado,
+        latestCountFound: hasCount,
+        latestCountValue: latestCount?.estoque_contado ?? null,
+        latestCountAt: latestCount?.created_at ?? latestCount?.data_contagem ?? null,
         proposto,
         produzido,
       });
