@@ -301,7 +301,7 @@ export function useUpdateProductConfig() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-products"] });
-      qc.invalidateQueries({ queryKey: ["op-counts-today"] });
+      qc.invalidateQueries({ queryKey: ["op-counts-latest"] });
       qc.invalidateQueries({ queryKey: ["op-lotes-today"] });
     },
   });

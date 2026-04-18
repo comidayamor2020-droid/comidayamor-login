@@ -161,7 +161,7 @@ export default function Produtos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["op-configs-all"] });
       queryClient.invalidateQueries({ queryKey: ["op-products"] });
-      queryClient.invalidateQueries({ queryKey: ["op-counts-today"] });
+      queryClient.invalidateQueries({ queryKey: ["op-counts-latest"] });
       queryClient.invalidateQueries({ queryKey: ["op-lotes-today"] });
       toast.success("Configuração operacional salva!");
       setOpDialogOpen(false);
