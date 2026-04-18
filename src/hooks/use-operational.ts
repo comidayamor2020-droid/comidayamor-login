@@ -62,13 +62,30 @@ export function useTodayLotes() {
 export function useTodayCounts() {
   const d = today();
   return useQuery({
-    queryKey: ["op-counts-today", d],
+    queryKey: ["op-counts-latest", d],
     queryFn: async () => {
-      const { data } = await supabase
+      // Fetch the latest valid count per product (not restricted to today).
+      // Counts are usually made at end of previous day and must serve as
+      // opening stock for the next production day.
+      const nowIso = new Date().toISOString();
+      const { data, error } = await supabase
         .from("op_contagens_loja")
         .select("*")
-        .eq("data_contagem", d);
-      return data ?? [];
+        .lte("created_at", nowIso)
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      if (error) {
+        console.error("[useTodayCounts] error fetching counts:", error);
+        return [];
+      }
+      // Keep only the most recent record per produto_id
+      const latestByProduct = new Map<string, (typeof data)[number]>();
+      for (const row of data ?? []) {
+        if (!latestByProduct.has(row.produto_id)) {
+          latestByProduct.set(row.produto_id, row);
+        }
+      }
+      return Array.from(latestByProduct.values());
     },
   });
 }
