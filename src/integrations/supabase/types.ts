@@ -1028,6 +1028,8 @@ export type Database = {
       }
       op_contagens_loja: {
         Row: {
+          confirmada_em: string | null
+          confirmada_por: string | null
           created_at: string
           criado_por: string | null
           data_contagem: string
@@ -1037,9 +1039,12 @@ export type Database = {
           id: string
           observacao: string | null
           produto_id: string
+          status: string
           updated_at: string
         }
         Insert: {
+          confirmada_em?: string | null
+          confirmada_por?: string | null
           created_at?: string
           criado_por?: string | null
           data_contagem?: string
@@ -1049,9 +1054,12 @@ export type Database = {
           id?: string
           observacao?: string | null
           produto_id: string
+          status?: string
           updated_at?: string
         }
         Update: {
+          confirmada_em?: string | null
+          confirmada_por?: string | null
           created_at?: string
           criado_por?: string | null
           data_contagem?: string
@@ -1061,6 +1069,7 @@ export type Database = {
           id?: string
           observacao?: string | null
           produto_id?: string
+          status?: string
           updated_at?: string
         }
         Relationships: [
