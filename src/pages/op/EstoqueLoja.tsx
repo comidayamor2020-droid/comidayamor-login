@@ -162,12 +162,12 @@ export default function EstoqueLoja() {
             </p>
           </div>
           {isConfirmed ? (
-            <Badge className="gap-1 bg-emerald-600 hover:bg-emerald-600">
+            <Badge className="gap-1">
               <Lock className="h-3.5 w-3.5" />
               Contagem confirmada
             </Badge>
           ) : (
-            <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700">
+            <Badge variant="outline" className="gap-1">
               <Unlock className="h-3.5 w-3.5" />
               Contagem em aberto
             </Badge>
