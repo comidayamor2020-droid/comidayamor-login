@@ -90,6 +90,51 @@ export function useTodayCounts() {
   });
 }
 
+/** Fetch today's counts only, including their open/confirmed status. */
+export function useTodayDayCounts() {
+  const d = today();
+  return useQuery({
+    queryKey: ["op-counts-day", d],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("op_contagens_loja")
+        .select("*")
+        .eq("data_contagem", d)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("[useTodayDayCounts] error:", error);
+        return [];
+      }
+      return data ?? [];
+    },
+  });
+}
+
+/** Returns whether today's count is confirmed (any row with status='confirmada' for today). */
+export function useDayCountStatus() {
+  const d = today();
+  return useQuery({
+    queryKey: ["op-day-count-status", d],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("op_contagens_loja")
+        .select("status, confirmada_em, confirmada_por")
+        .eq("data_contagem", d)
+        .eq("status", "confirmada")
+        .limit(1);
+      if (error) {
+        console.error("[useDayCountStatus] error:", error);
+        return { confirmed: false, confirmada_em: null as string | null };
+      }
+      const first = (data ?? [])[0];
+      return {
+        confirmed: !!first,
+        confirmada_em: (first?.confirmada_em ?? null) as string | null,
+      };
+    },
+  });
+}
+
 export function useOccurrences(status?: string) {
   return useQuery({
     queryKey: ["op-occurrences", status],
@@ -203,17 +248,111 @@ export function useSubmitCount() {
       estoque_contado: number;
       observacao?: string;
     }) => {
-      const { error } = await supabase.from("op_contagens_loja").insert({
-        produto_id: input.produto_id,
-        estoque_esperado: input.estoque_esperado,
-        estoque_contado: input.estoque_contado,
-        observacao: input.observacao ?? null,
-        criado_por: profile?.id ?? null,
-      });
+      const d = today();
+      // Block edits if today's count is already confirmed
+      const { data: existing, error: readErr } = await supabase
+        .from("op_contagens_loja")
+        .select("id, status")
+        .eq("produto_id", input.produto_id)
+        .eq("data_contagem", d)
+        .maybeSingle();
+      if (readErr) throw readErr;
+      if (existing?.status === "confirmada") {
+        throw new Error("Contagem do dia já confirmada. Reabra para editar.");
+      }
+      // Upsert by (produto_id, data_contagem) — a unique index protects us
+      const { error } = await supabase.from("op_contagens_loja").upsert(
+        {
+          produto_id: input.produto_id,
+          data_contagem: d,
+          estoque_esperado: input.estoque_esperado,
+          estoque_contado: input.estoque_contado,
+          observacao: input.observacao ?? null,
+          criado_por: profile?.id ?? null,
+          status: "aberta",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "produto_id,data_contagem" },
+      );
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["op-counts-latest"] });
+      qc.invalidateQueries({ queryKey: ["op-counts-day"] });
+      qc.invalidateQueries({ queryKey: ["op-day-count-status"] });
+    },
+  });
+}
+
+export function useConfirmDayCount() {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async () => {
+      const d = today();
+      const { data: rows, error: readErr } = await supabase
+        .from("op_contagens_loja")
+        .select("id")
+        .eq("data_contagem", d)
+        .eq("status", "aberta");
+      if (readErr) throw readErr;
+      if (!rows || rows.length === 0) {
+        throw new Error("Nenhuma contagem registrada hoje para confirmar.");
+      }
+      const { error } = await supabase
+        .from("op_contagens_loja")
+        .update({
+          status: "confirmada",
+          confirmada_em: new Date().toISOString(),
+          confirmada_por: profile?.id ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("data_contagem", d)
+        .eq("status", "aberta");
+      if (error) throw error;
+      await logAudit({
+        action_type: "confirm_day_count",
+        entity_type: "op_contagens_loja",
+        entity_id: d,
+        details: { rows_confirmed: rows.length, data: d },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-counts-latest"] });
+      qc.invalidateQueries({ queryKey: ["op-counts-day"] });
+      qc.invalidateQueries({ queryKey: ["op-day-count-status"] });
+    },
+  });
+}
+
+export function useReopenDayCount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (motivo: string) => {
+      const d = today();
+      const { error } = await supabase
+        .from("op_contagens_loja")
+        .update({
+          status: "aberta",
+          confirmada_em: null,
+          confirmada_por: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("data_contagem", d)
+        .eq("status", "confirmada");
+      if (error) throw error;
+      await logAudit({
+        action_type: "reopen_day_count",
+        entity_type: "op_contagens_loja",
+        entity_id: d,
+        motivo,
+        details: { data: d },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["op-counts-latest"] });
+      qc.invalidateQueries({ queryKey: ["op-counts-day"] });
+      qc.invalidateQueries({ queryKey: ["op-day-count-status"] });
     },
   });
 }
