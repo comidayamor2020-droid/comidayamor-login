@@ -426,6 +426,132 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_context: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          execution_id: string | null
+          id: string
+          message_content: string | null
+          message_metadata: Json | null
+          message_role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          execution_id?: string | null
+          id?: string
+          message_content?: string | null
+          message_metadata?: Json | null
+          message_role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          execution_id?: string | null
+          id?: string
+          message_content?: string | null
+          message_metadata?: Json | null
+          message_role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_context_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_snapshots: {
+        Row: {
+          created_at: string | null
+          data_source: string | null
+          execution_id: string | null
+          id: string
+          notes: string | null
+          snapshot_data: Json | null
+          stage_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_source?: string | null
+          execution_id?: string | null
+          id?: string
+          notes?: string | null
+          snapshot_data?: Json | null
+          stage_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_source?: string | null
+          execution_id?: string | null
+          id?: string
+          notes?: string | null
+          snapshot_data?: Json | null
+          stage_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_snapshots_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      error_logs: {
+        Row: {
+          context_data: Json | null
+          created_at: string | null
+          error_message: string | null
+          error_stack: string | null
+          error_type: string | null
+          execution_id: string | null
+          id: string
+          resolved: boolean | null
+          resolved_at: string | null
+          severity: string | null
+        }
+        Insert: {
+          context_data?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          error_stack?: string | null
+          error_type?: string | null
+          execution_id?: string | null
+          id?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Update: {
+          context_data?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          error_stack?: string | null
+          error_type?: string | null
+          execution_id?: string | null
+          id?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_logs_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fluxo_caixa_entradas: {
         Row: {
           categoria: string
@@ -517,6 +643,62 @@ export type Database = {
           telefone?: string | null
         }
         Relationships: []
+      }
+      ia_decisions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          decision: string | null
+          execution_id: string | null
+          ia_function: string | null
+          ia_model: string | null
+          ia_provider: string | null
+          id: string
+          input_context: Json | null
+          output_result: Json | null
+          processing_time_ms: number | null
+          prompt: string | null
+          reasoning: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          decision?: string | null
+          execution_id?: string | null
+          ia_function?: string | null
+          ia_model?: string | null
+          ia_provider?: string | null
+          id?: string
+          input_context?: Json | null
+          output_result?: Json | null
+          processing_time_ms?: number | null
+          prompt?: string | null
+          reasoning?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          decision?: string | null
+          execution_id?: string | null
+          ia_function?: string | null
+          ia_model?: string | null
+          ia_provider?: string | null
+          id?: string
+          input_context?: Json | null
+          output_result?: Json | null
+          processing_time_ms?: number | null
+          prompt?: string | null
+          reasoning?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_decisions_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       insumos: {
         Row: {
@@ -616,6 +798,47 @@ export type Database = {
           venda_id?: string
         }
         Relationships: []
+      }
+      lovable_results: {
+        Row: {
+          created_at: string | null
+          execution_id: string | null
+          id: string
+          input_params: Json | null
+          lovable_action: string | null
+          lovable_component_id: string | null
+          output_result: Json | null
+          processing_time_ms: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          execution_id?: string | null
+          id?: string
+          input_params?: Json | null
+          lovable_action?: string | null
+          lovable_component_id?: string | null
+          output_result?: Json | null
+          processing_time_ms?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          execution_id?: string | null
+          id?: string
+          input_params?: Json | null
+          lovable_action?: string | null
+          lovable_component_id?: string | null
+          output_result?: Json | null
+          processing_time_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lovable_results_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       movimentacao_estoque: {
         Row: {
@@ -1255,6 +1478,80 @@ export type Database = {
         }
         Relationships: []
       }
+      system_configs: {
+        Row: {
+          config_key: string
+          config_value: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_modified_at: string | null
+          last_modified_by: string | null
+          version: number | null
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_modified_at?: string | null
+          last_modified_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_modified_at?: string | null
+          last_modified_by?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      user_feedback: {
+        Row: {
+          created_at: string | null
+          execution_id: string | null
+          feedback_text: string | null
+          feedback_type: string | null
+          id: string
+          rating: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          execution_id?: string | null
+          feedback_text?: string | null
+          feedback_type?: string | null
+          id?: string
+          rating?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          execution_id?: string | null
+          feedback_text?: string | null
+          feedback_type?: string | null
+          id?: string
+          rating?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_user_id: string | null
@@ -1332,6 +1629,137 @@ export type Database = {
           id?: string
           valor_bruto?: number | null
           valor_liquido?: number | null
+        }
+        Relationships: []
+      }
+      vendas_rastreadas: {
+        Row: {
+          analise_custos_id: string | null
+          analise_insumo_id: string | null
+          analise_mercado_id: string | null
+          canal: string | null
+          categoria: string | null
+          created_at: string | null
+          data_venda: string | null
+          id: string
+          pdvlegal_id: string | null
+          preco_unitario: number | null
+          produto: string | null
+          quantidade: number | null
+          recomendacao_preco_id: string | null
+          updated_at: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          analise_custos_id?: string | null
+          analise_insumo_id?: string | null
+          analise_mercado_id?: string | null
+          canal?: string | null
+          categoria?: string | null
+          created_at?: string | null
+          data_venda?: string | null
+          id?: string
+          pdvlegal_id?: string | null
+          preco_unitario?: number | null
+          produto?: string | null
+          quantidade?: number | null
+          recomendacao_preco_id?: string | null
+          updated_at?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          analise_custos_id?: string | null
+          analise_insumo_id?: string | null
+          analise_mercado_id?: string | null
+          canal?: string | null
+          categoria?: string | null
+          created_at?: string | null
+          data_venda?: string | null
+          id?: string
+          pdvlegal_id?: string | null
+          preco_unitario?: number | null
+          produto?: string | null
+          quantidade?: number | null
+          recomendacao_preco_id?: string | null
+          updated_at?: string | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_rastreadas_analise_custos_id_fkey"
+            columns: ["analise_custos_id"]
+            isOneToOne: false
+            referencedRelation: "ia_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_rastreadas_analise_insumo_id_fkey"
+            columns: ["analise_insumo_id"]
+            isOneToOne: false
+            referencedRelation: "ia_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_rastreadas_analise_mercado_id_fkey"
+            columns: ["analise_mercado_id"]
+            isOneToOne: false
+            referencedRelation: "ia_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_rastreadas_recomendacao_preco_id_fkey"
+            columns: ["recomendacao_preco_id"]
+            isOneToOne: false
+            referencedRelation: "ia_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          error_type: string | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          workflow_id: string
+          workflow_name: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          error_type?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          workflow_id: string
+          workflow_name?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          error_type?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          workflow_id?: string
+          workflow_name?: string | null
         }
         Relationships: []
       }
