@@ -73,9 +73,11 @@ export interface SaidasPanelHandle {
 interface Props {
   externalDialogOpen?: boolean;
   onExternalDialogChange?: (open: boolean) => void;
+  initialFilter?: string;
+  onInitialFilterApplied?: () => void;
 }
 
-export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Props) {
+export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initialFilter, onInitialFilterApplied }: Props) {
   const qc = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = externalDialogOpen ?? internalOpen;
