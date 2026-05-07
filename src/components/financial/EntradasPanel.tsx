@@ -85,7 +85,6 @@ export function EntradasPanel({ entradas, loading, externalDialogOpen, onExterna
     e.preventDefault();
     const valor = parseFloat(form.valor.replace(",", ".")) || 0;
     if (!form.descricao.trim() || valor <= 0) { toast.error("Preencha descrição e valor."); return; }
-    if (!form.classificacao_dre || !form.subcategoria_dre) { toast.error("Preencha classificação e subcategoria DRE."); return; }
 
     const payload = {
       data: form.data,
@@ -95,8 +94,8 @@ export function EntradasPanel({ entradas, loading, externalDialogOpen, onExterna
       observacao: form.observacao || undefined,
       status: form.status,
       criado_por: profile?.id,
-      classificacao_dre: form.classificacao_dre,
-      subcategoria_dre: form.subcategoria_dre,
+      classificacao_dre: form.classificacao_dre || undefined,
+      subcategoria_dre: form.subcategoria_dre || undefined,
     };
 
     const onSuccess = () => { toast.success(editingId ? "Entrada atualizada!" : "Entrada cadastrada!"); closeDialog(); };
@@ -222,17 +221,23 @@ export function EntradasPanel({ entradas, loading, externalDialogOpen, onExterna
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Classificação DRE *</Label>
-                <Select value={form.classificacao_dre} onValueChange={(v) => { set("classificacao_dre", v); set("subcategoria_dre", ""); }}>
+                <Label>Classificação DRE</Label>
+                <Select value={form.classificacao_dre || "__none__"} onValueChange={(v) => { const val = v === "__none__" ? "" : v; set("classificacao_dre", val); set("subcategoria_dre", ""); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CLASSIFICACOES_ENTRADA.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sem classificação</SelectItem>
+                    {CLASSIFICACOES_ENTRADA.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Subcategoria DRE *</Label>
-                <Select value={form.subcategoria_dre} onValueChange={(v) => set("subcategoria_dre", v)} disabled={!form.classificacao_dre}>
+                <Label>Subcategoria DRE</Label>
+                <Select value={form.subcategoria_dre || "__none__"} onValueChange={(v) => set("subcategoria_dre", v === "__none__" ? "" : v)} disabled={!form.classificacao_dre}>
                   <SelectTrigger><SelectValue placeholder={form.classificacao_dre ? "Selecionar" : "Escolha a classificação"} /></SelectTrigger>
-                  <SelectContent>{(SUBCATEGORIAS[form.classificacao_dre] ?? []).map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sem subcategoria</SelectItem>
+                    {(SUBCATEGORIAS[form.classificacao_dre] ?? []).map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
