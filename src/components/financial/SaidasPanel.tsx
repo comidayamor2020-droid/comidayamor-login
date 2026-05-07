@@ -113,8 +113,6 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
       const valorNum = parseFloat(form.valor.replace(",", ".")) || 0;
       if (!form.descricao.trim()) throw new Error("Nome da conta é obrigatório");
       if (!form.data_vencimento) throw new Error("Data de vencimento é obrigatória");
-      if (!form.classificacao_dre) throw new Error("Classificação DRE é obrigatória");
-      if (!form.subcategoria_dre) throw new Error("Subcategoria DRE é obrigatória");
 
       const basePayload = {
         descricao: form.descricao.trim(),
@@ -126,8 +124,8 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
         centro_custo: form.centro_custo || null,
         data_pagamento: form.status === "Pago" && form.data_pagamento ? form.data_pagamento : null,
         observacoes: buildObs(),
-        classificacao_dre: form.classificacao_dre,
-        subcategoria_dre: form.subcategoria_dre,
+        classificacao_dre: form.classificacao_dre || null,
+        subcategoria_dre: form.subcategoria_dre || null,
       };
 
       if (editingId) {
