@@ -189,15 +189,14 @@ export default function FluxoCaixa() {
 
           {/* === RESUMO === */}
           <TabsContent value="resumo" className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-              <SummaryCard icon={Wallet} label="Saldo Inicial (Caixa)" value={saldoInicial} variant="neutral" hint="Saldo de abertura" />
-              <SummaryCard icon={ArrowUpCircle} label="Entradas" value={totalEntradas} variant="positive" hint="Receitas do período" />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <SummaryCard icon={ArrowUpCircle} label="Entradas" value={mes?.entradasEfetivadas ?? 0} variant="positive" hint="Efetivadas este mês" />
               <SummaryCard
                 icon={ArrowDownCircle}
                 label="Saídas"
-                value={totalSaidas}
+                value={mes?.saidasEfetivadas ?? 0}
                 variant="negative"
-                hint="Despesas pagas"
+                hint="Efetivadas este mês"
                 extra={
                   (venc?.vencidas ?? 0) > 0 || (venc?.vencendoEmBreve ?? 0) > 0 ? (
                     <div className="mt-2 space-y-1">
@@ -221,8 +220,8 @@ export default function FluxoCaixa() {
                   ) : null
                 }
               />
-              <SummaryCard icon={TrendingUp} label="Saldo Final" value={saldoFinal} variant={saldoFinal >= 0 ? "positive" : "negative"} hint="Saldo + Ent − Saí" />
-              <SummaryCard icon={Calendar} label="Projeção 7 dias" value={projecao7d} variant={projecao7d >= 0 ? "neutral" : "negative"} hint="Baseado em saídas médias" />
+              <SummaryCard icon={Wallet} label="Saldo Atual" value={mes?.saldoAtual ?? 0} variant={(mes?.saldoAtual ?? 0) >= 0 ? "positive" : "negative"} hint="Entradas − Saídas (mês)" />
+              <SummaryCard icon={TrendingUp} label="Projeção Mês" value={mes?.projecaoMes ?? 0} variant={(mes?.projecaoMes ?? 0) >= 0 ? "positive" : "negative"} hint="Previsto para o mês" />
             </div>
 
             {(loadingE || loadingS) ? (
