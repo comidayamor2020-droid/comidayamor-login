@@ -184,10 +184,12 @@ function CollapsibleGroup({
   label,
   items,
   onClose,
+  badges = {},
 }: {
   label: string;
   items: NavItem[];
   onClose?: () => void;
+  badges?: Record<string, number>;
 }) {
   const [open, setOpen] = useState(() => {
     const saved = loadGroupStates();
@@ -213,21 +215,30 @@ function CollapsibleGroup({
       </button>
       {open && (
         <nav className="flex flex-col gap-0.5 px-3 pb-1">
-          {items.map((item) => (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              end
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/20 hover:text-sidebar-foreground"
-              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-accent"
-              onClick={onClose}
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.title}</span>
-            </NavLink>
-          ))}
+          {items.map((item) => {
+            const count = badges[item.url] ?? 0;
+            return (
+              <NavLink
+                key={item.url}
+                to={item.url}
+                end
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/20 hover:text-sidebar-foreground"
+                activeClassName="bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-accent"
+                onClick={onClose}
+              >
+                <item.icon className="h-4 w-4" />
+                <span className="flex-1">{item.title}</span>
+                {count > 0 && (
+                  <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">
+                    {count}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
       )}
     </div>
   );
 }
+
