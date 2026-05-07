@@ -21,10 +21,12 @@ type PeriodoFilter = "hoje" | "7dias" | "30dias" | "todos";
 
 export default function FluxoCaixa() {
   const { data: caixa } = useCaixaDisponivel();
+  const { data: venc } = useVencimentos();
   const [periodo, setPeriodo] = useState<PeriodoFilter>("30dias");
   const [tab, setTab] = useState<string>("resumo");
   const [entradaDialogOpen, setEntradaDialogOpen] = useState(false);
   const [saidaDialogOpen, setSaidaDialogOpen] = useState(false);
+  const [saidasInitialFilter, setSaidasInitialFilter] = useState<string | undefined>(undefined);
 
   const hoje = format(new Date(), "yyyy-MM-dd");
   const dateRange = useMemo(() => {
