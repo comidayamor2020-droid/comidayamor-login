@@ -114,12 +114,90 @@ export default function FluxoCaixa() {
         {/* Período */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Período:</span>
-          {(["hoje", "7dias", "30dias", "todos"] as PeriodoFilter[]).map((p) => (
-            <Button key={p} size="sm" variant={periodo === p ? "default" : "outline"} onClick={() => setPeriodo(p)}>
-              {{ hoje: "Hoje", "7dias": "7 dias", "30dias": "30 dias", todos: "Todos" }[p]}
-            </Button>
-          ))}
+          <Select
+            value={periodo}
+            onValueChange={(v) => {
+              if (v === "personalizado") {
+                setDraftRange(customRange);
+                setCustomDialogOpen(true);
+              } else {
+                setPeriodo(v as PeriodoFilter);
+              }
+            }}
+          >
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue>
+                {periodo === "personalizado" && customRange.from && customRange.to
+                  ? `${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")}`
+                  : { hoje: "Hoje", "7dias": "7 dias", "15dias": "15 dias", "30dias": "30 dias", personalizado: "Personalizado..." }[periodo]}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoje">Hoje</SelectItem>
+              <SelectItem value="7dias">7 dias</SelectItem>
+              <SelectItem value="15dias">15 dias</SelectItem>
+              <SelectItem value="30dias">30 dias</SelectItem>
+              <SelectSeparator />
+              <SelectItem value="personalizado">
+                {customRange.from && customRange.to
+                  ? `Personalizado (${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")})`
+                  : "Personalizado..."}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Selecionar Período Personalizado</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Data Inicial</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !draftRange.from && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {draftRange.from ? format(draftRange.from, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarUI mode="single" selected={draftRange.from} onSelect={(d) => setDraftRange((r) => ({ ...r, from: d }))} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Data Final</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !draftRange.to && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {draftRange.to ? format(draftRange.to, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarUI mode="single" selected={draftRange.to} onSelect={(d) => setDraftRange((r) => ({ ...r, to: d }))} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCustomDialogOpen(false)}>Cancelar</Button>
+              <Button
+                disabled={!draftRange.from || !draftRange.to}
+                onClick={() => {
+                  setCustomRange(draftRange);
+                  setPeriodo("personalizado");
+                  setCustomDialogOpen(false);
+                }}
+              >
+                Aplicar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={setTab} className="w-full">
