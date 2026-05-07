@@ -222,12 +222,13 @@ export default function FluxoCaixa() {
 }
 
 function SummaryCard({
-  icon: Icon, label, value, variant, hint,
+  icon: Icon, label, value, variant, hint, extra,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string; value: number;
   variant: "neutral" | "positive" | "negative";
   hint?: string;
+  extra?: React.ReactNode;
 }) {
   const color =
     variant === "positive" ? "text-emerald-600" : variant === "negative" ? "text-red-600" : "text-foreground";
