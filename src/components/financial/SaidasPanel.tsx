@@ -309,7 +309,41 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initia
                     <TableCell className="font-medium">{c.descricao}</TableCell>
                     <TableCell>{c.categoria ?? "—"}</TableCell>
                     <TableCell>{c.fornecedor ?? "—"}</TableCell>
-                    <TableCell>{c.data_vencimento ? format(parseISO(c.data_vencimento), "dd/MM/yyyy") : "—"}</TableCell>
+                    <TableCell>
+                      {c.data_vencimento ? (
+                        <div className="flex items-center gap-1.5">
+                          <span>{format(parseISO(c.data_vencimento), "dd/MM/yyyy")}</span>
+                          {c.status !== "Pago" && (() => {
+                            const dias = differenceInDays(parseISO(c.data_vencimento), new Date());
+                            if (dias < 0) {
+                              return (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Vencida há {Math.abs(dias)} {Math.abs(dias) === 1 ? "dia" : "dias"}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            }
+                            if (dias <= 3) {
+                              return (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Pin className="h-3.5 w-3.5 text-orange-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Vence em {dias === 0 ? "hoje" : `${dias} ${dias === 1 ? "dia" : "dias"}`}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">{c.valor != null ? formatBRL(c.valor) : "—"}</TableCell>
                     <TableCell>{c.forma_pagamento ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{c.status ?? "—"}</Badge></TableCell>
