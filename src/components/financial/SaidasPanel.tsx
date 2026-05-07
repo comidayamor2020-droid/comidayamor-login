@@ -161,6 +161,7 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initia
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contas-pagar"] });
       qc.invalidateQueries({ queryKey: ["fluxo-saidas"] });
+      qc.invalidateQueries({ queryKey: ["vencimentos-count"] });
       toast.success(editingId ? "Conta atualizada!" : "Conta cadastrada!");
       closeDialog();
     },
@@ -175,6 +176,7 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initia
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contas-pagar"] });
       qc.invalidateQueries({ queryKey: ["fluxo-saidas"] });
+      qc.invalidateQueries({ queryKey: ["vencimentos-count"] });
       toast.success("Conta excluída");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -191,6 +193,7 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initia
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contas-pagar"] });
       qc.invalidateQueries({ queryKey: ["fluxo-saidas"] });
+      qc.invalidateQueries({ queryKey: ["vencimentos-count"] });
       toast.success("Marcado como pago");
     },
     onError: (e: Error) => toast.error(e.message),
