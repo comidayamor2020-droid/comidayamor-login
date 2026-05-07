@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Pencil, Filter, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Filter, Trash2, CheckCircle2, AlertTriangle, Pin } from "lucide-react";
 import { format, differenceInDays, parseISO, addMonths } from "date-fns";
 import { formatBRL } from "@/lib/format";
 
@@ -72,9 +73,11 @@ export interface SaidasPanelHandle {
 interface Props {
   externalDialogOpen?: boolean;
   onExternalDialogChange?: (open: boolean) => void;
+  initialFilter?: string;
+  onInitialFilterApplied?: () => void;
 }
 
-export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Props) {
+export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initialFilter, onInitialFilterApplied }: Props) {
   const qc = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = externalDialogOpen ?? internalOpen;
@@ -86,6 +89,13 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
   const [catFilter, setCatFilter] = useState<string>("todas");
   const [fpFilter, setFpFilter] = useState<string>("todas");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (initialFilter && (["todas","hoje","proximos7","vencidas","agendadas","pagas"] as string[]).includes(initialFilter)) {
+      setFilter(initialFilter as FilterPreset);
+      onInitialFilterApplied?.();
+    }
+  }, [initialFilter, onInitialFilterApplied]);
 
   const set = (key: keyof FormState, val: string | boolean) => setForm((p) => ({ ...p, [key]: val }));
 
@@ -151,6 +161,7 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contas-pagar"] });
       qc.invalidateQueries({ queryKey: ["fluxo-saidas"] });
+      qc.invalidateQueries({ queryKey: ["vencimentos-count"] });
       toast.success(editingId ? "Conta atualizada!" : "Conta cadastrada!");
       closeDialog();
     },
@@ -165,6 +176,7 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contas-pagar"] });
       qc.invalidateQueries({ queryKey: ["fluxo-saidas"] });
+      qc.invalidateQueries({ queryKey: ["vencimentos-count"] });
       toast.success("Conta excluída");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -181,6 +193,7 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contas-pagar"] });
       qc.invalidateQueries({ queryKey: ["fluxo-saidas"] });
+      qc.invalidateQueries({ queryKey: ["vencimentos-count"] });
       toast.success("Marcado como pago");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -299,7 +312,41 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange }: Prop
                     <TableCell className="font-medium">{c.descricao}</TableCell>
                     <TableCell>{c.categoria ?? "—"}</TableCell>
                     <TableCell>{c.fornecedor ?? "—"}</TableCell>
-                    <TableCell>{c.data_vencimento ? format(parseISO(c.data_vencimento), "dd/MM/yyyy") : "—"}</TableCell>
+                    <TableCell>
+                      {c.data_vencimento ? (
+                        <div className="flex items-center gap-1.5">
+                          <span>{format(parseISO(c.data_vencimento), "dd/MM/yyyy")}</span>
+                          {c.status !== "Pago" && (() => {
+                            const dias = differenceInDays(parseISO(c.data_vencimento), new Date());
+                            if (dias < 0) {
+                              return (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Vencida há {Math.abs(dias)} {Math.abs(dias) === 1 ? "dia" : "dias"}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            }
+                            if (dias <= 3) {
+                              return (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Pin className="h-3.5 w-3.5 text-orange-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Vence em {dias === 0 ? "hoje" : `${dias} ${dias === 1 ? "dia" : "dias"}`}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">{c.valor != null ? formatBRL(c.valor) : "—"}</TableCell>
                     <TableCell>{c.forma_pagamento ?? "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{c.status ?? "—"}</Badge></TableCell>

@@ -12,17 +12,21 @@ import { format, subDays } from "date-fns";
 import { formatBRL } from "@/lib/format";
 import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import { useEntradas, useSaidas } from "@/hooks/use-fluxo-caixa";
+import { useVencimentos } from "@/hooks/use-vencimentos";
 import { EntradasPanel } from "@/components/financial/EntradasPanel";
 import { SaidasPanel } from "@/components/financial/SaidasPanel";
+import { AlertTriangle, Pin } from "lucide-react";
 
 type PeriodoFilter = "hoje" | "7dias" | "30dias" | "todos";
 
 export default function FluxoCaixa() {
   const { data: caixa } = useCaixaDisponivel();
+  const { data: venc } = useVencimentos();
   const [periodo, setPeriodo] = useState<PeriodoFilter>("30dias");
   const [tab, setTab] = useState<string>("resumo");
   const [entradaDialogOpen, setEntradaDialogOpen] = useState(false);
   const [saidaDialogOpen, setSaidaDialogOpen] = useState(false);
+  const [saidasInitialFilter, setSaidasInitialFilter] = useState<string | undefined>(undefined);
 
   const hoje = format(new Date(), "yyyy-MM-dd");
   const dateRange = useMemo(() => {
@@ -99,7 +103,14 @@ export default function FluxoCaixa() {
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="entradas">Entradas</TabsTrigger>
-            <TabsTrigger value="saidas">Saídas</TabsTrigger>
+            <TabsTrigger value="saidas" className="gap-2">
+              Saídas
+              {(venc?.total ?? 0) > 0 && (
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">
+                  {venc!.total}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* === RESUMO === */}
@@ -107,7 +118,35 @@ export default function FluxoCaixa() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               <SummaryCard icon={Wallet} label="Saldo Inicial (Caixa)" value={saldoInicial} variant="neutral" hint="Saldo de abertura" />
               <SummaryCard icon={ArrowUpCircle} label="Entradas" value={totalEntradas} variant="positive" hint="Receitas do período" />
-              <SummaryCard icon={ArrowDownCircle} label="Saídas" value={totalSaidas} variant="negative" hint="Despesas pagas" />
+              <SummaryCard
+                icon={ArrowDownCircle}
+                label="Saídas"
+                value={totalSaidas}
+                variant="negative"
+                hint="Despesas pagas"
+                extra={
+                  (venc?.vencidas ?? 0) > 0 || (venc?.vencendoEmBreve ?? 0) > 0 ? (
+                    <div className="mt-2 space-y-1">
+                      {(venc?.vencidas ?? 0) > 0 && (
+                        <button
+                          onClick={() => { setSaidasInitialFilter("vencidas"); setTab("saidas"); }}
+                          className="flex items-center gap-1 text-[11px] text-red-600 hover:underline"
+                        >
+                          <AlertTriangle className="h-3 w-3" /> {venc!.vencidas} {venc!.vencidas === 1 ? "conta vencida" : "contas vencidas"}
+                        </button>
+                      )}
+                      {(venc?.vencendoEmBreve ?? 0) > 0 && (
+                        <button
+                          onClick={() => { setSaidasInitialFilter("proximos7"); setTab("saidas"); }}
+                          className="flex items-center gap-1 text-[11px] text-orange-600 hover:underline"
+                        >
+                          <Pin className="h-3 w-3" /> {venc!.vencendoEmBreve} {venc!.vencendoEmBreve === 1 ? "vencendo em breve" : "vencendo em breve"}
+                        </button>
+                      )}
+                    </div>
+                  ) : null
+                }
+              />
               <SummaryCard icon={TrendingUp} label="Saldo Final" value={saldoFinal} variant={saldoFinal >= 0 ? "positive" : "negative"} hint="Saldo + Ent − Saí" />
               <SummaryCard icon={Calendar} label="Projeção 7 dias" value={projecao7d} variant={projecao7d >= 0 ? "neutral" : "negative"} hint="Baseado em saídas médias" />
             </div>
@@ -174,6 +213,8 @@ export default function FluxoCaixa() {
             <SaidasPanel
               externalDialogOpen={saidaDialogOpen}
               onExternalDialogChange={setSaidaDialogOpen}
+              initialFilter={saidasInitialFilter}
+              onInitialFilterApplied={() => setSaidasInitialFilter(undefined)}
             />
           </TabsContent>
         </Tabs>
@@ -183,12 +224,13 @@ export default function FluxoCaixa() {
 }
 
 function SummaryCard({
-  icon: Icon, label, value, variant, hint,
+  icon: Icon, label, value, variant, hint, extra,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string; value: number;
   variant: "neutral" | "positive" | "negative";
   hint?: string;
+  extra?: React.ReactNode;
 }) {
   const color =
     variant === "positive" ? "text-emerald-600" : variant === "negative" ? "text-red-600" : "text-foreground";
@@ -201,6 +243,7 @@ function SummaryCard({
         </div>
         <p className={`text-xl font-bold ${color}`}>{formatBRL(value)}</p>
         {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
+        {extra}
       </CardContent>
     </Card>
   );
