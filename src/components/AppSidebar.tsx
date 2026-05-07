@@ -76,6 +76,9 @@ interface AppSidebarProps {
 
 export function AppSidebar({ onClose }: AppSidebarProps) {
   const { profile, user, signOut, loading } = useAuth();
+  const { data: venc } = useVencimentos();
+  const fluxoBadge = (venc?.total ?? 0) > 0 ? venc!.total : 0;
+  const badges: Record<string, number> = fluxoBadge ? { "/fluxo-caixa": fluxoBadge } : {};
 
   const displayName = profile?.name ?? user?.email ?? "Usuário";
   const role = (profile?.role as AppRole) ?? null;
