@@ -12,7 +12,7 @@ import { Pencil, Trash2, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { formatBRL } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
-import { CLASSIFICACOES_ENTRADA, SUBCATEGORIAS } from "@/lib/dre-constants";
+
 import { EntradaCaixa, useCreateEntrada, useUpdateEntrada, useDeleteEntrada } from "@/hooks/use-fluxo-caixa";
 
 const ORIGENS = [
