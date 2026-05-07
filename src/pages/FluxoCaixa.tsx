@@ -6,7 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar,
+  Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import {
+  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, CalendarIcon,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { formatBRL } from "@/lib/format";
@@ -17,12 +26,15 @@ import { EntradasPanel } from "@/components/financial/EntradasPanel";
 import { SaidasPanel } from "@/components/financial/SaidasPanel";
 import { AlertTriangle, Pin } from "lucide-react";
 
-type PeriodoFilter = "hoje" | "7dias" | "30dias" | "todos";
+type PeriodoFilter = "hoje" | "7dias" | "15dias" | "30dias" | "personalizado";
 
 export default function FluxoCaixa() {
   const { data: caixa } = useCaixaDisponivel();
   const { data: venc } = useVencimentos();
-  const [periodo, setPeriodo] = useState<PeriodoFilter>("30dias");
+  const [periodo, setPeriodo] = useState<PeriodoFilter>("hoje");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [draftRange, setDraftRange] = useState<{ from?: Date; to?: Date }>({});
   const [tab, setTab] = useState<string>("resumo");
   const [entradaDialogOpen, setEntradaDialogOpen] = useState(false);
   const [saidaDialogOpen, setSaidaDialogOpen] = useState(false);
@@ -30,14 +42,18 @@ export default function FluxoCaixa() {
 
   const hoje = format(new Date(), "yyyy-MM-dd");
   const dateRange = useMemo(() => {
+    if (periodo === "personalizado" && customRange.from && customRange.to) {
+      return { from: format(customRange.from, "yyyy-MM-dd"), to: format(customRange.to, "yyyy-MM-dd") };
+    }
     const to = hoje;
     const from =
       periodo === "hoje" ? hoje
       : periodo === "7dias" ? format(subDays(new Date(), 7), "yyyy-MM-dd")
+      : periodo === "15dias" ? format(subDays(new Date(), 15), "yyyy-MM-dd")
       : periodo === "30dias" ? format(subDays(new Date(), 30), "yyyy-MM-dd")
-      : undefined;
+      : hoje;
     return { from, to };
-  }, [periodo, hoje]);
+  }, [periodo, hoje, customRange]);
 
   const { data: entradas = [], isLoading: loadingE } = useEntradas(dateRange.from, dateRange.to);
   const { data: saidas = [], isLoading: loadingS } = useSaidas(dateRange.from, dateRange.to);
@@ -49,7 +65,14 @@ export default function FluxoCaixa() {
   const saldoInicial = caixa?.valor ?? 0;
   const saldoFinal = saldoInicial + totalEntradas - totalSaidas;
 
-  const diasPeriodo = periodo === "hoje" ? 1 : periodo === "7dias" ? 7 : periodo === "30dias" ? 30 : 30;
+  const diasPeriodo =
+    periodo === "hoje" ? 1
+    : periodo === "7dias" ? 7
+    : periodo === "15dias" ? 15
+    : periodo === "30dias" ? 30
+    : (customRange.from && customRange.to
+        ? Math.max(1, Math.round((customRange.to.getTime() - customRange.from.getTime()) / 86400000) + 1)
+        : 1);
   const mediaDiariaSaidas = diasPeriodo > 0 ? totalSaidas / diasPeriodo : 0;
   const projecao7d = saldoFinal - mediaDiariaSaidas * 7;
 
@@ -91,12 +114,90 @@ export default function FluxoCaixa() {
         {/* Período */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Período:</span>
-          {(["hoje", "7dias", "30dias", "todos"] as PeriodoFilter[]).map((p) => (
-            <Button key={p} size="sm" variant={periodo === p ? "default" : "outline"} onClick={() => setPeriodo(p)}>
-              {{ hoje: "Hoje", "7dias": "7 dias", "30dias": "30 dias", todos: "Todos" }[p]}
-            </Button>
-          ))}
+          <Select
+            value={periodo}
+            onValueChange={(v) => {
+              if (v === "personalizado") {
+                setDraftRange(customRange);
+                setCustomDialogOpen(true);
+              } else {
+                setPeriodo(v as PeriodoFilter);
+              }
+            }}
+          >
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue>
+                {periodo === "personalizado" && customRange.from && customRange.to
+                  ? `${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")}`
+                  : { hoje: "Hoje", "7dias": "7 dias", "15dias": "15 dias", "30dias": "30 dias", personalizado: "Personalizado..." }[periodo]}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoje">Hoje</SelectItem>
+              <SelectItem value="7dias">7 dias</SelectItem>
+              <SelectItem value="15dias">15 dias</SelectItem>
+              <SelectItem value="30dias">30 dias</SelectItem>
+              <SelectSeparator />
+              <SelectItem value="personalizado">
+                {customRange.from && customRange.to
+                  ? `Personalizado (${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")})`
+                  : "Personalizado..."}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Selecionar Período Personalizado</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Data Inicial</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !draftRange.from && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {draftRange.from ? format(draftRange.from, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarUI mode="single" selected={draftRange.from} onSelect={(d) => setDraftRange((r) => ({ ...r, from: d }))} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Data Final</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !draftRange.to && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {draftRange.to ? format(draftRange.to, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarUI mode="single" selected={draftRange.to} onSelect={(d) => setDraftRange((r) => ({ ...r, to: d }))} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCustomDialogOpen(false)}>Cancelar</Button>
+              <Button
+                disabled={!draftRange.from || !draftRange.to}
+                onClick={() => {
+                  setCustomRange(draftRange);
+                  setPeriodo("personalizado");
+                  setCustomDialogOpen(false);
+                }}
+              >
+                Aplicar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={setTab} className="w-full">
