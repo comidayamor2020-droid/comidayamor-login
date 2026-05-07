@@ -118,7 +118,35 @@ export default function FluxoCaixa() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               <SummaryCard icon={Wallet} label="Saldo Inicial (Caixa)" value={saldoInicial} variant="neutral" hint="Saldo de abertura" />
               <SummaryCard icon={ArrowUpCircle} label="Entradas" value={totalEntradas} variant="positive" hint="Receitas do período" />
-              <SummaryCard icon={ArrowDownCircle} label="Saídas" value={totalSaidas} variant="negative" hint="Despesas pagas" />
+              <SummaryCard
+                icon={ArrowDownCircle}
+                label="Saídas"
+                value={totalSaidas}
+                variant="negative"
+                hint="Despesas pagas"
+                extra={
+                  (venc?.vencidas ?? 0) > 0 || (venc?.vencendoEmBreve ?? 0) > 0 ? (
+                    <div className="mt-2 space-y-1">
+                      {(venc?.vencidas ?? 0) > 0 && (
+                        <button
+                          onClick={() => { setSaidasInitialFilter("vencidas"); setTab("saidas"); }}
+                          className="flex items-center gap-1 text-[11px] text-red-600 hover:underline"
+                        >
+                          <AlertTriangle className="h-3 w-3" /> {venc!.vencidas} {venc!.vencidas === 1 ? "conta vencida" : "contas vencidas"}
+                        </button>
+                      )}
+                      {(venc?.vencendoEmBreve ?? 0) > 0 && (
+                        <button
+                          onClick={() => { setSaidasInitialFilter("proximos7"); setTab("saidas"); }}
+                          className="flex items-center gap-1 text-[11px] text-orange-600 hover:underline"
+                        >
+                          <Pin className="h-3 w-3" /> {venc!.vencendoEmBreve} {venc!.vencendoEmBreve === 1 ? "vencendo em breve" : "vencendo em breve"}
+                        </button>
+                      )}
+                    </div>
+                  ) : null
+                }
+              />
               <SummaryCard icon={TrendingUp} label="Saldo Final" value={saldoFinal} variant={saldoFinal >= 0 ? "positive" : "negative"} hint="Saldo + Ent − Saí" />
               <SummaryCard icon={Calendar} label="Projeção 7 dias" value={projecao7d} variant={projecao7d >= 0 ? "neutral" : "negative"} hint="Baseado em saídas médias" />
             </div>
