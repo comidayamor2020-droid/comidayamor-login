@@ -15,11 +15,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
-  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, CalendarIcon,
+  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, CalendarIcon,
 } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { formatBRL } from "@/lib/format";
-import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import { useEntradas, useSaidas } from "@/hooks/use-fluxo-caixa";
 import { useVencimentos } from "@/hooks/use-vencimentos";
 import { useFluxoMes } from "@/hooks/use-fluxo-mes";
