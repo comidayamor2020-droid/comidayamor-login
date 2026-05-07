@@ -241,6 +241,7 @@ function SummaryCard({
         </div>
         <p className={`text-xl font-bold ${color}`}>{formatBRL(value)}</p>
         {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
+        {extra}
       </CardContent>
     </Card>
   );
