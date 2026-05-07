@@ -6,7 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar,
+  Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import {
+  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, CalendarIcon,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { formatBRL } from "@/lib/format";
