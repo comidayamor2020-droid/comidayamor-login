@@ -8,6 +8,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_ROUTES, type AppRole } from "@/lib/roles";
+import { useVencimentos } from "@/hooks/use-vencimentos";
 
 interface NavItem {
   title: string;
