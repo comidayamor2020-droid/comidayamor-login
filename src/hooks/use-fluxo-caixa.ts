@@ -9,6 +9,9 @@ export interface EntradaCaixa {
   valor: number;
   observacao: string | null;
   origem: string;
+  status: string;
+  classificacao_dre: string | null;
+  subcategoria_dre: string | null;
   criado_por: string | null;
   created_at: string;
 }
@@ -31,19 +34,22 @@ export function useEntradas(from?: string, to?: string) {
   });
 }
 
+export interface CreateEntradaPayload {
+  data: string;
+  descricao: string;
+  categoria: string;
+  valor: number;
+  observacao?: string;
+  status?: string;
+  criado_por?: string;
+  classificacao_dre?: string;
+  subcategoria_dre?: string;
+}
+
 export function useCreateEntrada() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: {
-      data: string;
-      descricao: string;
-      categoria: string;
-      valor: number;
-      observacao?: string;
-      criado_por?: string;
-      classificacao_dre?: string;
-      subcategoria_dre?: string;
-    }) => {
+    mutationFn: async (payload: CreateEntradaPayload) => {
       const { error } = await supabase.from("fluxo_caixa_entradas").insert({
         data: payload.data,
         descricao: payload.descricao,
@@ -51,6 +57,7 @@ export function useCreateEntrada() {
         valor: payload.valor,
         observacao: payload.observacao || null,
         origem: "manual",
+        status: payload.status || "Confirmada",
         criado_por: payload.criado_por || null,
         classificacao_dre: payload.classificacao_dre || null,
         subcategoria_dre: payload.subcategoria_dre || null,
@@ -60,6 +67,37 @@ export function useCreateEntrada() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["fluxo-entradas"] });
     },
+  });
+}
+
+export function useUpdateEntrada() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: CreateEntradaPayload & { id: string }) => {
+      const { error } = await supabase.from("fluxo_caixa_entradas").update({
+        data: payload.data,
+        descricao: payload.descricao,
+        categoria: payload.categoria,
+        valor: payload.valor,
+        observacao: payload.observacao || null,
+        status: payload.status || "Confirmada",
+        classificacao_dre: payload.classificacao_dre || null,
+        subcategoria_dre: payload.subcategoria_dre || null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fluxo-entradas"] }),
+  });
+}
+
+export function useDeleteEntrada() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("fluxo_caixa_entradas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fluxo-entradas"] }),
   });
 }
 

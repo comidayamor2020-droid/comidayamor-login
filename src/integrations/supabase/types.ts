@@ -563,6 +563,7 @@ export type Database = {
           id: string
           observacao: string | null
           origem: string
+          status: string
           subcategoria_dre: string | null
           valor: number
         }
@@ -576,6 +577,7 @@ export type Database = {
           id?: string
           observacao?: string | null
           origem?: string
+          status?: string
           subcategoria_dre?: string | null
           valor?: number
         }
@@ -589,6 +591,7 @@ export type Database = {
           id?: string
           observacao?: string | null
           origem?: string
+          status?: string
           subcategoria_dre?: string | null
           valor?: number
         }
