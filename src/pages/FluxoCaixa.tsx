@@ -213,6 +213,8 @@ export default function FluxoCaixa() {
             <SaidasPanel
               externalDialogOpen={saidaDialogOpen}
               onExternalDialogChange={setSaidaDialogOpen}
+              initialFilter={saidasInitialFilter}
+              onInitialFilterApplied={() => setSaidasInitialFilter(undefined)}
             />
           </TabsContent>
         </Tabs>
