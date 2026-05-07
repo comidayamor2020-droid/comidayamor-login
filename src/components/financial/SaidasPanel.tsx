@@ -90,6 +90,13 @@ export function SaidasPanel({ externalDialogOpen, onExternalDialogChange, initia
   const [fpFilter, setFpFilter] = useState<string>("todas");
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    if (initialFilter && (["todas","hoje","proximos7","vencidas","agendadas","pagas"] as string[]).includes(initialFilter)) {
+      setFilter(initialFilter as FilterPreset);
+      onInitialFilterApplied?.();
+    }
+  }, [initialFilter, onInitialFilterApplied]);
+
   const set = (key: keyof FormState, val: string | boolean) => setForm((p) => ({ ...p, [key]: val }));
 
   const { data: contas = [], isLoading } = useQuery({
