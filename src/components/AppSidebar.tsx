@@ -143,7 +143,7 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
 
         {/* Grouped items */}
         {groupsFiltered.map((group) => (
-          <CollapsibleGroup key={group.label} label={group.label} items={group.items} onClose={onClose} />
+          <CollapsibleGroup key={group.label} label={group.label} items={group.items} onClose={onClose} badges={badges} />
         ))}
       </div>
 
