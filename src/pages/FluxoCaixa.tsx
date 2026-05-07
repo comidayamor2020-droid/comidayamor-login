@@ -12,8 +12,10 @@ import { format, subDays } from "date-fns";
 import { formatBRL } from "@/lib/format";
 import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import { useEntradas, useSaidas } from "@/hooks/use-fluxo-caixa";
+import { useVencimentos } from "@/hooks/use-vencimentos";
 import { EntradasPanel } from "@/components/financial/EntradasPanel";
 import { SaidasPanel } from "@/components/financial/SaidasPanel";
+import { AlertTriangle, Pin } from "lucide-react";
 
 type PeriodoFilter = "hoje" | "7dias" | "30dias" | "todos";
 
