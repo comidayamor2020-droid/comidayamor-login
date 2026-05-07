@@ -22,15 +22,16 @@ import { formatBRL } from "@/lib/format";
 import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import { useEntradas, useSaidas } from "@/hooks/use-fluxo-caixa";
 import { useVencimentos } from "@/hooks/use-vencimentos";
+import { useFluxoMes } from "@/hooks/use-fluxo-mes";
 import { EntradasPanel } from "@/components/financial/EntradasPanel";
 import { SaidasPanel } from "@/components/financial/SaidasPanel";
 import { AlertTriangle, Pin } from "lucide-react";
 
-type PeriodoFilter = "hoje" | "7dias" | "15dias" | "30dias" | "personalizado";
+type PeriodoFilter = "hoje" | "personalizado";
 
 export default function FluxoCaixa() {
-  const { data: caixa } = useCaixaDisponivel();
   const { data: venc } = useVencimentos();
+  const { data: mes } = useFluxoMes();
   const [periodo, setPeriodo] = useState<PeriodoFilter>("hoje");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
