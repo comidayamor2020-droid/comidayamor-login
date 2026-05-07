@@ -15,22 +15,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
-  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, CalendarIcon,
+  Plus, TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle, CalendarIcon,
 } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { formatBRL } from "@/lib/format";
-import { useCaixaDisponivel } from "@/hooks/use-caixa";
 import { useEntradas, useSaidas } from "@/hooks/use-fluxo-caixa";
 import { useVencimentos } from "@/hooks/use-vencimentos";
+import { useFluxoMes } from "@/hooks/use-fluxo-mes";
 import { EntradasPanel } from "@/components/financial/EntradasPanel";
 import { SaidasPanel } from "@/components/financial/SaidasPanel";
 import { AlertTriangle, Pin } from "lucide-react";
 
-type PeriodoFilter = "hoje" | "7dias" | "15dias" | "30dias" | "personalizado";
+type PeriodoFilter = "hoje" | "personalizado";
 
 export default function FluxoCaixa() {
-  const { data: caixa } = useCaixaDisponivel();
   const { data: venc } = useVencimentos();
+  const { data: mes } = useFluxoMes();
   const [periodo, setPeriodo] = useState<PeriodoFilter>("hoje");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
@@ -45,36 +45,11 @@ export default function FluxoCaixa() {
     if (periodo === "personalizado" && customRange.from && customRange.to) {
       return { from: format(customRange.from, "yyyy-MM-dd"), to: format(customRange.to, "yyyy-MM-dd") };
     }
-    const to = hoje;
-    const from =
-      periodo === "hoje" ? hoje
-      : periodo === "7dias" ? format(subDays(new Date(), 7), "yyyy-MM-dd")
-      : periodo === "15dias" ? format(subDays(new Date(), 15), "yyyy-MM-dd")
-      : periodo === "30dias" ? format(subDays(new Date(), 30), "yyyy-MM-dd")
-      : hoje;
-    return { from, to };
+    return { from: hoje, to: hoje };
   }, [periodo, hoje, customRange]);
 
   const { data: entradas = [], isLoading: loadingE } = useEntradas(dateRange.from, dateRange.to);
   const { data: saidas = [], isLoading: loadingS } = useSaidas(dateRange.from, dateRange.to);
-
-  const totalEntradas = entradas
-    .filter((e) => (e.status ?? "Confirmada") !== "Cancelada")
-    .reduce((s, e) => s + e.valor, 0);
-  const totalSaidas = saidas.reduce((s, e) => s + e.valor, 0);
-  const saldoInicial = caixa?.valor ?? 0;
-  const saldoFinal = saldoInicial + totalEntradas - totalSaidas;
-
-  const diasPeriodo =
-    periodo === "hoje" ? 1
-    : periodo === "7dias" ? 7
-    : periodo === "15dias" ? 15
-    : periodo === "30dias" ? 30
-    : (customRange.from && customRange.to
-        ? Math.max(1, Math.round((customRange.to.getTime() - customRange.from.getTime()) / 86400000) + 1)
-        : 1);
-  const mediaDiariaSaidas = diasPeriodo > 0 ? totalSaidas / diasPeriodo : 0;
-  const projecao7d = saldoFinal - mediaDiariaSaidas * 7;
 
   const movimentacoes = useMemo(() => {
     const all = [
@@ -89,7 +64,7 @@ export default function FluxoCaixa() {
         status: "Pago", origem: s.origem,
       })),
     ].sort((a, b) => b.data.localeCompare(a.data));
-    return all.slice(0, 20);
+    return all.slice(0, 50);
   }, [entradas, saidas]);
 
   return (
@@ -129,14 +104,11 @@ export default function FluxoCaixa() {
               <SelectValue>
                 {periodo === "personalizado" && customRange.from && customRange.to
                   ? `${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")}`
-                  : { hoje: "Hoje", "7dias": "7 dias", "15dias": "15 dias", "30dias": "30 dias", personalizado: "Personalizado..." }[periodo]}
+                  : periodo === "hoje" ? "Hoje" : "Personalizado..."}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="hoje">Hoje</SelectItem>
-              <SelectItem value="7dias">7 dias</SelectItem>
-              <SelectItem value="15dias">15 dias</SelectItem>
-              <SelectItem value="30dias">30 dias</SelectItem>
               <SelectSeparator />
               <SelectItem value="personalizado">
                 {customRange.from && customRange.to
@@ -216,15 +188,14 @@ export default function FluxoCaixa() {
 
           {/* === RESUMO === */}
           <TabsContent value="resumo" className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-              <SummaryCard icon={Wallet} label="Saldo Inicial (Caixa)" value={saldoInicial} variant="neutral" hint="Saldo de abertura" />
-              <SummaryCard icon={ArrowUpCircle} label="Entradas" value={totalEntradas} variant="positive" hint="Receitas do período" />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <SummaryCard icon={ArrowUpCircle} label="Entradas" value={mes?.entradasEfetivadas ?? 0} variant="positive" hint="Efetivadas este mês" />
               <SummaryCard
                 icon={ArrowDownCircle}
                 label="Saídas"
-                value={totalSaidas}
+                value={mes?.saidasEfetivadas ?? 0}
                 variant="negative"
-                hint="Despesas pagas"
+                hint="Efetivadas este mês"
                 extra={
                   (venc?.vencidas ?? 0) > 0 || (venc?.vencendoEmBreve ?? 0) > 0 ? (
                     <div className="mt-2 space-y-1">
@@ -248,8 +219,8 @@ export default function FluxoCaixa() {
                   ) : null
                 }
               />
-              <SummaryCard icon={TrendingUp} label="Saldo Final" value={saldoFinal} variant={saldoFinal >= 0 ? "positive" : "negative"} hint="Saldo + Ent − Saí" />
-              <SummaryCard icon={Calendar} label="Projeção 7 dias" value={projecao7d} variant={projecao7d >= 0 ? "neutral" : "negative"} hint="Baseado em saídas médias" />
+              <SummaryCard icon={Wallet} label="Saldo Atual" value={mes?.saldoAtual ?? 0} variant={(mes?.saldoAtual ?? 0) >= 0 ? "positive" : "negative"} hint="Entradas − Saídas (mês)" />
+              <SummaryCard icon={TrendingUp} label="Projeção Mês" value={mes?.projecaoMes ?? 0} variant={(mes?.projecaoMes ?? 0) >= 0 ? "positive" : "negative"} hint="Previsto para o mês" />
             </div>
 
             {(loadingE || loadingS) ? (
