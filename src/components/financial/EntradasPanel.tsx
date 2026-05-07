@@ -85,7 +85,6 @@ export function EntradasPanel({ entradas, loading, externalDialogOpen, onExterna
     e.preventDefault();
     const valor = parseFloat(form.valor.replace(",", ".")) || 0;
     if (!form.descricao.trim() || valor <= 0) { toast.error("Preencha descrição e valor."); return; }
-    if (!form.classificacao_dre || !form.subcategoria_dre) { toast.error("Preencha classificação e subcategoria DRE."); return; }
 
     const payload = {
       data: form.data,
@@ -95,8 +94,8 @@ export function EntradasPanel({ entradas, loading, externalDialogOpen, onExterna
       observacao: form.observacao || undefined,
       status: form.status,
       criado_por: profile?.id,
-      classificacao_dre: form.classificacao_dre,
-      subcategoria_dre: form.subcategoria_dre,
+      classificacao_dre: form.classificacao_dre || undefined,
+      subcategoria_dre: form.subcategoria_dre || undefined,
     };
 
     const onSuccess = () => { toast.success(editingId ? "Entrada atualizada!" : "Entrada cadastrada!"); closeDialog(); };
