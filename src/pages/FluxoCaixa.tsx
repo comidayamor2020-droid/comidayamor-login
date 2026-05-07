@@ -105,14 +105,11 @@ export default function FluxoCaixa() {
               <SelectValue>
                 {periodo === "personalizado" && customRange.from && customRange.to
                   ? `${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")}`
-                  : { hoje: "Hoje", "7dias": "7 dias", "15dias": "15 dias", "30dias": "30 dias", personalizado: "Personalizado..." }[periodo]}
+                  : periodo === "hoje" ? "Hoje" : "Personalizado..."}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="hoje">Hoje</SelectItem>
-              <SelectItem value="7dias">7 dias</SelectItem>
-              <SelectItem value="15dias">15 dias</SelectItem>
-              <SelectItem value="30dias">30 dias</SelectItem>
               <SelectSeparator />
               <SelectItem value="personalizado">
                 {customRange.from && customRange.to
