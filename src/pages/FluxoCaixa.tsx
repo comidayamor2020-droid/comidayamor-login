@@ -26,12 +26,15 @@ import { EntradasPanel } from "@/components/financial/EntradasPanel";
 import { SaidasPanel } from "@/components/financial/SaidasPanel";
 import { AlertTriangle, Pin } from "lucide-react";
 
-type PeriodoFilter = "hoje" | "7dias" | "30dias" | "todos";
+type PeriodoFilter = "hoje" | "7dias" | "15dias" | "30dias" | "personalizado";
 
 export default function FluxoCaixa() {
   const { data: caixa } = useCaixaDisponivel();
   const { data: venc } = useVencimentos();
-  const [periodo, setPeriodo] = useState<PeriodoFilter>("30dias");
+  const [periodo, setPeriodo] = useState<PeriodoFilter>("hoje");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [draftRange, setDraftRange] = useState<{ from?: Date; to?: Date }>({});
   const [tab, setTab] = useState<string>("resumo");
   const [entradaDialogOpen, setEntradaDialogOpen] = useState(false);
   const [saidaDialogOpen, setSaidaDialogOpen] = useState(false);
@@ -39,14 +42,18 @@ export default function FluxoCaixa() {
 
   const hoje = format(new Date(), "yyyy-MM-dd");
   const dateRange = useMemo(() => {
+    if (periodo === "personalizado" && customRange.from && customRange.to) {
+      return { from: format(customRange.from, "yyyy-MM-dd"), to: format(customRange.to, "yyyy-MM-dd") };
+    }
     const to = hoje;
     const from =
       periodo === "hoje" ? hoje
       : periodo === "7dias" ? format(subDays(new Date(), 7), "yyyy-MM-dd")
+      : periodo === "15dias" ? format(subDays(new Date(), 15), "yyyy-MM-dd")
       : periodo === "30dias" ? format(subDays(new Date(), 30), "yyyy-MM-dd")
-      : undefined;
+      : hoje;
     return { from, to };
-  }, [periodo, hoje]);
+  }, [periodo, hoje, customRange]);
 
   const { data: entradas = [], isLoading: loadingE } = useEntradas(dateRange.from, dateRange.to);
   const { data: saidas = [], isLoading: loadingS } = useSaidas(dateRange.from, dateRange.to);
@@ -58,7 +65,14 @@ export default function FluxoCaixa() {
   const saldoInicial = caixa?.valor ?? 0;
   const saldoFinal = saldoInicial + totalEntradas - totalSaidas;
 
-  const diasPeriodo = periodo === "hoje" ? 1 : periodo === "7dias" ? 7 : periodo === "30dias" ? 30 : 30;
+  const diasPeriodo =
+    periodo === "hoje" ? 1
+    : periodo === "7dias" ? 7
+    : periodo === "15dias" ? 15
+    : periodo === "30dias" ? 30
+    : (customRange.from && customRange.to
+        ? Math.max(1, Math.round((customRange.to.getTime() - customRange.from.getTime()) / 86400000) + 1)
+        : 1);
   const mediaDiariaSaidas = diasPeriodo > 0 ? totalSaidas / diasPeriodo : 0;
   const projecao7d = saldoFinal - mediaDiariaSaidas * 7;
 
