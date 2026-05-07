@@ -103,7 +103,14 @@ export default function FluxoCaixa() {
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="entradas">Entradas</TabsTrigger>
-            <TabsTrigger value="saidas">Saídas</TabsTrigger>
+            <TabsTrigger value="saidas" className="gap-2">
+              Saídas
+              {(venc?.total ?? 0) > 0 && (
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">
+                  {venc!.total}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* === RESUMO === */}
