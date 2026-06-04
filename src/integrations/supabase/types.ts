@@ -294,6 +294,30 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes_b2c: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          telefone: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          telefone: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       clientes_fidelidade: {
         Row: {
           ativo: boolean | null
