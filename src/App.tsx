@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DRE = lazy(() => import("./pages/DRE"));
 const Produtos = lazy(() => import("./pages/Produtos"));
 const ClientesB2B = lazy(() => import("./pages/ClientesB2B"));
+const ClientesB2C = lazy(() => import("./pages/ClientesB2C"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Compras = lazy(() => import("./pages/Compras"));
 const ContasPagar = lazy(() => import("./pages/ContasPagar"));
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/dashboard-financeiro" element={<R path="/dashboard-financeiro"><DashboardFinanceiro /></R>} />
               <Route path="/produtos" element={<R path="/produtos"><Produtos /></R>} />
               <Route path="/clientes-b2b" element={<R path="/clientes-b2b"><ClientesB2B /></R>} />
+              <Route path="/clientes-b2c" element={<R path="/clientes-b2c"><ClientesB2C /></R>} />
               <Route path="/usuarios" element={<R path="/usuarios"><Usuarios /></R>} />
               <Route path="/compras" element={<R path="/compras"><Compras /></R>} />
               <Route path="/producao" element={<R path="/producao"><Producao /></R>} />
