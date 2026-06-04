@@ -289,3 +289,47 @@ export default function Usuarios() {
     </DashboardLayout>
   );
 }
+
+function B2CClientesTable({ search }: { search: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["clientes_b2c"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clientes_b2c" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{ id: string; nome: string; email: string; telefone: string; created_at: string }>;
+    },
+  });
+
+  if (isLoading) return <div className="flex items-center justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" /></div>;
+  const q = search.toLowerCase();
+  const filtered = (data ?? []).filter((c) => c.nome.toLowerCase().includes(q) || c.email.toLowerCase().includes(q));
+  if (!filtered.length) return <p className="py-8 text-center text-sm text-muted-foreground">Nenhum cliente B2C cadastrado.</p>;
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border bg-muted/50">
+            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Nome</th>
+            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
+            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Telefone</th>
+            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Data de cadastro</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((c) => (
+            <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30">
+              <td className="px-4 py-3 font-medium text-foreground">{c.nome}</td>
+              <td className="px-4 py-3 text-muted-foreground">{c.email}</td>
+              <td className="px-4 py-3 text-muted-foreground">{c.telefone}</td>
+              <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString("pt-BR")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
