@@ -37,6 +37,7 @@ export default function ClientesB2C() {
   const [errors, setErrors] = useState<{ email?: string; telefone?: string; nome?: string }>({});
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ClienteB2C | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: clientes, isLoading } = useQuery({
     queryKey: ["clientes_b2c"],
