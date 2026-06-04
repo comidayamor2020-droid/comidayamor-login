@@ -294,6 +294,87 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes_fidelidade: {
+        Row: {
+          ativo: boolean | null
+          cep: string | null
+          cidade: string | null
+          consentimento_email: boolean | null
+          consentimento_sms: boolean | null
+          contador_compras: number | null
+          cpf_hash: string
+          data_cadastro: string | null
+          data_consentimento: string | null
+          data_nascimento: string | null
+          data_ultima_compra: string | null
+          email: string
+          email_verificado: boolean | null
+          endereco: string | null
+          id: string
+          interesse_categoria: string | null
+          nome: string
+          origem_cadastro: string | null
+          recompensas_desbloqueadas: Json | null
+          telefone: string
+          termos_aceitos: boolean | null
+          total_compras: number | null
+          total_gasto: number | null
+          ultima_atualizacao: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          cep?: string | null
+          cidade?: string | null
+          consentimento_email?: boolean | null
+          consentimento_sms?: boolean | null
+          contador_compras?: number | null
+          cpf_hash: string
+          data_cadastro?: string | null
+          data_consentimento?: string | null
+          data_nascimento?: string | null
+          data_ultima_compra?: string | null
+          email: string
+          email_verificado?: boolean | null
+          endereco?: string | null
+          id?: string
+          interesse_categoria?: string | null
+          nome: string
+          origem_cadastro?: string | null
+          recompensas_desbloqueadas?: Json | null
+          telefone: string
+          termos_aceitos?: boolean | null
+          total_compras?: number | null
+          total_gasto?: number | null
+          ultima_atualizacao?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          cep?: string | null
+          cidade?: string | null
+          consentimento_email?: boolean | null
+          consentimento_sms?: boolean | null
+          contador_compras?: number | null
+          cpf_hash?: string
+          data_cadastro?: string | null
+          data_consentimento?: string | null
+          data_nascimento?: string | null
+          data_ultima_compra?: string | null
+          email?: string
+          email_verificado?: boolean | null
+          endereco?: string | null
+          id?: string
+          interesse_categoria?: string | null
+          nome?: string
+          origem_cadastro?: string | null
+          recompensas_desbloqueadas?: Json | null
+          telefone?: string
+          termos_aceitos?: boolean | null
+          total_compras?: number | null
+          total_gasto?: number | null
+          ultima_atualizacao?: string | null
+        }
+        Relationships: []
+      }
       compras: {
         Row: {
           data_compra: string | null
@@ -329,6 +410,51 @@ export type Database = {
           valor_total?: number | null
         }
         Relationships: []
+      }
+      compras_fidelidade: {
+        Row: {
+          cliente_id: string
+          criado_em: string | null
+          data_compra: string | null
+          descricao: string | null
+          id: string
+          origem: string | null
+          valor: number
+        }
+        Insert: {
+          cliente_id: string
+          criado_em?: string | null
+          data_compra?: string | null
+          descricao?: string | null
+          id?: string
+          origem?: string | null
+          valor: number
+        }
+        Update: {
+          cliente_id?: string
+          criado_em?: string | null
+          data_compra?: string | null
+          descricao?: string | null
+          id?: string
+          origem?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compras_fidelidade_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes_fidelidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_fidelidade_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vw_relatorio_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contas_pagar: {
         Row: {
@@ -1490,6 +1616,60 @@ export type Database = {
         }
         Relationships: []
       }
+      recompensas_fidelidade: {
+        Row: {
+          cliente_id: string
+          codigo_cupom: string | null
+          criado_em: string | null
+          data_desbloqueada: string | null
+          data_uso: string | null
+          descricao: string | null
+          id: string
+          tipo: string
+          usado: boolean | null
+          valor: string | null
+        }
+        Insert: {
+          cliente_id: string
+          codigo_cupom?: string | null
+          criado_em?: string | null
+          data_desbloqueada?: string | null
+          data_uso?: string | null
+          descricao?: string | null
+          id?: string
+          tipo: string
+          usado?: boolean | null
+          valor?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          codigo_cupom?: string | null
+          criado_em?: string | null
+          data_desbloqueada?: string | null
+          data_uso?: string | null
+          descricao?: string | null
+          id?: string
+          tipo?: string
+          usado?: boolean | null
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recompensas_fidelidade_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes_fidelidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recompensas_fidelidade_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vw_relatorio_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_configs: {
         Row: {
           config_key: string
@@ -1777,13 +1957,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_relatorio_clientes: {
+        Row: {
+          compras_faltam_recompensa: number | null
+          contador_compras: number | null
+          data_cadastro: string | null
+          data_ultima_compra: string | null
+          dias_sem_comprar: number | null
+          email: string | null
+          id: string | null
+          nome: string | null
+          recompensas_pendentes: number | null
+          recompensas_usadas: number | null
+          status_atividade: string | null
+          telefone: string | null
+          total_compras: number | null
+          total_gasto: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       current_user_is_active: { Args: never; Returns: boolean }
       current_user_role: { Args: never; Returns: string }
       get_current_user_is_active: { Args: never; Returns: boolean }
       get_current_user_role: { Args: never; Returns: string }
+      incrementar_contador_compras: {
+        Args: { cliente_uuid: string }
+        Returns: {
+          novo_contador: number
+          recompensa_desbloqueada: boolean
+        }[]
+      }
+      registrar_compra_cliente: {
+        Args: { cliente_uuid: string; valor_compra: number }
+        Returns: {
+          compra_id: string
+          novo_contador: number
+          recompensa: boolean
+          total_compras: number
+          total_gasto: number
+        }[]
+      }
       update_own_last_login: { Args: never; Returns: undefined }
     }
     Enums: {
