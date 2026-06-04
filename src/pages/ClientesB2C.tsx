@@ -10,8 +10,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Trash2, UserPlus } from "lucide-react";
+import { Search, Trash2, UserPlus, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 function formatTelefone(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -36,6 +37,7 @@ export default function ClientesB2C() {
   const [errors, setErrors] = useState<{ email?: string; telefone?: string; nome?: string }>({});
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ClienteB2C | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: clientes, isLoading } = useQuery({
     queryKey: ["clientes_b2c"],
@@ -201,34 +203,73 @@ export default function ClientesB2C() {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Nome</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">E-mail</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Telefone</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Data de cadastro</th>
-                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody>
-                  {filtered.map((c) => (
-                    <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                      <td className="px-4 py-3 font-medium text-foreground">{c.nome}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{c.email}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{c.telefone}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {new Date(c.created_at).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(c)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                {filtered.map((c) => {
+                  const isOpen = expandedId === c.id;
+                  return (
+                    <tbody key={c.id}>
+                      <tr
+                        className="border-b border-border last:border-0 cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => setExpandedId(isOpen ? null : c.id)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-foreground transition-colors duration-200 hover:text-[#A76141]">
+                              {c.nome}
+                            </span>
+                            <ChevronDown
+                              className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
+                                isOpen && "rotate-180"
+                              )}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-0">
+                          <div
+                            className={cn(
+                              "overflow-hidden transition-all duration-300 ease-out",
+                              isOpen ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"
+                            )}
+                          >
+                            <div className="grid grid-cols-1 gap-3 px-4 py-3 sm:grid-cols-3">
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground">E-mail</p>
+                                <p className="text-sm text-foreground">{c.email}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground">Telefone</p>
+                                <p className="text-sm text-foreground">{c.telefone}</p>
+                              </div>
+                              <div className="flex items-end justify-between">
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground">Data de cadastro</p>
+                                  <p className="text-sm text-foreground">
+                                    {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                                  </p>
+                                </div>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteTarget(c);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  );
+                })}
               </table>
             </div>
           )}
