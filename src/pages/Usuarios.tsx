@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAllUsers, useUpdateUser, useCreateUser, useB2BCompanies } from "@/hooks/use-admin";
 import { useDeleteUser } from "@/hooks/use-delete-user";
@@ -177,7 +179,7 @@ export default function Usuarios() {
         </div>
         <TabsContent value="cya">{renderTable()}</TabsContent>
         <TabsContent value="b2b">{renderTable()}</TabsContent>
-        <TabsContent value="b2c">{renderTable()}</TabsContent>
+        <TabsContent value="b2c"><B2CClientesTable search={search} /></TabsContent>
       </Tabs>
 
       {/* Edit Dialog */}
