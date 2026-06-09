@@ -1,0 +1,1 @@
+CREATE POLICY "Loja can insert clientes_b2c" ON public.clientes_b2c FOR INSERT TO authenticated WITH CHECK (public.get_current_user_role() = 'loja');
