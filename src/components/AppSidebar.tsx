@@ -32,7 +32,6 @@ const GROUPS: NavGroup[] = [
       { title: "Dashboard Financeiro", url: "/dashboard-financeiro", icon: PieChart },
       { title: "DRE", url: "/dre", icon: FileText },
       { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: TrendingUp },
-      { title: "Compras", url: "/compras", icon: Package },
       { title: "Produção", url: "/producao", icon: Factory },
     ],
   },
