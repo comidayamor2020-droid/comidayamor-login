@@ -142,9 +142,20 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
         )}
 
         {/* Grouped items */}
-        {groupsFiltered.map((group) => (
-          <CollapsibleGroup key={group.label} label={group.label} items={group.items} onClose={onClose} badges={badges} />
-        ))}
+        {groupsFiltered.map((group) => {
+          // Hide misleading "Financeiro" label for gerente_operacional (only sees Produção)
+          const hideLabel = role === "gerente_operacional" && group.label === "Financeiro";
+          return (
+            <CollapsibleGroup
+              key={group.label}
+              label={group.label}
+              items={group.items}
+              onClose={onClose}
+              badges={badges}
+              hideLabel={hideLabel}
+            />
+          );
+        })}
       </div>
 
       <div className="border-t border-sidebar-border p-3">
@@ -185,13 +196,16 @@ function CollapsibleGroup({
   items,
   onClose,
   badges = {},
+  hideLabel = false,
 }: {
   label: string;
   items: NavItem[];
   onClose?: () => void;
   badges?: Record<string, number>;
+  hideLabel?: boolean;
 }) {
   const [open, setOpen] = useState(() => {
+    if (hideLabel) return true;
     const saved = loadGroupStates();
     return saved[label] !== undefined ? saved[label] : true;
   });
@@ -206,13 +220,15 @@ function CollapsibleGroup({
 
   return (
     <div className="mt-1">
-      <button
-        onClick={toggle}
-        className="flex w-full items-center justify-between px-5 py-2 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors"
-      >
-        <span>{label}</span>
-        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "" : "-rotate-90"}`} />
-      </button>
+      {!hideLabel && (
+        <button
+          onClick={toggle}
+          className="flex w-full items-center justify-between px-5 py-2 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors"
+        >
+          <span>{label}</span>
+          <ChevronDown className={`h-3 w-3 transition-transform ${open ? "" : "-rotate-90"}`} />
+        </button>
+      )}
       {open && (
         <nav className="flex flex-col gap-0.5 px-3 pb-1">
           {items.map((item) => {
