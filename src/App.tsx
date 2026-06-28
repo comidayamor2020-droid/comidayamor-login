@@ -120,6 +120,7 @@ const App = () => (
               {/* Custeio */}
               <Route path="/custeio/parametros" element={<R path="/custeio/parametros"><CusteioParametros /></R>} />
               <Route path="/custeio/insumos" element={<R path="/custeio/insumos"><CusteioInsumos /></R>} />
+              <Route path="/custeio/fichas" element={<R path="/custeio/fichas"><CusteioFichas /></R>} />
 
 
 
