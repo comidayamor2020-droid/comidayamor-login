@@ -32,7 +32,6 @@ const GROUPS: NavGroup[] = [
       { title: "Dashboard Financeiro", url: "/dashboard-financeiro", icon: PieChart },
       { title: "DRE", url: "/dre", icon: FileText },
       { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: TrendingUp },
-      { title: "Produção", url: "/producao", icon: Factory },
     ],
   },
   {
@@ -49,6 +48,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { title: "Portal B2B", url: "/b2b", icon: Store },
       { title: "Meus Pedidos", url: "/b2b/pedidos", icon: ClipboardList },
+      { title: "Produção B2B", url: "/producao", icon: Factory },
     ],
   },
   {
