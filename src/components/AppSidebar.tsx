@@ -142,9 +142,20 @@ export function AppSidebar({ onClose }: AppSidebarProps) {
         )}
 
         {/* Grouped items */}
-        {groupsFiltered.map((group) => (
-          <CollapsibleGroup key={group.label} label={group.label} items={group.items} onClose={onClose} badges={badges} />
-        ))}
+        {groupsFiltered.map((group) => {
+          // Hide misleading "Financeiro" label for gerente_operacional (only sees Produção)
+          const hideLabel = role === "gerente_operacional" && group.label === "Financeiro";
+          return (
+            <CollapsibleGroup
+              key={group.label}
+              label={group.label}
+              items={group.items}
+              onClose={onClose}
+              badges={badges}
+              hideLabel={hideLabel}
+            />
+          );
+        })}
       </div>
 
       <div className="border-t border-sidebar-border p-3">
