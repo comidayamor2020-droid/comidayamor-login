@@ -15,10 +15,11 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
   ],
   gerente_operacional: [
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
+    "/central-operacional",
     "/produtos", "/producao", "/clientes-b2b", "/b2b", "/b2b/pedidos",
   ],
-  loja: ["/op/estoque-loja", "/clientes-b2c"],
-  producao: ["/op/producao-dia"],
+  loja: ["/op/estoque-loja", "/central-operacional", "/clientes-b2c"],
+  producao: ["/op/producao-dia", "/central-operacional"],
   compras: ["/compras"],
   b2b_cliente: ["/b2b", "/b2b/pedidos"],
 };
