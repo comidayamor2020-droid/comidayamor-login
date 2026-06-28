@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, LogOut, Package, Factory, Store,
   ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
   BarChart3, Zap, ArrowLeftRight, CheckCircle, Calendar, X,
-  ChevronDown, Users, TrendingUp, PieChart,
+  ChevronDown, Users, TrendingUp, PieChart, LayoutGrid,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -54,6 +54,7 @@ const GROUPS: NavGroup[] = [
   {
     label: "Operacional",
     items: [
+      { title: "Central Operacional", url: "/central-operacional", icon: LayoutGrid },
       { title: "Resumo Operacional", url: "/op", icon: BarChart3 },
       { title: "Produção do Dia", url: "/op/producao-dia", icon: Zap },
       { title: "Estoque da Loja", url: "/op/estoque-loja", icon: Package },

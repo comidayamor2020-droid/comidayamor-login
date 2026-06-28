@@ -34,6 +34,7 @@ const ConciliacaoOp = lazy(() => import("./pages/op/Conciliacao"));
 const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 const Conselho = lazy(() => import("./pages/Conselho"));
+const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,11 @@ const App = () => (
               <Route path="/op/conciliacao" element={<R path="/op/conciliacao"><ConciliacaoOp /></R>} />
               <Route path="/op/aprovacoes" element={<R path="/op/aprovacoes"><AprovacoesOp /></R>} />
               <Route path="/op/programadas" element={<R path="/op/programadas"><ProducoesProgamadas /></R>} />
+
+              {/* Central Operacional — abas reaproveitando as telas existentes */}
+              <Route path="/central-operacional" element={<R path="/central-operacional"><CentralOperacional /></R>} />
+
+
 
               {/* Conselho — Strategic */}
               <Route path="/conselho" element={<R path="/conselho"><Conselho /></R>} />
