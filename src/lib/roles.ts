@@ -27,9 +27,9 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
 export const ROLE_DEFAULT_ROUTE: Record<AppRole, string> = {
   admin: "/",
   gestao: "/",
-  gerente_operacional: "/op",
-  loja: "/op/estoque-loja",
-  producao: "/op/producao-dia",
+  gerente_operacional: "/central-operacional",
+  loja: "/central-operacional",
+  producao: "/central-operacional",
   compras: "/compras",
   b2b_cliente: "/b2b",
 };
