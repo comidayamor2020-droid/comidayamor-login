@@ -60,6 +60,7 @@ const GROUPS: NavGroup[] = [
     label: "Custeio",
     items: [
       { title: "Insumos", url: "/custeio/insumos", icon: Package },
+      { title: "Fichas Técnicas", url: "/custeio/fichas", icon: BookOpen },
       { title: "Parâmetros", url: "/custeio/parametros", icon: Sliders },
     ],
   },
