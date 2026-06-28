@@ -37,6 +37,7 @@ const Conselho = lazy(() => import("./pages/Conselho"));
 const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
 const CusteioParametros = lazy(() => import("./pages/custeio/Parametros"));
 const CusteioInsumos = lazy(() => import("./pages/custeio/Insumos"));
+const CusteioFichas = lazy(() => import("./pages/custeio/FichasTecnicas"));
 
 const queryClient = new QueryClient();
 
