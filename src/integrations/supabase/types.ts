@@ -617,6 +617,42 @@ export type Database = {
           },
         ]
       }
+      custeio_insumos: {
+        Row: {
+          created_at: string
+          custo_unidade_base: number | null
+          id: string
+          nome: string
+          observacao: string | null
+          preco_embalagem: number
+          tamanho_embalagem: number
+          unidade_base: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custo_unidade_base?: number | null
+          id?: string
+          nome: string
+          observacao?: string | null
+          preco_embalagem?: number
+          tamanho_embalagem?: number
+          unidade_base: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custo_unidade_base?: number | null
+          id?: string
+          nome?: string
+          observacao?: string | null
+          preco_embalagem?: number
+          tamanho_embalagem?: number
+          unidade_base?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_snapshots: {
         Row: {
           created_at: string | null
@@ -1465,6 +1501,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parametros_custeio: {
+        Row: {
+          aliquota_imposto: number
+          created_at: string
+          custo_energia_kwh: number
+          custo_hora_mao_obra: number | null
+          id: string
+          margem_alvo: number
+          perda_refugo: number
+          updated_at: string
+        }
+        Insert: {
+          aliquota_imposto?: number
+          created_at?: string
+          custo_energia_kwh?: number
+          custo_hora_mao_obra?: number | null
+          id?: string
+          margem_alvo?: number
+          perda_refugo?: number
+          updated_at?: string
+        }
+        Update: {
+          aliquota_imposto?: number
+          created_at?: string
+          custo_energia_kwh?: number
+          custo_hora_mao_obra?: number | null
+          id?: string
+          margem_alvo?: number
+          perda_refugo?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       producao: {
         Row: {

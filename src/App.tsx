@@ -35,6 +35,8 @@ const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 const Conselho = lazy(() => import("./pages/Conselho"));
 const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
+const CusteioParametros = lazy(() => import("./pages/custeio/Parametros"));
+const CusteioInsumos = lazy(() => import("./pages/custeio/Insumos"));
 
 const queryClient = new QueryClient();
 
@@ -113,6 +115,10 @@ const App = () => (
 
               {/* Central Operacional — abas reaproveitando as telas existentes */}
               <Route path="/central-operacional" element={<R path="/central-operacional"><CentralOperacional /></R>} />
+
+              {/* Custeio */}
+              <Route path="/custeio/parametros" element={<R path="/custeio/parametros"><CusteioParametros /></R>} />
+              <Route path="/custeio/insumos" element={<R path="/custeio/insumos"><CusteioInsumos /></R>} />
 
 
 
