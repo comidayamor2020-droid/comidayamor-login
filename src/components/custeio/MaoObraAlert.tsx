@@ -11,7 +11,7 @@ export function MaoObraAlert() {
         .select("custo_hora_mao_obra")
         .limit(1)
         .maybeSingle();
-      return data as { custo_hora_mao_obra: number | null } | null;
+      return data as unknown as { custo_hora_mao_obra: number | null } | null;
     },
   });
 
