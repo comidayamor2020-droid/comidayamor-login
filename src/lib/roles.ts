@@ -13,7 +13,7 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
   ],
   gerente_operacional: [
     "/op", "/op/producao-dia", "/op/estoque-loja", "/op/conciliacao", "/op/aprovacoes", "/op/programadas",
-    "/produtos", "/fluxo-caixa", "/producao", "/clientes-b2b", "/b2b", "/b2b/pedidos",
+    "/produtos", "/producao", "/clientes-b2b", "/b2b", "/b2b/pedidos",
   ],
   loja: ["/op/estoque-loja", "/clientes-b2c"],
   producao: ["/op/producao-dia"],
