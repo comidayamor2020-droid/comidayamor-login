@@ -738,6 +738,106 @@ export type Database = {
           },
         ]
       }
+      ficha_componentes: {
+        Row: {
+          componente_ficha_id: string | null
+          componente_tipo: string
+          created_at: string
+          ficha_id: string
+          id: string
+          insumo_id: string | null
+          quantidade: number
+          updated_at: string
+        }
+        Insert: {
+          componente_ficha_id?: string | null
+          componente_tipo: string
+          created_at?: string
+          ficha_id: string
+          id?: string
+          insumo_id?: string | null
+          quantidade: number
+          updated_at?: string
+        }
+        Update: {
+          componente_ficha_id?: string | null
+          componente_tipo?: string
+          created_at?: string
+          ficha_id?: string
+          id?: string
+          insumo_id?: string | null
+          quantidade?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ficha_componentes_componente_ficha_id_fkey"
+            columns: ["componente_ficha_id"]
+            isOneToOne: false
+            referencedRelation: "fichas_tecnicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ficha_componentes_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: false
+            referencedRelation: "fichas_tecnicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ficha_componentes_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "custeio_insumos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fichas_tecnicas: {
+        Row: {
+          created_at: string
+          custo_unitario_calculado: number | null
+          embalagem_custo: number
+          energia_kwh: number | null
+          horas_trabalho: number | null
+          id: string
+          nome: string
+          precisa_revisao: boolean
+          rendimento: number | null
+          rendimento_unidade: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custo_unitario_calculado?: number | null
+          embalagem_custo?: number
+          energia_kwh?: number | null
+          horas_trabalho?: number | null
+          id?: string
+          nome: string
+          precisa_revisao?: boolean
+          rendimento?: number | null
+          rendimento_unidade?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custo_unitario_calculado?: number | null
+          embalagem_custo?: number
+          energia_kwh?: number | null
+          horas_trabalho?: number | null
+          id?: string
+          nome?: string
+          precisa_revisao?: boolean
+          rendimento?: number | null
+          rendimento_unidade?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fluxo_caixa_entradas: {
         Row: {
           categoria: string
