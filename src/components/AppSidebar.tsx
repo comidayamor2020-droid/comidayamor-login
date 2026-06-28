@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, LogOut, Package, Factory, Store,
   ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
   BarChart3, Zap, ArrowLeftRight, CheckCircle, Calendar, X,
-  ChevronDown, Users, TrendingUp, PieChart,
+  ChevronDown, Users, TrendingUp, PieChart, LayoutGrid,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
