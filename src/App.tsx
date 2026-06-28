@@ -37,6 +37,7 @@ const Conselho = lazy(() => import("./pages/Conselho"));
 const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
 const CusteioParametros = lazy(() => import("./pages/custeio/Parametros"));
 const CusteioInsumos = lazy(() => import("./pages/custeio/Insumos"));
+const CusteioFichas = lazy(() => import("./pages/custeio/FichasTecnicas"));
 
 const queryClient = new QueryClient();
 
@@ -119,6 +120,7 @@ const App = () => (
               {/* Custeio */}
               <Route path="/custeio/parametros" element={<R path="/custeio/parametros"><CusteioParametros /></R>} />
               <Route path="/custeio/insumos" element={<R path="/custeio/insumos"><CusteioInsumos /></R>} />
+              <Route path="/custeio/fichas" element={<R path="/custeio/fichas"><CusteioFichas /></R>} />
 
 
 

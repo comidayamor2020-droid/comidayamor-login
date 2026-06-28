@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, FileText, LogOut, Factory, Store,
   ClipboardList, ShoppingBag, Building2, Users as UsersIcon,
-  X, ChevronDown, Users, TrendingUp, PieChart, LayoutGrid, Sliders, Package,
+  X, ChevronDown, Users, TrendingUp, PieChart, LayoutGrid, Sliders, Package, BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +60,7 @@ const GROUPS: NavGroup[] = [
     label: "Custeio",
     items: [
       { title: "Insumos", url: "/custeio/insumos", icon: Package },
+      { title: "Fichas Técnicas", url: "/custeio/fichas", icon: BookOpen },
       { title: "Parâmetros", url: "/custeio/parametros", icon: Sliders },
     ],
   },
