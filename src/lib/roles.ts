@@ -19,7 +19,7 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
     "/produtos", "/producao", "/clientes-b2b", "/b2b", "/b2b/pedidos",
   ],
   loja: ["/op/estoque-loja", "/central-operacional", "/clientes-b2c"],
-  producao: ["/op/producao-dia", "/central-operacional"],
+  producao: ["/op/producao-dia", "/central-operacional", "/producao"],
   compras: ["/compras"],
   b2b_cliente: ["/b2b", "/b2b/pedidos"],
 };
