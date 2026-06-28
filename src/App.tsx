@@ -34,6 +34,7 @@ const ConciliacaoOp = lazy(() => import("./pages/op/Conciliacao"));
 const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 const Conselho = lazy(() => import("./pages/Conselho"));
+const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
 
 const queryClient = new QueryClient();
 
