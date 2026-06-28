@@ -68,22 +68,26 @@ export default function CentralOperacional() {
             <LayoutGrid className="h-4 w-4" />
             Central Operacional
           </div>
-          {tabs.map((t) => {
-            const isActive = t.key === (active ?? tabs[0].key);
-            return (
-              <button
-                key={t.key}
-                onClick={() => setActive(t.key)}
-                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {t.label}
-              </button>
-            );
-          })}
+          {tabs.length === 1 ? (
+            <span className="text-sm font-medium text-foreground">{tabs[0].label}</span>
+          ) : (
+            tabs.map((t) => {
+              const isActive = t.key === (active ?? tabs[0].key);
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setActive(t.key)}
+                  className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
