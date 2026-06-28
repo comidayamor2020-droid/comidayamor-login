@@ -54,6 +54,7 @@ const GROUPS: NavGroup[] = [
   {
     label: "Operacional",
     items: [
+      { title: "Central Operacional", url: "/central-operacional", icon: LayoutGrid },
       { title: "Resumo Operacional", url: "/op", icon: BarChart3 },
       { title: "Produção do Dia", url: "/op/producao-dia", icon: Zap },
       { title: "Estoque da Loja", url: "/op/estoque-loja", icon: Package },
