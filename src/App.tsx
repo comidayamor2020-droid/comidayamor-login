@@ -111,6 +111,11 @@ const App = () => (
               <Route path="/op/aprovacoes" element={<R path="/op/aprovacoes"><AprovacoesOp /></R>} />
               <Route path="/op/programadas" element={<R path="/op/programadas"><ProducoesProgamadas /></R>} />
 
+              {/* Central Operacional — abas reaproveitando as telas existentes */}
+              <Route path="/central-operacional" element={<R path="/central-operacional"><CentralOperacional /></R>} />
+
+
+
               {/* Conselho — Strategic */}
               <Route path="/conselho" element={<R path="/conselho"><Conselho /></R>} />
 
