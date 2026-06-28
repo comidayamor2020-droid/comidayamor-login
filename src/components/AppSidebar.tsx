@@ -53,7 +53,7 @@ const GROUPS: NavGroup[] = [
   {
     label: "Operacional",
     items: [
-      { title: "Central Operacional", url: "/central-operacional", icon: LayoutGrid },
+      { title: "Operacional", url: "/central-operacional", icon: LayoutGrid },
     ],
   },
   {
