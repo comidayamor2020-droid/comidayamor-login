@@ -1,8 +1,9 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { LayoutGrid } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_ROUTES, type AppRole } from "@/lib/roles";
 
 // Reutiliza as páginas operacionais existentes EXATAMENTE como estão.
-// Cada uma traz seu próprio DashboardLayout/conteúdo — nada é reescrito aqui.
 const ResumoOperacional = lazy(() => import("./op/ResumoOperacional"));
 const ProducaoDia = lazy(() => import("./op/ProducaoDia"));
 const EstoqueLoja = lazy(() => import("./op/EstoqueLoja"));
@@ -18,18 +19,45 @@ type TabKey =
   | "aprovacoes"
   | "programadas";
 
-const TABS: { key: TabKey; label: string; Component: React.ComponentType }[] = [
-  { key: "resumo", label: "Resumo", Component: ResumoOperacional },
-  { key: "producao-dia", label: "Produção do Dia", Component: ProducaoDia },
-  { key: "estoque", label: "Estoque / Contagem", Component: EstoqueLoja },
-  { key: "conciliacao", label: "Conciliação", Component: Conciliacao },
-  { key: "aprovacoes", label: "Aprovações", Component: Aprovacoes },
-  { key: "programadas", label: "Programadas", Component: ProducoesProgamadas },
+interface TabDef {
+  key: TabKey;
+  label: string;
+  /** Rota original em ROLE_ROUTES usada para checar permissão. */
+  route: string;
+  Component: React.ComponentType;
+}
+
+const ALL_TABS: TabDef[] = [
+  { key: "resumo", label: "Resumo", route: "/op", Component: ResumoOperacional },
+  { key: "producao-dia", label: "Produção do Dia", route: "/op/producao-dia", Component: ProducaoDia },
+  { key: "estoque", label: "Estoque / Contagem", route: "/op/estoque-loja", Component: EstoqueLoja },
+  { key: "conciliacao", label: "Conciliação", route: "/op/conciliacao", Component: Conciliacao },
+  { key: "aprovacoes", label: "Aprovações", route: "/op/aprovacoes", Component: Aprovacoes },
+  { key: "programadas", label: "Programadas", route: "/op/programadas", Component: ProducoesProgamadas },
 ];
 
 export default function CentralOperacional() {
-  const [active, setActive] = useState<TabKey>("resumo");
-  const Current = TABS.find((t) => t.key === active)!.Component;
+  const { profile } = useAuth();
+  const role = (profile?.role as AppRole) ?? null;
+  const allowedRoutes = role ? (ROLE_ROUTES[role] ?? []) : [];
+
+  const tabs = useMemo(
+    () => ALL_TABS.filter((t) => allowedRoutes.includes(t.route)),
+    [allowedRoutes],
+  );
+
+  const [active, setActive] = useState<TabKey | null>(tabs[0]?.key ?? null);
+  const Current = tabs.find((t) => t.key === active)?.Component ?? tabs[0]?.Component;
+
+  if (tabs.length === 0 || !Current) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-8">
+        <p className="text-sm text-muted-foreground">
+          Você não tem acesso a nenhuma área operacional.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -40,8 +68,8 @@ export default function CentralOperacional() {
             <LayoutGrid className="h-4 w-4" />
             Central Operacional
           </div>
-          {TABS.map((t) => {
-            const isActive = t.key === active;
+          {tabs.map((t) => {
+            const isActive = t.key === (active ?? tabs[0].key);
             return (
               <button
                 key={t.key}
@@ -59,7 +87,6 @@ export default function CentralOperacional() {
         </div>
       </div>
 
-      {/* Espaço para a faixa de abas não cobrir o conteúdo da página interna */}
       <div className="pt-12">
         <Suspense
           fallback={
