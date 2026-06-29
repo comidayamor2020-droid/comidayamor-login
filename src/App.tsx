@@ -35,6 +35,7 @@ const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 const Conselho = lazy(() => import("./pages/Conselho"));
 const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
+const CentralB2B = lazy(() => import("./pages/CentralB2B"));
 const CusteioParametros = lazy(() => import("./pages/custeio/Parametros"));
 const CusteioInsumos = lazy(() => import("./pages/custeio/Insumos"));
 const CusteioFichas = lazy(() => import("./pages/custeio/FichasTecnicas"));
