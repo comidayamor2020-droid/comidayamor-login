@@ -478,13 +478,14 @@ export default function FichasTecnicas() {
               <TableHead>Tipo</TableHead>
               <TableHead className="text-right">Rendimento</TableHead>
               <TableHead className="text-right">Custo unitário</TableHead>
+              <TableHead className="text-right">B2C (varejo)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-24"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {fichasComCusto.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma ficha cadastrada.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma ficha cadastrada.</TableCell></TableRow>
             ) : fichasComCusto.map((f) => (
               <TableRow key={f.id}>
                 <TableCell className="font-medium">{f.nome}</TableCell>
@@ -492,6 +493,9 @@ export default function FichasTecnicas() {
                 <TableCell className="text-right">{f.rendimento ?? "—"} {f.rendimento_unidade ?? ""}</TableCell>
                 <TableCell className="text-right">
                   {f._bd.custoUnitario > 0 ? `${formatBRL(f._bd.custoUnitario)} / ${f.rendimento_unidade ?? ""}` : "—"}
+                </TableCell>
+                <TableCell className="text-right">
+                  {(f as any).preco_venda_b2c != null ? formatBRL(Number((f as any).preco_venda_b2c)) : "—"}
                 </TableCell>
                 <TableCell>
                   {f._bd.precisaRevisao && (
