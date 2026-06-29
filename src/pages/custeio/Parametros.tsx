@@ -16,6 +16,7 @@ type Params = {
   aliquota_imposto: number;
   perda_refugo: number;
   margem_alvo: number;
+  cdi_anual: number;
 };
 
 const FIELDS: {
