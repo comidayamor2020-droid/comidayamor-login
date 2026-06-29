@@ -16,6 +16,7 @@ type Params = {
   aliquota_imposto: number;
   perda_refugo: number;
   margem_alvo: number;
+  cdi_anual: number;
 };
 
 const FIELDS: {
@@ -29,6 +30,7 @@ const FIELDS: {
   { key: "aliquota_imposto", label: "Alíquota de imposto (decimal)", help: "0.06 = 6%. Confirme com contador.", step: "0.0001" },
   { key: "perda_refugo", label: "Perda/refugo (decimal)", help: "0.05 = 5%. Quebra de produção.", step: "0.0001" },
   { key: "margem_alvo", label: "Margem-alvo (decimal)", help: "0.40 = 40%. Lucro desejado sobre o preço de venda.", step: "0.0001" },
+  { key: "cdi_anual", label: "CDI anual (decimal)", help: "Taxa anual de referência (CDI) usada para calcular o custo de vender a prazo. Hoje ~14% a.a. (0.14).", step: "0.0001" },
 ];
 
 export default function Parametros() {
@@ -57,6 +59,7 @@ export default function Parametros() {
         aliquota_imposto: String(data.aliquota_imposto ?? ""),
         perda_refugo: String(data.perda_refugo ?? ""),
         margem_alvo: String(data.margem_alvo ?? ""),
+        cdi_anual: String(data.cdi_anual ?? "0.14"),
       });
     }
   }, [data]);
@@ -70,6 +73,7 @@ export default function Parametros() {
       aliquota_imposto: Number(form.aliquota_imposto),
       perda_refugo: Number(form.perda_refugo),
       margem_alvo: Number(form.margem_alvo),
+      cdi_anual: Number(form.cdi_anual),
     };
     const { error } = await supabase
       .from("parametros_custeio" as any)

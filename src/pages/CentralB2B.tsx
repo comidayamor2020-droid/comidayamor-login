@@ -6,20 +6,29 @@ import { ROLE_ROUTES, type AppRole } from "@/lib/roles";
 const ClientesB2B = lazy(() => import("./ClientesB2B"));
 const MeusPedidos = lazy(() => import("./MeusPedidos"));
 const Producao = lazy(() => import("./Producao"));
+const SimuladorProposta = lazy(() => import("./b2b/SimuladorProposta"));
 
-type TabKey = "clientes" | "pedidos" | "producao";
+type TabKey = "clientes" | "pedidos" | "producao" | "simulador";
 
 interface TabDef {
   key: TabKey;
   label: string;
   route: string;
   Component: React.ComponentType;
+  roles?: AppRole[]; // se definido, restringe além do canAccess
 }
 
 const ALL_TABS: TabDef[] = [
   { key: "clientes", label: "Clientes B2B", route: "/clientes-b2b", Component: ClientesB2B },
   { key: "pedidos", label: "Pedidos", route: "/b2b/pedidos", Component: MeusPedidos },
   { key: "producao", label: "Produção do Pedido", route: "/producao", Component: Producao },
+  {
+    key: "simulador",
+    label: "Simulador de Proposta",
+    route: "/central-b2b",
+    Component: SimuladorProposta,
+    roles: ["admin", "gestao", "gerente_operacional"],
+  },
 ];
 
 export default function CentralB2B() {
@@ -28,8 +37,10 @@ export default function CentralB2B() {
   const allowedRoutes = role ? (ROLE_ROUTES[role] ?? []) : [];
 
   const tabs = useMemo(
-    () => ALL_TABS.filter((t) => allowedRoutes.includes(t.route)),
-    [allowedRoutes],
+    () =>
+      ALL_TABS.filter((t) => allowedRoutes.includes(t.route))
+        .filter((t) => !t.roles || (role && t.roles.includes(role))),
+    [allowedRoutes, role],
   );
 
   const [active, setActive] = useState<TabKey | null>(tabs[0]?.key ?? null);
