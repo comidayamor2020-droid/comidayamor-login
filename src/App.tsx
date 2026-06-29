@@ -117,6 +117,7 @@ const App = () => (
 
               {/* Central Operacional — abas reaproveitando as telas existentes */}
               <Route path="/central-operacional" element={<R path="/central-operacional"><CentralOperacional /></R>} />
+              <Route path="/central-b2b" element={<R path="/central-b2b"><CentralB2B /></R>} />
 
               {/* Custeio */}
               <Route path="/custeio/parametros" element={<R path="/custeio/parametros"><CusteioParametros /></R>} />
