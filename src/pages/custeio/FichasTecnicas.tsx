@@ -38,6 +38,7 @@ export default function FichasTecnicas() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FICHA);
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | "intermediario" | "produto_final">("todos");
   const [componentes, setComponentes] = useState<ComponenteRow[]>([]);
   const [saving, setSaving] = useState(false);
 
