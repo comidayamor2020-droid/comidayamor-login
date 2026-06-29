@@ -37,8 +37,10 @@ export default function CentralB2B() {
   const allowedRoutes = role ? (ROLE_ROUTES[role] ?? []) : [];
 
   const tabs = useMemo(
-    () => ALL_TABS.filter((t) => allowedRoutes.includes(t.route)),
-    [allowedRoutes],
+    () =>
+      ALL_TABS.filter((t) => allowedRoutes.includes(t.route))
+        .filter((t) => !t.roles || (role && t.roles.includes(role))),
+    [allowedRoutes, role],
   );
 
   const [active, setActive] = useState<TabKey | null>(tabs[0]?.key ?? null);
