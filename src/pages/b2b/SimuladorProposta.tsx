@@ -8,7 +8,10 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { FileDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { gerarPropostaPDF, gerarNumeroProposta } from "@/lib/proposta-pdf";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
