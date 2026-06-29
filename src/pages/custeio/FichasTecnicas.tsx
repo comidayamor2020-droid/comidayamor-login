@@ -219,6 +219,7 @@ export default function FichasTecnicas() {
       horas_trabalho: form.horas_trabalho ? Number(form.horas_trabalho) : null,
       energia_kwh: form.energia_kwh ? Number(form.energia_kwh) : null,
       embalagem_custo: Number(form.embalagem_custo || 0),
+      preco_venda_b2c: form.preco_venda_b2c ? Number(form.preco_venda_b2c) : null,
       precisa_revisao: breakdown.precisaRevisao,
       custo_unitario_calculado: breakdown.custoUnitario || null,
     };
