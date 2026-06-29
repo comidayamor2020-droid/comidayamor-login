@@ -495,9 +495,11 @@ export default function FichasTecnicas() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fichasComCusto.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma ficha cadastrada.</TableCell></TableRow>
-            ) : fichasComCusto.map((f) => (
+            {(() => {
+              const lista = fichasComCusto.filter((f) => filtroTipo === "todos" ? true : f.tipo === filtroTipo);
+              if (lista.length === 0) return (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma ficha encontrada.</TableCell></TableRow>
+            ); return lista.map((f) => (
               <TableRow key={f.id}>
                 <TableCell className="font-medium">{f.nome}</TableCell>
                 <TableCell className="text-xs">{f.tipo === "produto_final" ? "Produto final" : "Intermediário"}</TableCell>
