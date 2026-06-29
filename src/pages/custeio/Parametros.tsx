@@ -30,6 +30,7 @@ const FIELDS: {
   { key: "aliquota_imposto", label: "Alíquota de imposto (decimal)", help: "0.06 = 6%. Confirme com contador.", step: "0.0001" },
   { key: "perda_refugo", label: "Perda/refugo (decimal)", help: "0.05 = 5%. Quebra de produção.", step: "0.0001" },
   { key: "margem_alvo", label: "Margem-alvo (decimal)", help: "0.40 = 40%. Lucro desejado sobre o preço de venda.", step: "0.0001" },
+  { key: "cdi_anual", label: "CDI anual (decimal)", help: "Taxa anual de referência (CDI) usada para calcular o custo de vender a prazo. Hoje ~14% a.a. (0.14).", step: "0.0001" },
 ];
 
 export default function Parametros() {
