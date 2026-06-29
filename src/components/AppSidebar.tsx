@@ -46,9 +46,6 @@ const GROUPS: NavGroup[] = [
     label: "B2B",
     items: [
       { title: "Central B2B", url: "/central-b2b", icon: LayoutGrid },
-      { title: "Portal B2B", url: "/b2b", icon: Store },
-      { title: "Meus Pedidos", url: "/b2b/pedidos", icon: ClipboardList },
-      { title: "Produção B2B", url: "/producao", icon: Factory },
     ],
   },
   {
