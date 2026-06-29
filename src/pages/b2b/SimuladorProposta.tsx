@@ -34,12 +34,7 @@ type Ficha = {
   nome: string;
   custo_unitario_calculado: number | null;
   precisa_revisao: boolean | null;
-};
-
-type Produto = {
-  id: string;
-  nome: string;
-  preco_venda: number | null;
+  preco_venda_b2c: number | null;
 };
 
 type Cliente = {
