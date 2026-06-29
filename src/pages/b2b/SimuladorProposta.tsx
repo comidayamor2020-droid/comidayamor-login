@@ -8,7 +8,10 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { FileDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { gerarPropostaPDF, gerarNumeroProposta } from "@/lib/proposta-pdf";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -225,6 +228,48 @@ export default function SimuladorProposta() {
       algumRevisao,
     };
   }, [linhas, freteTotal, margemAlvo]);
+
+  const handleGerarPDF = () => {
+    const itensValidos = linhas.filter((l) => l.ficha && l.q > 0 && l.pv > 0);
+    if (itensValidos.length === 0) {
+      toast({
+        title: "Nenhum item válido",
+        description: "Adicione ao menos um produto com quantidade e preço B2B.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const clienteNome =
+      modoCliente === "cadastrado"
+        ? (() => {
+            const c = clientes?.find((x) => x.id === clienteId);
+            return c ? c.trade_name || c.company_name : "";
+          })()
+        : novoCliente.nome.trim();
+    if (!clienteNome) {
+      toast({
+        title: "Cliente não informado",
+        description: "Selecione um cliente cadastrado ou preencha o nome.",
+        variant: "destructive",
+      });
+      return;
+    }
+    gerarPropostaPDF({
+      numero: gerarNumeroProposta(),
+      emissao: new Date(),
+      validadeDias: 7,
+      cliente: clienteNome,
+      prazoDias: diasCorridos,
+      frete: freteTotal,
+      itens: itensValidos.map((l) => ({
+        nome: l.ficha!.nome,
+        qtd: l.q,
+        precoB2B: l.pv,
+        b2c: l.b2c,
+        margemComprador: l.margemComprador,
+      })),
+    });
+  };
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -481,6 +526,12 @@ export default function SimuladorProposta() {
               hint={`alvo ${pct(margemAlvo)}`}
               strong
             />
+          </div>
+
+          <div className="flex justify-end border-t pt-4">
+            <Button onClick={handleGerarPDF}>
+              <FileDown className="mr-2 h-4 w-4" /> Gerar PDF da proposta
+            </Button>
           </div>
         </Card>
       </div>
