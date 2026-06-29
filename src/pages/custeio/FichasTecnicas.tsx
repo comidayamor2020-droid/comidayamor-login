@@ -330,6 +330,18 @@ export default function FichasTecnicas() {
             <Input type="number" step="0.0001" value={form.embalagem_custo}
               onChange={(e) => setForm({ ...form, embalagem_custo: e.target.value })} />
           </div>
+          <div className="space-y-1.5">
+            <Label>
+              Preço de venda B2C — varejo (R$)
+              {form.tipo === "intermediario" && (
+                <span className="ml-1 text-xs text-muted-foreground">(opcional)</span>
+              )}
+            </Label>
+            <Input type="number" step="0.01" value={form.preco_venda_b2c}
+              onChange={(e) => setForm({ ...form, preco_venda_b2c: e.target.value })}
+              placeholder="—" />
+          </div>
+
         </div>
 
         {/* Componentes */}
