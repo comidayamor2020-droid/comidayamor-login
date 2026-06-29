@@ -35,6 +35,7 @@ const AprovacoesOp = lazy(() => import("./pages/op/Aprovacoes"));
 const ProducoesProgamadas = lazy(() => import("./pages/op/ProducoesProgamadas"));
 const Conselho = lazy(() => import("./pages/Conselho"));
 const CentralOperacional = lazy(() => import("./pages/CentralOperacional"));
+const CentralB2B = lazy(() => import("./pages/CentralB2B"));
 const CusteioParametros = lazy(() => import("./pages/custeio/Parametros"));
 const CusteioInsumos = lazy(() => import("./pages/custeio/Insumos"));
 const CusteioFichas = lazy(() => import("./pages/custeio/FichasTecnicas"));
@@ -116,6 +117,7 @@ const App = () => (
 
               {/* Central Operacional — abas reaproveitando as telas existentes */}
               <Route path="/central-operacional" element={<R path="/central-operacional"><CentralOperacional /></R>} />
+              <Route path="/central-b2b" element={<R path="/central-b2b"><CentralB2B /></R>} />
 
               {/* Custeio */}
               <Route path="/custeio/parametros" element={<R path="/custeio/parametros"><CusteioParametros /></R>} />

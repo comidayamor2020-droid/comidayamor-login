@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Factory, ChevronDown, ChevronUp, Truck, Clock, CheckCircle2, XCircle, Package } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon?: any }> = {
   draft: { label: "Rascunho", variant: "secondary" },
@@ -37,7 +38,7 @@ function getNextStatuses(current: string): string[] {
   return [...next, "cancelado"];
 }
 
-function OrderItems({ orderId }: { orderId: string }) {
+function OrderItems({ orderId, hidePrices }: { orderId: string; hidePrices?: boolean }) {
   const { data: items, isLoading } = useProductionOrderItems(orderId);
   if (isLoading) return <p className="px-5 py-3 text-sm text-muted-foreground">Carregando...</p>;
   if (!items?.length) return <p className="px-5 py-3 text-sm text-muted-foreground">Sem itens.</p>;
@@ -49,8 +50,8 @@ function OrderItems({ orderId }: { orderId: string }) {
           <tr className="text-xs uppercase text-muted-foreground">
             <th className="pb-2 text-left font-medium">Produto</th>
             <th className="pb-2 text-right font-medium">Qtd</th>
-            <th className="pb-2 text-right font-medium">Unit.</th>
-            <th className="pb-2 text-right font-medium">Total</th>
+            {!hidePrices && <th className="pb-2 text-right font-medium">Unit.</th>}
+            {!hidePrices && <th className="pb-2 text-right font-medium">Total</th>}
           </tr>
         </thead>
         <tbody>
@@ -58,8 +59,8 @@ function OrderItems({ orderId }: { orderId: string }) {
             <tr key={item.id} className="border-t border-border/50">
               <td className="py-2 text-foreground">{(item as any).produtos?.nome ?? "Produto"}</td>
               <td className="py-2 text-right tabular-nums">{item.quantity}</td>
-              <td className="py-2 text-right tabular-nums">{formatBRL(item.unit_price)}</td>
-              <td className="py-2 text-right tabular-nums font-medium">{formatBRL(item.total_price)}</td>
+              {!hidePrices && <td className="py-2 text-right tabular-nums">{formatBRL(item.unit_price)}</td>}
+              {!hidePrices && <td className="py-2 text-right tabular-nums font-medium">{formatBRL(item.total_price)}</td>}
             </tr>
           ))}
         </tbody>
@@ -69,6 +70,8 @@ function OrderItems({ orderId }: { orderId: string }) {
 }
 
 export default function Producao() {
+  const { profile } = useAuth();
+  const restricted = profile?.role === "producao";
   const { data: orders, isLoading } = useProductionOrders();
   const updateStatus = useUpdateOrderStatus();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -176,7 +179,7 @@ export default function Producao() {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm font-medium text-foreground">#{order.id.slice(0, 8)}</span>
                     <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                    {company?.company_name && (
+                    {!restricted && company?.company_name && (
                       <span className="text-sm text-muted-foreground">{company.company_name}</span>
                     )}
                     <span className="text-xs text-muted-foreground">
@@ -184,7 +187,9 @@ export default function Producao() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-foreground">{formatBRL(order.total_amount)}</span>
+                    {!restricted && (
+                      <span className="font-semibold text-foreground">{formatBRL(order.total_amount)}</span>
+                    )}
                     {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </button>
@@ -192,12 +197,14 @@ export default function Producao() {
                 {isExpanded && (
                   <>
                     <div className="border-t border-border px-5 py-3 text-sm">
-                      <div className="flex flex-wrap gap-x-8 gap-y-2 text-muted-foreground">
-                        {company?.contact_name && <span>Contato: {company.contact_name}</span>}
-                        {company?.phone && <span>Tel: {company.phone}</span>}
-                        {company?.whatsapp && <span>WhatsApp: {company.whatsapp}</span>}
-                        {company?.email && <span>Email: {company.email}</span>}
-                      </div>
+                      {!restricted && (
+                        <div className="flex flex-wrap gap-x-8 gap-y-2 text-muted-foreground">
+                          {company?.contact_name && <span>Contato: {company.contact_name}</span>}
+                          {company?.phone && <span>Tel: {company.phone}</span>}
+                          {company?.whatsapp && <span>WhatsApp: {company.whatsapp}</span>}
+                          {company?.email && <span>Email: {company.email}</span>}
+                        </div>
+                      )}
                       {order.notes && <p className="mt-2 text-muted-foreground"><span className="font-medium">Obs:</span> {order.notes}</p>}
                       {order.estimated_delivery_date && (
                         <p className="mt-2 text-foreground">
@@ -214,7 +221,7 @@ export default function Producao() {
                         </Button>
                       </div>
                     </div>
-                    <OrderItems orderId={order.id} />
+                    <OrderItems orderId={order.id} hidePrices={restricted} />
                   </>
                 )}
               </div>
