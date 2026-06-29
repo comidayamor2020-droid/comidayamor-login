@@ -179,7 +179,7 @@ export default function Producao() {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm font-medium text-foreground">#{order.id.slice(0, 8)}</span>
                     <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                    {company?.company_name && (
+                    {!restricted && company?.company_name && (
                       <span className="text-sm text-muted-foreground">{company.company_name}</span>
                     )}
                     <span className="text-xs text-muted-foreground">
@@ -187,7 +187,9 @@ export default function Producao() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-foreground">{formatBRL(order.total_amount)}</span>
+                    {!restricted && (
+                      <span className="font-semibold text-foreground">{formatBRL(order.total_amount)}</span>
+                    )}
                     {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </button>
@@ -195,12 +197,14 @@ export default function Producao() {
                 {isExpanded && (
                   <>
                     <div className="border-t border-border px-5 py-3 text-sm">
-                      <div className="flex flex-wrap gap-x-8 gap-y-2 text-muted-foreground">
-                        {company?.contact_name && <span>Contato: {company.contact_name}</span>}
-                        {company?.phone && <span>Tel: {company.phone}</span>}
-                        {company?.whatsapp && <span>WhatsApp: {company.whatsapp}</span>}
-                        {company?.email && <span>Email: {company.email}</span>}
-                      </div>
+                      {!restricted && (
+                        <div className="flex flex-wrap gap-x-8 gap-y-2 text-muted-foreground">
+                          {company?.contact_name && <span>Contato: {company.contact_name}</span>}
+                          {company?.phone && <span>Tel: {company.phone}</span>}
+                          {company?.whatsapp && <span>WhatsApp: {company.whatsapp}</span>}
+                          {company?.email && <span>Email: {company.email}</span>}
+                        </div>
+                      )}
                       {order.notes && <p className="mt-2 text-muted-foreground"><span className="font-medium">Obs:</span> {order.notes}</p>}
                       {order.estimated_delivery_date && (
                         <p className="mt-2 text-foreground">
@@ -217,7 +221,7 @@ export default function Producao() {
                         </Button>
                       </div>
                     </div>
-                    <OrderItems orderId={order.id} />
+                    <OrderItems orderId={order.id} hidePrices={restricted} />
                   </>
                 )}
               </div>
