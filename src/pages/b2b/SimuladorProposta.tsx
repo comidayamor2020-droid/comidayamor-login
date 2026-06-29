@@ -229,6 +229,48 @@ export default function SimuladorProposta() {
     };
   }, [linhas, freteTotal, margemAlvo]);
 
+  const handleGerarPDF = () => {
+    const itensValidos = linhas.filter((l) => l.ficha && l.q > 0 && l.pv > 0);
+    if (itensValidos.length === 0) {
+      toast({
+        title: "Nenhum item válido",
+        description: "Adicione ao menos um produto com quantidade e preço B2B.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const clienteNome =
+      modoCliente === "cadastrado"
+        ? (() => {
+            const c = clientes?.find((x) => x.id === clienteId);
+            return c ? c.trade_name || c.company_name : "";
+          })()
+        : novoCliente.nome.trim();
+    if (!clienteNome) {
+      toast({
+        title: "Cliente não informado",
+        description: "Selecione um cliente cadastrado ou preencha o nome.",
+        variant: "destructive",
+      });
+      return;
+    }
+    gerarPropostaPDF({
+      numero: gerarNumeroProposta(),
+      emissao: new Date(),
+      validadeDias: 7,
+      cliente: clienteNome,
+      prazoDias: diasCorridos,
+      frete: freteTotal,
+      itens: itensValidos.map((l) => ({
+        nome: l.ficha!.nome,
+        qtd: l.q,
+        precoB2B: l.pv,
+        b2c: l.b2c,
+        margemComprador: l.margemComprador,
+      })),
+    });
+  };
+
   return (
     <div className="mx-auto max-w-7xl p-6">
       <h1 className="mb-1 font-display text-2xl font-semibold">
