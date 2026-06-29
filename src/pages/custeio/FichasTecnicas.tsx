@@ -38,6 +38,7 @@ export default function FichasTecnicas() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FICHA);
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | "intermediario" | "produto_final">("todos");
   const [componentes, setComponentes] = useState<ComponenteRow[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -470,6 +471,16 @@ export default function FichasTecnicas() {
         </div>
       </Card>
 
+      <Card className="mb-3 flex flex-wrap items-center gap-2 p-3">
+        <span className="text-sm text-muted-foreground">Filtrar por tipo:</span>
+        <Button size="sm" variant={filtroTipo === "todos" ? "default" : "outline"} onClick={() => setFiltroTipo("todos")}>Todos</Button>
+        <Button size="sm" variant={filtroTipo === "intermediario" ? "default" : "outline"} onClick={() => setFiltroTipo("intermediario")}>Intermediário</Button>
+        <Button size="sm" variant={filtroTipo === "produto_final" ? "default" : "outline"} onClick={() => setFiltroTipo("produto_final")}>Produto final</Button>
+        <span className="ml-auto text-xs text-muted-foreground">
+          Insumos ficam em <a href="/custeio/insumos" className="underline">Insumos</a>
+        </span>
+      </Card>
+
       <Card>
         <Table>
           <TableHeader>
@@ -484,9 +495,11 @@ export default function FichasTecnicas() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fichasComCusto.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma ficha cadastrada.</TableCell></TableRow>
-            ) : fichasComCusto.map((f) => (
+            {(() => {
+              const lista = fichasComCusto.filter((f) => filtroTipo === "todos" ? true : f.tipo === filtroTipo);
+              if (lista.length === 0) return (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma ficha encontrada.</TableCell></TableRow>
+            ); return lista.map((f) => (
               <TableRow key={f.id}>
                 <TableCell className="font-medium">{f.nome}</TableCell>
                 <TableCell className="text-xs">{f.tipo === "produto_final" ? "Produto final" : "Intermediário"}</TableCell>
@@ -518,7 +531,7 @@ export default function FichasTecnicas() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            )); })()}
           </TableBody>
         </Table>
       </Card>
