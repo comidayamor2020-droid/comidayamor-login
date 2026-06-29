@@ -70,6 +70,8 @@ function OrderItems({ orderId, hidePrices }: { orderId: string; hidePrices?: boo
 }
 
 export default function Producao() {
+  const { profile } = useAuth();
+  const restricted = profile?.role === "producao";
   const { data: orders, isLoading } = useProductionOrders();
   const updateStatus = useUpdateOrderStatus();
   const [expandedId, setExpandedId] = useState<string | null>(null);
