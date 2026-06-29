@@ -73,6 +73,7 @@ export default function Parametros() {
       aliquota_imposto: Number(form.aliquota_imposto),
       perda_refugo: Number(form.perda_refugo),
       margem_alvo: Number(form.margem_alvo),
+      cdi_anual: Number(form.cdi_anual),
     };
     const { error } = await supabase
       .from("parametros_custeio" as any)
