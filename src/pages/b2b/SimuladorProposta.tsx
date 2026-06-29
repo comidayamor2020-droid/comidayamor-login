@@ -80,22 +80,11 @@ export default function SimuladorProposta() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fichas_tecnicas" as any)
-        .select("id, nome, custo_unitario_calculado, precisa_revisao, tipo")
+        .select("id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo")
         .eq("tipo", "produto_final")
         .order("nome");
       if (error) throw error;
       return (data as unknown as Ficha[]) ?? [];
-    },
-  });
-
-  const { data: produtos } = useQuery({
-    queryKey: ["produtos", "simulador"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("produtos")
-        .select("id, nome, preco_venda");
-      if (error) throw error;
-      return (data as Produto[]) ?? [];
     },
   });
 
@@ -123,15 +112,6 @@ export default function SimuladorProposta() {
       return data as unknown as Params | null;
     },
   });
-
-  // B2C lookup por nome (fichas e produtos não têm FK direta)
-  const b2cByNome = useMemo(() => {
-    const m = new Map<string, number>();
-    (produtos ?? []).forEach((p) => {
-      if (p.preco_venda != null) m.set(p.nome.trim().toLowerCase(), Number(p.preco_venda));
-    });
-    return m;
-  }, [produtos]);
 
   // Cliente
   const [modoCliente, setModoCliente] = useState<"cadastrado" | "novo">(
