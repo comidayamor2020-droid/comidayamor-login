@@ -471,6 +471,16 @@ export default function FichasTecnicas() {
         </div>
       </Card>
 
+      <Card className="mb-3 flex flex-wrap items-center gap-2 p-3">
+        <span className="text-sm text-muted-foreground">Filtrar por tipo:</span>
+        <Button size="sm" variant={filtroTipo === "todos" ? "default" : "outline"} onClick={() => setFiltroTipo("todos")}>Todos</Button>
+        <Button size="sm" variant={filtroTipo === "intermediario" ? "default" : "outline"} onClick={() => setFiltroTipo("intermediario")}>Intermediário</Button>
+        <Button size="sm" variant={filtroTipo === "produto_final" ? "default" : "outline"} onClick={() => setFiltroTipo("produto_final")}>Produto final</Button>
+        <span className="ml-auto text-xs text-muted-foreground">
+          Insumos ficam em <a href="/custeio/insumos" className="underline">Insumos</a>
+        </span>
+      </Card>
+
       <Card>
         <Table>
           <TableHeader>
