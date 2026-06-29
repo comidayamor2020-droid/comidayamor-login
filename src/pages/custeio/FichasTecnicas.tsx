@@ -31,6 +31,7 @@ const EMPTY_FICHA = {
   horas_trabalho: "",
   energia_kwh: "",
   embalagem_custo: "",
+  preco_venda_b2c: "",
 };
 
 export default function FichasTecnicas() {
@@ -161,6 +162,7 @@ export default function FichasTecnicas() {
       horas_trabalho: f.horas_trabalho != null ? String(f.horas_trabalho) : "",
       energia_kwh: f.energia_kwh != null ? String(f.energia_kwh) : "",
       embalagem_custo: f.embalagem_custo != null ? String(f.embalagem_custo) : "",
+      preco_venda_b2c: (f as any).preco_venda_b2c != null ? String((f as any).preco_venda_b2c) : "",
     });
     const { data } = await supabase
       .from("ficha_componentes" as any).select("*").eq("ficha_id", f.id);
@@ -217,6 +219,7 @@ export default function FichasTecnicas() {
       horas_trabalho: form.horas_trabalho ? Number(form.horas_trabalho) : null,
       energia_kwh: form.energia_kwh ? Number(form.energia_kwh) : null,
       embalagem_custo: Number(form.embalagem_custo || 0),
+      preco_venda_b2c: form.preco_venda_b2c ? Number(form.preco_venda_b2c) : null,
       precisa_revisao: breakdown.precisaRevisao,
       custo_unitario_calculado: breakdown.custoUnitario || null,
     };
@@ -327,6 +330,18 @@ export default function FichasTecnicas() {
             <Input type="number" step="0.0001" value={form.embalagem_custo}
               onChange={(e) => setForm({ ...form, embalagem_custo: e.target.value })} />
           </div>
+          <div className="space-y-1.5">
+            <Label>
+              Preço de venda B2C — varejo (R$)
+              {form.tipo === "intermediario" && (
+                <span className="ml-1 text-xs text-muted-foreground">(opcional)</span>
+              )}
+            </Label>
+            <Input type="number" step="0.01" value={form.preco_venda_b2c}
+              onChange={(e) => setForm({ ...form, preco_venda_b2c: e.target.value })}
+              placeholder="—" />
+          </div>
+
         </div>
 
         {/* Componentes */}
@@ -463,13 +478,14 @@ export default function FichasTecnicas() {
               <TableHead>Tipo</TableHead>
               <TableHead className="text-right">Rendimento</TableHead>
               <TableHead className="text-right">Custo unitário</TableHead>
+              <TableHead className="text-right">B2C (varejo)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-24"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {fichasComCusto.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma ficha cadastrada.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma ficha cadastrada.</TableCell></TableRow>
             ) : fichasComCusto.map((f) => (
               <TableRow key={f.id}>
                 <TableCell className="font-medium">{f.nome}</TableCell>
@@ -477,6 +493,9 @@ export default function FichasTecnicas() {
                 <TableCell className="text-right">{f.rendimento ?? "—"} {f.rendimento_unidade ?? ""}</TableCell>
                 <TableCell className="text-right">
                   {f._bd.custoUnitario > 0 ? `${formatBRL(f._bd.custoUnitario)} / ${f.rendimento_unidade ?? ""}` : "—"}
+                </TableCell>
+                <TableCell className="text-right">
+                  {(f as any).preco_venda_b2c != null ? formatBRL(Number((f as any).preco_venda_b2c)) : "—"}
                 </TableCell>
                 <TableCell>
                   {f._bd.precisaRevisao && (

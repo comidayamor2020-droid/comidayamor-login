@@ -1,0 +1,1 @@
+ALTER TABLE public.fichas_tecnicas ADD COLUMN IF NOT EXISTS preco_venda_b2c numeric;

@@ -803,6 +803,7 @@ export type Database = {
           id: string
           nome: string
           precisa_revisao: boolean
+          preco_venda_b2c: number | null
           rendimento: number | null
           rendimento_unidade: string | null
           tipo: string
@@ -817,6 +818,7 @@ export type Database = {
           id?: string
           nome: string
           precisa_revisao?: boolean
+          preco_venda_b2c?: number | null
           rendimento?: number | null
           rendimento_unidade?: string | null
           tipo: string
@@ -831,6 +833,7 @@ export type Database = {
           id?: string
           nome?: string
           precisa_revisao?: boolean
+          preco_venda_b2c?: number | null
           rendimento?: number | null
           rendimento_unidade?: string | null
           tipo?: string

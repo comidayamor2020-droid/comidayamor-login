@@ -34,12 +34,7 @@ type Ficha = {
   nome: string;
   custo_unitario_calculado: number | null;
   precisa_revisao: boolean | null;
-};
-
-type Produto = {
-  id: string;
-  nome: string;
-  preco_venda: number | null;
+  preco_venda_b2c: number | null;
 };
 
 type Cliente = {
@@ -85,22 +80,11 @@ export default function SimuladorProposta() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fichas_tecnicas" as any)
-        .select("id, nome, custo_unitario_calculado, precisa_revisao, tipo")
+        .select("id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo")
         .eq("tipo", "produto_final")
         .order("nome");
       if (error) throw error;
       return (data as unknown as Ficha[]) ?? [];
-    },
-  });
-
-  const { data: produtos } = useQuery({
-    queryKey: ["produtos", "simulador"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("produtos")
-        .select("id, nome, preco_venda");
-      if (error) throw error;
-      return (data as Produto[]) ?? [];
     },
   });
 
@@ -128,15 +112,6 @@ export default function SimuladorProposta() {
       return data as unknown as Params | null;
     },
   });
-
-  // B2C lookup por nome (fichas e produtos não têm FK direta)
-  const b2cByNome = useMemo(() => {
-    const m = new Map<string, number>();
-    (produtos ?? []).forEach((p) => {
-      if (p.preco_venda != null) m.set(p.nome.trim().toLowerCase(), Number(p.preco_venda));
-    });
-    return m;
-  }, [produtos]);
 
   // Cliente
   const [modoCliente, setModoCliente] = useState<"cadastrado" | "novo">(
@@ -191,7 +166,7 @@ export default function SimuladorProposta() {
       else if (pv >= precoMinAjustado) semaforo = "verde";
       else semaforo = "amarelo";
 
-      const b2c = ficha ? b2cByNome.get(ficha.nome.trim().toLowerCase()) : undefined;
+      const b2c = ficha?.preco_venda_b2c != null ? Number(ficha.preco_venda_b2c) : null;
       const margemComprador =
         b2c && b2c > 0 && pv > 0 ? (b2c - pv) / b2c : null;
 
@@ -209,7 +184,7 @@ export default function SimuladorProposta() {
         precoMinAjustado,
         margemReal,
         semaforo,
-        b2c: b2c ?? null,
+        b2c,
         margemComprador,
         precisaRevisao,
         // totais por linha
@@ -219,7 +194,7 @@ export default function SimuladorProposta() {
         vpTotal: vp * q,
       };
     });
-  }, [items, fichas, b2cByNome, aliq, margemAlvo, fator]);
+  }, [items, fichas, aliq, margemAlvo, fator]);
 
   const total = useMemo(() => {
     const receita = linhas.reduce((s, l) => s + l.receita, 0);
