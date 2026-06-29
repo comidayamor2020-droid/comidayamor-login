@@ -1,9 +1,17 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 
 type Ficha = {
@@ -20,6 +36,19 @@ type Ficha = {
   precisa_revisao: boolean | null;
 };
 
+type Produto = {
+  id: string;
+  nome: string;
+  preco_venda: number | null;
+};
+
+type Cliente = {
+  id: string;
+  company_name: string;
+  trade_name: string | null;
+  contact_name: string | null;
+};
+
 type Params = {
   aliquota_imposto: number;
   margem_alvo: number;
@@ -27,10 +56,28 @@ type Params = {
   custo_hora_mao_obra: number | null;
 };
 
+type Item = {
+  key: string;
+  fichaId: string;
+  qtd: string;
+  preco: string;
+};
+
 const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  isFinite(n)
+    ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    : "—";
 const pct = (n: number) =>
-  `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+  isFinite(n)
+    ? `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`
+    : "—";
+
+const newItem = (): Item => ({
+  key: crypto.randomUUID(),
+  fichaId: "",
+  qtd: "1",
+  preco: "",
+});
 
 export default function SimuladorProposta() {
   const { data: fichas } = useQuery({
@@ -42,7 +89,30 @@ export default function SimuladorProposta() {
         .eq("tipo", "produto_final")
         .order("nome");
       if (error) throw error;
-      return (data as unknown as (Ficha & { tipo: string })[]) ?? [];
+      return (data as unknown as Ficha[]) ?? [];
+    },
+  });
+
+  const { data: produtos } = useQuery({
+    queryKey: ["produtos", "simulador"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("id, nome, preco_venda");
+      if (error) throw error;
+      return (data as Produto[]) ?? [];
+    },
+  });
+
+  const { data: clientes } = useQuery({
+    queryKey: ["b2b_companies", "simulador"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("b2b_companies")
+        .select("id, company_name, trade_name, contact_name")
+        .order("company_name");
+      if (error) throw error;
+      return (data as Cliente[]) ?? [];
     },
   });
 
@@ -59,260 +129,384 @@ export default function SimuladorProposta() {
     },
   });
 
-  const [fichaId, setFichaId] = useState<string>("");
-  const [qtd, setQtd] = useState<string>("1");
+  // B2C lookup por nome (fichas e produtos não têm FK direta)
+  const b2cByNome = useMemo(() => {
+    const m = new Map<string, number>();
+    (produtos ?? []).forEach((p) => {
+      if (p.preco_venda != null) m.set(p.nome.trim().toLowerCase(), Number(p.preco_venda));
+    });
+    return m;
+  }, [produtos]);
+
+  // Cliente
+  const [modoCliente, setModoCliente] = useState<"cadastrado" | "novo">(
+    "cadastrado",
+  );
+  const [clienteId, setClienteId] = useState<string>("");
+  const [novoCliente, setNovoCliente] = useState({
+    nome: "",
+    contato: "",
+    telefone: "",
+  });
+
+  // Condições
   const [prazo, setPrazo] = useState<string>("30");
-  const [precoVenda, setPrecoVenda] = useState<string>("");
   const [frete, setFrete] = useState<string>("0");
 
-  const ficha = fichas?.find((f) => f.id === fichaId);
-  const custoIncompleto =
-    !!ficha &&
-    (ficha.precisa_revisao === true ||
-      !params?.custo_hora_mao_obra ||
-      Number(params?.custo_hora_mao_obra) <= 0);
+  // Itens
+  const [items, setItems] = useState<Item[]>([newItem()]);
+  const updateItem = (key: string, patch: Partial<Item>) =>
+    setItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)));
+  const removeItem = (key: string) =>
+    setItems((prev) => (prev.length === 1 ? prev : prev.filter((it) => it.key !== key)));
 
-  const calc = useMemo(() => {
-    if (!ficha || !params) return null;
-    const custo = Number(ficha.custo_unitario_calculado ?? 0);
-    const aliq = Number(params.aliquota_imposto ?? 0);
-    const margem = Number(params.margem_alvo ?? 0);
-    const cdi = Number(params.cdi_anual ?? 0);
-    const q = Math.max(0, Number(qtd) || 0);
-    const diasCorridos = Math.max(0, Number(prazo) || 0);
-    const pv = Math.max(0, Number(precoVenda) || 0);
-    const freteTotal = Math.max(0, Number(frete) || 0);
+  const aliq = Number(params?.aliquota_imposto ?? 0);
+  const margemAlvo = Number(params?.margem_alvo ?? 0);
+  const cdi = Number(params?.cdi_anual ?? 0);
+  const diasCorridos = Math.max(0, Number(prazo) || 0);
+  const taxaDia = Math.pow(1 + cdi, 1 / 252) - 1;
+  const diasUteis = Math.round(diasCorridos * (252 / 365));
+  const fator = Math.pow(1 + taxaDia, diasUteis);
+  const freteTotal = Math.max(0, Number(frete) || 0);
 
-    // Preço mínimo (saudável, sem prazo)
-    const denom = 1 - aliq - margem;
-    const precoMin = denom > 0 ? custo / denom : Infinity;
+  const custoIncompletoGeral =
+    !params?.custo_hora_mao_obra || Number(params?.custo_hora_mao_obra) <= 0;
 
-    // Custo do prazo
-    const taxaDia = Math.pow(1 + cdi, 1 / 252) - 1;
-    const diasUteis = Math.round(diasCorridos * (252 / 365));
-    const fator = Math.pow(1 + taxaDia, diasUteis);
-    const vp = pv / fator;
-    const custoPrazoUnit = pv - vp;
+  const linhas = useMemo(() => {
+    return items.map((it) => {
+      const ficha = fichas?.find((f) => f.id === it.fichaId);
+      const custo = Number(ficha?.custo_unitario_calculado ?? 0);
+      const q = Math.max(0, Number(it.qtd) || 0);
+      const pv = Math.max(0, Number(it.preco) || 0);
+      const denom = 1 - aliq - margemAlvo;
+      const precoMin = denom > 0 ? custo / denom : Infinity;
+      const vp = pv / fator;
+      const custoPrazoUnit = pv - vp;
+      const precoMinAjustado = precoMin + custoPrazoUnit;
+      const margemReal = vp > 0 ? (vp - custo - vp * aliq) / vp : -Infinity;
 
-    const precoMinAjustado = precoMin + custoPrazoUnit;
+      let semaforo: "verde" | "amarelo" | "vermelho" = "vermelho";
+      if (!ficha || pv <= 0) semaforo = "vermelho";
+      else if (vp < custo + vp * aliq) semaforo = "vermelho";
+      else if (pv >= precoMinAjustado) semaforo = "verde";
+      else semaforo = "amarelo";
 
-    // Margem real (sobre valor presente)
-    const margemReal = vp > 0 ? (vp - custo - vp * aliq) / vp : -Infinity;
+      const b2c = ficha ? b2cByNome.get(ficha.nome.trim().toLowerCase()) : undefined;
+      const margemComprador =
+        b2c && b2c > 0 && pv > 0 ? (b2c - pv) / b2c : null;
 
-    // Totais
-    const receitaBruta = pv * q;
-    const custoTotal = custo * q;
-    const impostoTotal = vp * aliq * q;
-    const lucroEstimado = vp * q - custoTotal - impostoTotal - freteTotal;
+      const precisaRevisao = !!ficha?.precisa_revisao;
 
-    // Semáforo
+      return {
+        item: it,
+        ficha,
+        custo,
+        q,
+        pv,
+        vp,
+        custoPrazoUnit,
+        precoMin,
+        precoMinAjustado,
+        margemReal,
+        semaforo,
+        b2c: b2c ?? null,
+        margemComprador,
+        precisaRevisao,
+        // totais por linha
+        receita: pv * q,
+        custoTotal: custo * q,
+        impostoTotal: vp * aliq * q,
+        vpTotal: vp * q,
+      };
+    });
+  }, [items, fichas, b2cByNome, aliq, margemAlvo, fator]);
+
+  const total = useMemo(() => {
+    const receita = linhas.reduce((s, l) => s + l.receita, 0);
+    const custoTotal = linhas.reduce((s, l) => s + l.custoTotal, 0) + freteTotal;
+    const impostoTotal = linhas.reduce((s, l) => s + l.impostoTotal, 0);
+    const vpTotal = linhas.reduce((s, l) => s + l.vpTotal, 0);
+    const custoPrazoTotal = receita - vpTotal;
+    const lucro = vpTotal - custoTotal - impostoTotal;
+    const margemReal = vpTotal > 0 ? lucro / vpTotal : -Infinity;
+
     let semaforo: "verde" | "amarelo" | "vermelho" = "vermelho";
-    if (vp < custo + vp * aliq) semaforo = "vermelho";
-    else if (pv >= precoMinAjustado) semaforo = "verde";
+    if (receita <= 0) semaforo = "vermelho";
+    else if (lucro < 0) semaforo = "vermelho";
+    else if (margemReal >= margemAlvo) semaforo = "verde";
     else semaforo = "amarelo";
 
-    // Desconto máximo
-    const espacoDesconto = pv - precoMinAjustado;
-    const espacoDescontoPct = pv > 0 ? espacoDesconto / pv : 0;
+    const algumRevisao = linhas.some((l) => l.precisaRevisao);
 
     return {
-      custo,
-      aliq,
-      margem,
-      precoMin,
-      taxaDia,
-      diasUteis,
-      vp,
-      custoPrazoUnit,
-      precoMinAjustado,
-      margemReal,
-      receitaBruta,
+      receita,
       custoTotal,
       impostoTotal,
-      freteTotal,
-      lucroEstimado,
+      vpTotal,
+      custoPrazoTotal,
+      lucro,
+      margemReal,
       semaforo,
-      espacoDesconto,
-      espacoDescontoPct,
-      q,
-      pv,
+      algumRevisao,
     };
-  }, [ficha, params, qtd, prazo, precoVenda, frete]);
+  }, [linhas, freteTotal, margemAlvo]);
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-7xl p-6">
       <h1 className="mb-1 font-display text-2xl font-semibold">
         Simulador de Proposta B2B
       </h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Calcule se um preço de venda B2B é saudável considerando custo, imposto,
-        margem e prazo de pagamento.
+        Monte uma proposta com vários itens, defina prazo e frete, e veja a
+        margem consolidada + margem do comprador por item.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Inputs */}
-        <Card className="space-y-4 p-6">
+      {(custoIncompletoGeral || total.algumRevisao) && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p>
+            <strong>Custo incompleto (sem mão de obra)</strong> — esta
+            simulação é provisória. Não feche negócio com base nela até
+            completar os custos.
+          </p>
+        </div>
+      )}
+
+      {/* Cliente */}
+      <Card className="mb-4 space-y-4 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold">Cliente</h2>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={modoCliente === "cadastrado" ? "default" : "outline"}
+              onClick={() => setModoCliente("cadastrado")}
+            >
+              Cadastrado
+            </Button>
+            <Button
+              size="sm"
+              variant={modoCliente === "novo" ? "default" : "outline"}
+              onClick={() => setModoCliente("novo")}
+            >
+              Novo
+            </Button>
+          </div>
+        </div>
+
+        {modoCliente === "cadastrado" ? (
           <div className="space-y-1.5">
-            <Label>Produto (ficha técnica)</Label>
-            <Select value={fichaId} onValueChange={setFichaId}>
+            <Label>Selecione o cliente B2B</Label>
+            <Select value={clienteId} onValueChange={setClienteId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione um produto final" />
+                <SelectValue placeholder="Cliente cadastrado" />
               </SelectTrigger>
               <SelectContent>
-                {fichas?.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
-                    {f.nome} — {brl(Number(f.custo_unitario_calculado ?? 0))}/un
+                {clientes?.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.trade_name || c.company_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
+        ) : (
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>Quantidade (un)</Label>
+              <Label>Nome / Empresa</Label>
               <Input
-                type="number"
-                min="0"
-                value={qtd}
-                onChange={(e) => setQtd(e.target.value)}
+                value={novoCliente.nome}
+                onChange={(e) =>
+                  setNovoCliente({ ...novoCliente, nome: e.target.value })
+                }
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Prazo de pagamento (dias)</Label>
+              <Label>Contato</Label>
               <Input
-                type="number"
-                min="0"
-                value={prazo}
-                onChange={(e) => setPrazo(e.target.value)}
+                value={novoCliente.contato}
+                onChange={(e) =>
+                  setNovoCliente({ ...novoCliente, contato: e.target.value })
+                }
               />
-              <p className="text-xs text-muted-foreground">
-                0 = à vista. Ex: 30, 60.
-              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefone / WhatsApp</Label>
+              <Input
+                value={novoCliente.telefone}
+                onChange={(e) =>
+                  setNovoCliente({ ...novoCliente, telefone: e.target.value })
+                }
+              />
             </div>
           </div>
+        )}
+      </Card>
 
+      {/* Itens */}
+      <Card className="mb-4 p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold">Itens da proposta</h2>
+          <Button size="sm" onClick={() => setItems([...items, newItem()])}>
+            <Plus className="mr-1 h-4 w-4" /> Adicionar item
+          </Button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[220px]">Produto</TableHead>
+                <TableHead className="w-24">Qtd</TableHead>
+                <TableHead className="w-32">Preço B2B (R$)</TableHead>
+                <TableHead className="w-28">Custo un.</TableHead>
+                <TableHead className="w-28">Margem real</TableHead>
+                <TableHead className="w-16">Status</TableHead>
+                <TableHead className="w-28">B2C sugerido</TableHead>
+                <TableHead className="w-32">Margem comprador</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {linhas.map((l) => (
+                <TableRow key={l.item.key}>
+                  <TableCell>
+                    <Select
+                      value={l.item.fichaId}
+                      onValueChange={(v) => updateItem(l.item.key, { fichaId: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fichas?.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={l.item.qtd}
+                      onChange={(e) =>
+                        updateItem(l.item.key, { qtd: e.target.value })
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={l.item.preco}
+                      onChange={(e) =>
+                        updateItem(l.item.key, { preco: e.target.value })
+                      }
+                      placeholder="0,00"
+                    />
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {l.ficha ? brl(l.custo) : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm font-medium">
+                    {l.ficha && l.pv > 0 ? pct(l.margemReal) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {l.ficha && l.pv > 0 ? (
+                      <SemaforoChip tipo={l.semaforo} />
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {l.b2c != null ? brl(l.b2c) : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {l.margemComprador != null ? pct(l.margemComprador) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeItem(l.item.key)}
+                      disabled={items.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      {/* Condições + Resumo */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="space-y-4 p-6 md:col-span-1">
+          <h2 className="font-display text-lg font-semibold">Condições</h2>
           <div className="space-y-1.5">
-            <Label>Preço de venda unitário pretendido (R$)</Label>
+            <Label>Prazo de pagamento (dias)</Label>
             <Input
               type="number"
-              step="0.01"
               min="0"
-              value={precoVenda}
-              onChange={(e) => setPrecoVenda(e.target.value)}
-              placeholder="0,00"
+              value={prazo}
+              onChange={(e) => setPrazo(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              0 = à vista. Taxa/dia útil: {pct(taxaDia)} ({diasUteis} dias úteis)
+            </p>
           </div>
-
           <div className="space-y-1.5">
-            <Label>Frete / entrega — total do pedido (R$)</Label>
+            <Label>Frete / entrega — total (R$)</Label>
             <Input
               type="number"
-              step="0.01"
               min="0"
+              step="0.01"
               value={frete}
               onChange={(e) => setFrete(e.target.value)}
             />
           </div>
-
-          {custoIncompleto && (
-            <div className="flex items-start gap-2 rounded-lg border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-900">
-              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <p>
-                <strong>Custo incompleto (sem mão de obra)</strong> — esta
-                simulação é provisória. Não feche negócio com base nela até
-                completar os custos.
-              </p>
-            </div>
-          )}
         </Card>
 
-        {/* Resultados */}
-        <Card className="space-y-4 p-6">
-          {!calc ? (
-            <p className="text-sm text-muted-foreground">
-              Selecione um produto e preencha os campos para ver os cálculos.
-            </p>
-          ) : (
-            <>
-              <Semaforo
-                tipo={calc.semaforo}
-                precoMinAjustado={calc.precoMinAjustado}
-                margemReal={calc.margemReal}
-                margemAlvo={calc.margem}
-              />
+        <Card className="space-y-4 p-6 md:col-span-2">
+          <h2 className="font-display text-lg font-semibold">Resumo da proposta</h2>
 
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <Linha label="Custo unitário (ficha)" value={brl(calc.custo)} />
-                <Linha
-                  label="Preço mínimo (saudável)"
-                  value={
-                    isFinite(calc.precoMin) ? brl(calc.precoMin) : "—"
-                  }
-                />
-                <Linha
-                  label="Custo do prazo / un"
-                  value={brl(calc.custoPrazoUnit)}
-                  hint={`${calc.diasUteis} dias úteis · taxa/dia ${pct(
-                    calc.taxaDia,
-                  )}`}
-                />
-                <Linha
-                  label="Preço mínimo ajustado ao prazo"
-                  value={
-                    isFinite(calc.precoMinAjustado)
-                      ? brl(calc.precoMinAjustado)
-                      : "—"
-                  }
-                  strong
-                />
-                <Linha
-                  label="Valor presente (un)"
-                  value={brl(calc.vp)}
-                  hint="preço descontado o prazo"
-                />
-                <Linha
-                  label="Margem real da proposta"
-                  value={pct(calc.margemReal)}
-                  strong
-                />
-              </div>
+          <SemaforoBox
+            tipo={total.semaforo}
+            margemReal={total.margemReal}
+            margemAlvo={margemAlvo}
+          />
 
-              <div className="rounded-lg border border-border bg-muted/30 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-                  Espaço para desconto
-                </p>
-                {calc.semaforo === "vermelho" || calc.espacoDesconto <= 0 ? (
-                  <p className="text-sm font-semibold text-destructive">
-                    Sem espaço para desconto.
-                  </p>
-                ) : (
-                  <p className="text-sm">
-                    Até <strong>{brl(calc.espacoDesconto)}</strong> (
-                    <strong>{pct(calc.espacoDescontoPct)}</strong>) sobre o
-                    preço pretendido, mantendo a margem.
-                  </p>
-                )}
-              </div>
-
-              <div className="border-t border-border pt-3">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-                  Totais do pedido ({calc.q} un)
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <Linha label="Receita bruta" value={brl(calc.receitaBruta)} />
-                  <Linha label="Custo total" value={brl(calc.custoTotal)} />
-                  <Linha label="Imposto (sobre VP)" value={brl(calc.impostoTotal)} />
-                  <Linha label="Frete" value={brl(calc.freteTotal)} />
-                  <Linha
-                    label="Lucro estimado (VP)"
-                    value={brl(calc.lucroEstimado)}
-                    strong
-                  />
-                </div>
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            <Linha label="Receita bruta" value={brl(total.receita)} />
+            <Linha
+              label="Custo total (+ frete)"
+              value={brl(total.custoTotal)}
+            />
+            <Linha label="Imposto (sobre VP)" value={brl(total.impostoTotal)} />
+            <Linha
+              label="Custo do prazo"
+              value={brl(total.custoPrazoTotal)}
+              hint={`${diasCorridos} dias`}
+            />
+            <Linha label="Valor presente" value={brl(total.vpTotal)} />
+            <Linha
+              label="Lucro estimado"
+              value={brl(total.lucro)}
+              strong
+            />
+            <Linha
+              label="Margem real consolidada"
+              value={pct(total.margemReal)}
+              hint={`alvo ${pct(margemAlvo)}`}
+              strong
+            />
+          </div>
         </Card>
       </div>
     </div>
@@ -339,14 +533,27 @@ function Linha({
   );
 }
 
-function Semaforo({
+function SemaforoChip({ tipo }: { tipo: "verde" | "amarelo" | "vermelho" }) {
+  const map = {
+    verde: { c: "bg-green-100 text-green-800 border-green-300", t: "🟢" },
+    amarelo: { c: "bg-yellow-100 text-yellow-800 border-yellow-300", t: "🟡" },
+    vermelho: { c: "bg-red-100 text-red-800 border-red-300", t: "🔴" },
+  }[tipo];
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${map.c}`}
+    >
+      {map.t}
+    </span>
+  );
+}
+
+function SemaforoBox({
   tipo,
-  precoMinAjustado,
   margemReal,
   margemAlvo,
 }: {
   tipo: "verde" | "amarelo" | "vermelho";
-  precoMinAjustado: number;
   margemReal: number;
   margemAlvo: number;
 }) {
@@ -355,10 +562,9 @@ function Semaforo({
       <div className="flex items-start gap-3 rounded-lg border border-green-500 bg-green-50 p-3 text-sm text-green-900">
         <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>
-          <p className="font-semibold">🟢 Margem saudável</p>
+          <p className="font-semibold">🟢 Proposta saudável</p>
           <p>
-            Preço acima do mínimo ajustado ({brl(precoMinAjustado)}). Margem
-            real: {pct(margemReal)} (alvo {pct(margemAlvo)}).
+            Margem real {pct(margemReal)} ≥ alvo {pct(margemAlvo)}.
           </p>
         </div>
       </div>
@@ -369,11 +575,9 @@ function Semaforo({
       <div className="flex items-start gap-3 rounded-lg border border-yellow-500 bg-yellow-50 p-3 text-sm text-yellow-900">
         <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>
-          <p className="font-semibold">🟡 Cobre o custo, mas abaixo da meta</p>
+          <p className="font-semibold">🟡 Lucra, mas abaixo da meta</p>
           <p>
-            Cobre custo + imposto + prazo, mas margem real ({pct(margemReal)})
-            está abaixo da margem-alvo ({pct(margemAlvo)}). Mínimo ajustado:{" "}
-            {brl(precoMinAjustado)}.
+            Margem real {pct(margemReal)} abaixo do alvo {pct(margemAlvo)}.
           </p>
         </div>
       </div>
@@ -384,10 +588,7 @@ function Semaforo({
       <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
       <div>
         <p className="font-semibold">🔴 PREJUÍZO — não feche neste preço</p>
-        <p>
-          Preço a valor presente está abaixo do custo + imposto. Você está
-          pagando para vender. Mínimo ajustado: {brl(precoMinAjustado)}.
-        </p>
+        <p>Receita não cobre custo + imposto + prazo.</p>
       </div>
     </div>
   );
