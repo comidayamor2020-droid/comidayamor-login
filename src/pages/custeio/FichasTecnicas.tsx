@@ -531,7 +531,7 @@ export default function FichasTecnicas() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            )); })()}
           </TableBody>
         </Table>
       </Card>
