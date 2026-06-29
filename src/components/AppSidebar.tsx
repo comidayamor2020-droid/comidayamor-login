@@ -39,7 +39,6 @@ const GROUPS: NavGroup[] = [
       { title: "Produtos", url: "/produtos", icon: ShoppingBag },
       { title: "Clientes B2C", url: "/clientes-b2c", icon: UsersIcon },
       { title: "Usuários", url: "/usuarios", icon: UsersIcon },
-      { title: "Clientes B2B", url: "/clientes-b2b", icon: Building2 },
     ],
   },
   {
