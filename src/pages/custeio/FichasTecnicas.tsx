@@ -31,6 +31,7 @@ const EMPTY_FICHA = {
   horas_trabalho: "",
   energia_kwh: "",
   embalagem_custo: "",
+  preco_venda_b2c: "",
 };
 
 export default function FichasTecnicas() {
