@@ -166,7 +166,7 @@ export default function SimuladorProposta() {
       else if (pv >= precoMinAjustado) semaforo = "verde";
       else semaforo = "amarelo";
 
-      const b2c = ficha ? b2cByNome.get(ficha.nome.trim().toLowerCase()) : undefined;
+      const b2c = ficha?.preco_venda_b2c != null ? Number(ficha.preco_venda_b2c) : null;
       const margemComprador =
         b2c && b2c > 0 && pv > 0 ? (b2c - pv) / b2c : null;
 
@@ -184,7 +184,7 @@ export default function SimuladorProposta() {
         precoMinAjustado,
         margemReal,
         semaforo,
-        b2c: b2c ?? null,
+        b2c,
         margemComprador,
         precisaRevisao,
         // totais por linha
@@ -194,7 +194,7 @@ export default function SimuladorProposta() {
         vpTotal: vp * q,
       };
     });
-  }, [items, fichas, b2cByNome, aliq, margemAlvo, fator]);
+  }, [items, fichas, aliq, margemAlvo, fator]);
 
   const total = useMemo(() => {
     const receita = linhas.reduce((s, l) => s + l.receita, 0);
