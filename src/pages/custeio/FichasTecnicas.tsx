@@ -162,6 +162,7 @@ export default function FichasTecnicas() {
       horas_trabalho: f.horas_trabalho != null ? String(f.horas_trabalho) : "",
       energia_kwh: f.energia_kwh != null ? String(f.energia_kwh) : "",
       embalagem_custo: f.embalagem_custo != null ? String(f.embalagem_custo) : "",
+      preco_venda_b2c: (f as any).preco_venda_b2c != null ? String((f as any).preco_venda_b2c) : "",
     });
     const { data } = await supabase
       .from("ficha_componentes" as any).select("*").eq("ficha_id", f.id);
