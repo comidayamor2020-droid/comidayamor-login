@@ -59,6 +59,7 @@ export default function Parametros() {
         aliquota_imposto: String(data.aliquota_imposto ?? ""),
         perda_refugo: String(data.perda_refugo ?? ""),
         margem_alvo: String(data.margem_alvo ?? ""),
+        cdi_anual: String(data.cdi_anual ?? "0.14"),
       });
     }
   }, [data]);
