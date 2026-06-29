@@ -1605,6 +1605,7 @@ export type Database = {
       parametros_custeio: {
         Row: {
           aliquota_imposto: number
+          cdi_anual: number
           created_at: string
           custo_energia_kwh: number
           custo_hora_mao_obra: number | null
@@ -1615,6 +1616,7 @@ export type Database = {
         }
         Insert: {
           aliquota_imposto?: number
+          cdi_anual?: number
           created_at?: string
           custo_energia_kwh?: number
           custo_hora_mao_obra?: number | null
@@ -1625,6 +1627,7 @@ export type Database = {
         }
         Update: {
           aliquota_imposto?: number
+          cdi_anual?: number
           created_at?: string
           custo_energia_kwh?: number
           custo_hora_mao_obra?: number | null
