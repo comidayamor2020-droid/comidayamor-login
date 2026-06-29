@@ -38,7 +38,7 @@ function getNextStatuses(current: string): string[] {
   return [...next, "cancelado"];
 }
 
-function OrderItems({ orderId }: { orderId: string }) {
+function OrderItems({ orderId, hidePrices }: { orderId: string; hidePrices?: boolean }) {
   const { data: items, isLoading } = useProductionOrderItems(orderId);
   if (isLoading) return <p className="px-5 py-3 text-sm text-muted-foreground">Carregando...</p>;
   if (!items?.length) return <p className="px-5 py-3 text-sm text-muted-foreground">Sem itens.</p>;
@@ -50,8 +50,8 @@ function OrderItems({ orderId }: { orderId: string }) {
           <tr className="text-xs uppercase text-muted-foreground">
             <th className="pb-2 text-left font-medium">Produto</th>
             <th className="pb-2 text-right font-medium">Qtd</th>
-            <th className="pb-2 text-right font-medium">Unit.</th>
-            <th className="pb-2 text-right font-medium">Total</th>
+            {!hidePrices && <th className="pb-2 text-right font-medium">Unit.</th>}
+            {!hidePrices && <th className="pb-2 text-right font-medium">Total</th>}
           </tr>
         </thead>
         <tbody>
@@ -59,8 +59,8 @@ function OrderItems({ orderId }: { orderId: string }) {
             <tr key={item.id} className="border-t border-border/50">
               <td className="py-2 text-foreground">{(item as any).produtos?.nome ?? "Produto"}</td>
               <td className="py-2 text-right tabular-nums">{item.quantity}</td>
-              <td className="py-2 text-right tabular-nums">{formatBRL(item.unit_price)}</td>
-              <td className="py-2 text-right tabular-nums font-medium">{formatBRL(item.total_price)}</td>
+              {!hidePrices && <td className="py-2 text-right tabular-nums">{formatBRL(item.unit_price)}</td>}
+              {!hidePrices && <td className="py-2 text-right tabular-nums font-medium">{formatBRL(item.total_price)}</td>}
             </tr>
           ))}
         </tbody>
