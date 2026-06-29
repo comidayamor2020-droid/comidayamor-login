@@ -39,16 +39,12 @@ const GROUPS: NavGroup[] = [
       { title: "Produtos", url: "/produtos", icon: ShoppingBag },
       { title: "Clientes B2C", url: "/clientes-b2c", icon: UsersIcon },
       { title: "Usuários", url: "/usuarios", icon: UsersIcon },
-      { title: "Clientes B2B", url: "/clientes-b2b", icon: Building2 },
     ],
   },
   {
     label: "B2B",
     items: [
       { title: "Central B2B", url: "/central-b2b", icon: LayoutGrid },
-      { title: "Portal B2B", url: "/b2b", icon: Store },
-      { title: "Meus Pedidos", url: "/b2b/pedidos", icon: ClipboardList },
-      { title: "Produção B2B", url: "/producao", icon: Factory },
     ],
   },
   {
