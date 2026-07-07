@@ -410,10 +410,15 @@ export default function SimuladorProposta() {
                 <TableHead className="w-28">Custo un.</TableHead>
                 <TableHead className="w-28">Margem real</TableHead>
                 <TableHead className="w-16">Status</TableHead>
-                <TableHead className="w-28">B2C sugerido</TableHead>
-                <TableHead className="w-32">Margem comprador</TableHead>
+                {tipoVenda === "b2b" && (
+                  <>
+                    <TableHead className="w-28">B2C sugerido</TableHead>
+                    <TableHead className="w-32">Margem comprador</TableHead>
+                  </>
+                )}
                 <TableHead className="w-10" />
               </TableRow>
+
             </TableHeader>
             <TableBody>
               {linhas.map((l) => (
