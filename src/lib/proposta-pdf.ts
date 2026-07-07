@@ -160,28 +160,54 @@ export function gerarPropostaPDF(data: PropostaPDFData) {
   doc.text(data.cliente || "—", margin + 14, clienteY + 34);
 
   // ==== TABELA DE ITENS ====
-  const body = data.itens.map((i) => [
-    i.nome,
-    String(i.qtd),
-    brl(i.precoB2B),
-    brl(i.precoB2B * i.qtd),
-    i.b2c != null ? brl(i.b2c) : "—",
-    pct(i.margemComprador),
-  ]);
+  const isEvento = data.tipoVenda === "evento";
+
+  const body = data.itens.map((i) =>
+    isEvento
+      ? [i.nome, String(i.qtd), brl(i.precoB2B), brl(i.precoB2B * i.qtd)]
+      : [
+          i.nome,
+          String(i.qtd),
+          brl(i.precoB2B),
+          brl(i.precoB2B * i.qtd),
+          i.b2c != null ? brl(i.b2c) : "—",
+          pct(i.margemComprador),
+        ],
+  );
 
   const subtotal = data.itens.reduce((s, i) => s + i.precoB2B * i.qtd, 0);
   const total = subtotal + data.frete;
 
+  const head = isEvento
+    ? [["Produto", "Qtd", "Preço unit.", "Subtotal"]]
+    : [[
+        "Produto",
+        "Qtd",
+        "Preço unit. (B2B)",
+        "Subtotal",
+        "Sugerido revenda",
+        "Margem do comprador",
+      ]];
+
+  const columnStyles: Record<number, any> = isEvento
+    ? {
+        0: { textColor: BORDO, fontStyle: "bold" },
+        1: { halign: "center" },
+        2: { halign: "right" },
+        3: { halign: "right", fontStyle: "bold" },
+      }
+    : {
+        0: { textColor: BORDO, fontStyle: "bold" },
+        1: { halign: "center" },
+        2: { halign: "right" },
+        3: { halign: "right", fontStyle: "bold" },
+        4: { halign: "right" },
+        5: { halign: "right", textColor: CARAMELO, fontStyle: "bold" },
+      };
+
   autoTable(doc, {
     startY: clienteY + 60,
-    head: [[
-      "Produto",
-      "Qtd",
-      "Preço unit. (B2B)",
-      "Subtotal",
-      "Sugerido revenda",
-      "Margem do comprador",
-    ]],
+    head,
     body,
     styles: {
       font: F_SANS,
@@ -200,23 +226,16 @@ export function gerarPropostaPDF(data: PropostaPDFData) {
       lineColor: BORDO,
       lineWidth: 0,
     },
-    bodyStyles: {
-      fillColor: CREME_CLARO,
-    },
-    alternateRowStyles: {
-      fillColor: CREME,
-    },
-    columnStyles: {
-      0: { textColor: BORDO, fontStyle: "bold" },
-      1: { halign: "center" },
-      2: { halign: "right" },
-      3: { halign: "right", fontStyle: "bold" },
-      4: { halign: "right" },
-      5: { halign: "right", textColor: CARAMELO, fontStyle: "bold" },
-    },
-    // margem negativa em vermelho
+    bodyStyles: { fillColor: CREME_CLARO },
+    alternateRowStyles: { fillColor: CREME },
+    columnStyles,
+    // margem negativa em vermelho (apenas B2B)
     didParseCell: (hookData) => {
-      if (hookData.section === "body" && hookData.column.index === 5) {
+      if (
+        !isEvento &&
+        hookData.section === "body" &&
+        hookData.column.index === 5
+      ) {
         const item = data.itens[hookData.row.index];
         if (item?.margemComprador != null && item.margemComprador < 0) {
           hookData.cell.styles.textColor = VERMELHO;
@@ -225,6 +244,7 @@ export function gerarPropostaPDF(data: PropostaPDFData) {
     },
     margin: { left: margin, right: margin },
   });
+
 
   let y = (doc as any).lastAutoTable.finalY + 24;
 
