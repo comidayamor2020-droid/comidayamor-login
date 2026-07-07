@@ -201,7 +201,7 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   const total = subtotal + data.frete;
 
   const head = isEvento
-    ? [["Produto", "Qtd", "Preço de tabela", "Preço evento", "Desconto", "Subtotal"]]
+    ? [["Produto", "Qtd", "Preço venda loja", "Preço evento", "Desconto", "Subtotal"]]
     : [[
         "Produto",
         "Qtd",
