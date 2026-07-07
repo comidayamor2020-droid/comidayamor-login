@@ -28,8 +28,21 @@ export type PropostaPDFData = {
   frete: number;
 };
 
-const PRIMARY: [number, number, number] = [162, 36, 47]; // #A2242F
-const BG_SOFT: [number, number, number] = [239, 227, 211]; // #EFE3D3
+// Identidade visual Comida y Amor
+const BORDO: [number, number, number] = [162, 36, 47];      // #A2242F
+const CREME: [number, number, number] = [239, 227, 211];    // #EFE3D3
+const CARAMELO: [number, number, number] = [167, 97, 65];   // #A76141
+const PINK: [number, number, number] = [239, 192, 203];     // #EFC0CB
+const VERMELHO: [number, number, number] = [242, 5, 49];    // #F20531
+const ESCURO: [number, number, number] = [46, 20, 22];      // texto principal
+const CREME_CLARO: [number, number, number] = [247, 240, 228];
+
+// Fontes: jsPDF built-ins como fallback
+// - "times" (serif) aproxima Playfair Display para títulos
+// - "helvetica" aproxima Montserrat Alternates para corpo
+// - italic é usado como fallback do Grandest Script
+const F_DISPLAY = "times";
+const F_SANS = "helvetica";
 
 export function gerarNumeroProposta(d = new Date()) {
   const y = d.getFullYear();
@@ -43,54 +56,109 @@ export function gerarNumeroProposta(d = new Date()) {
 export function gerarPropostaPDF(data: PropostaPDFData) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
   const margin = 40;
 
-  // Header band
-  doc.setFillColor(...PRIMARY);
-  doc.rect(0, 0, pageW, 90, "F");
-
-  // Logo placeholder
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(1);
-  doc.rect(margin, 20, 70, 50);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(7);
-  doc.text("LOGO", margin + 35, 48, { align: "center" });
-
-  // Company name + meta
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Comida y Amor", margin + 85, 42);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text("CNPJ: [a preencher]   •   Contato: [a preencher]", margin + 85, 58);
-
-  // Proposta meta (right)
-  doc.setFontSize(9);
+  const fmtDate = (d: Date) => d.toLocaleDateString("pt-BR");
   const validade = new Date(data.emissao);
   validade.setDate(validade.getDate() + data.validadeDias);
-  const fmtDate = (d: Date) => d.toLocaleDateString("pt-BR");
-  doc.text(`Proposta nº ${data.numero}`, pageW - margin, 36, { align: "right" });
-  doc.text(`Emissão: ${fmtDate(data.emissao)}`, pageW - margin, 50, { align: "right" });
-  doc.text(`Válida até: ${fmtDate(validade)}`, pageW - margin, 64, { align: "right" });
 
-  // Title
-  doc.setTextColor(40, 40, 40);
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text("Proposta Comercial", margin, 125);
+  // Função para desenhar o fundo creme + rodapé decorativo em cada página
+  const desenharFundoPagina = () => {
+    // Fundo creme
+    doc.setFillColor(...CREME);
+    doc.rect(0, 0, pageW, pageH, "F");
 
-  // Cliente
-  doc.setFillColor(...BG_SOFT);
-  doc.rect(margin, 140, pageW - margin * 2, 40, "F");
+    // Faixa fina pink na borda superior
+    doc.setFillColor(...PINK);
+    doc.rect(0, 0, pageW, 6, "F");
+
+    // Faixa fina bordô abaixo
+    doc.setFillColor(...BORDO);
+    doc.rect(0, 6, pageW, 2, "F");
+  };
+
+  desenharFundoPagina();
+
+  // ==== CABEÇALHO ====
+  // Monograma / logo textual (círculo bordô com "cyA")
+  const logoX = margin + 26;
+  const logoY = 62;
+  doc.setFillColor(...BORDO);
+  doc.circle(logoX, logoY, 26, "F");
+  doc.setDrawColor(...PINK);
+  doc.setLineWidth(1);
+  doc.circle(logoX, logoY, 30, "S");
+  doc.setTextColor(...CREME);
+  doc.setFont(F_DISPLAY, "italic");
+  doc.setFontSize(20);
+  doc.text("cyA", logoX, logoY + 7, { align: "center" });
+
+  // Nome da empresa
+  doc.setFont(F_DISPLAY, "bold");
+  doc.setTextColor(...BORDO);
+  doc.setFontSize(24);
+  doc.text("Comida y Amor", margin + 66, 58);
+
+  // Subtítulo caramelo
+  doc.setFont(F_SANS, "normal");
+  doc.setTextColor(...CARAMELO);
   doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text("CLIENTE", margin + 12, 158);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text(data.cliente || "—", margin + 12, 173);
+  doc.text("Confeitaria artesanal", margin + 68, 74);
 
-  // Tabela de itens
+  // Bloco de contato (direita)
+  doc.setFont(F_SANS, "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...ESCURO);
+  const rightX = pageW - margin;
+  doc.setTextColor(...CARAMELO);
+  doc.text("CNPJ", rightX, 40, { align: "right" });
+  doc.setTextColor(...ESCURO);
+  doc.text("39.710.375/0001-80", rightX, 52, { align: "right" });
+  doc.setTextColor(...CARAMELO);
+  doc.text("Contato", rightX, 66, { align: "right" });
+  doc.setTextColor(...ESCURO);
+  doc.text("comidayamor2020@gmail.com", rightX, 78, { align: "right" });
+  doc.text("+55 51 99643-7080", rightX, 90, { align: "right" });
+
+  // Linha divisória pink
+  doc.setDrawColor(...PINK);
+  doc.setLineWidth(1.2);
+  doc.line(margin, 105, pageW - margin, 105);
+
+  // ==== TÍTULO PROPOSTA ====
+  doc.setFont(F_DISPLAY, "bold");
+  doc.setTextColor(...BORDO);
+  doc.setFontSize(28);
+  doc.text("Proposta Comercial", margin, 145);
+
+  // Meta da proposta (direita, sob o título)
+  doc.setFont(F_DISPLAY, "italic");
+  doc.setTextColor(...CARAMELO);
+  doc.setFontSize(11);
+  doc.text(`nº ${data.numero}`, pageW - margin, 132, { align: "right" });
+  doc.setFont(F_SANS, "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...ESCURO);
+  doc.text(`Emissão: ${fmtDate(data.emissao)}`, pageW - margin, 146, { align: "right" });
+  doc.text(`Válida até: ${fmtDate(validade)}`, pageW - margin, 158, { align: "right" });
+
+  // ==== CLIENTE ====
+  const clienteY = 175;
+  doc.setFillColor(...CREME_CLARO);
+  doc.setDrawColor(...CARAMELO);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, clienteY, pageW - margin * 2, 44, 6, 6, "FD");
+  doc.setFont(F_SANS, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...CARAMELO);
+  doc.text("CLIENTE", margin + 14, clienteY + 16);
+  doc.setFont(F_DISPLAY, "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...BORDO);
+  doc.text(data.cliente || "—", margin + 14, clienteY + 34);
+
+  // ==== TABELA DE ITENS ====
   const body = data.itens.map((i) => [
     i.nome,
     String(i.qtd),
@@ -104,7 +172,7 @@ export function gerarPropostaPDF(data: PropostaPDFData) {
   const total = subtotal + data.frete;
 
   autoTable(doc, {
-    startY: 200,
+    startY: clienteY + 60,
     head: [[
       "Produto",
       "Qtd",
@@ -114,73 +182,142 @@ export function gerarPropostaPDF(data: PropostaPDFData) {
       "Margem do comprador",
     ]],
     body,
-    styles: { fontSize: 9, cellPadding: 6 },
-    headStyles: { fillColor: PRIMARY, textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [250, 246, 240] },
+    styles: {
+      font: F_SANS,
+      fontSize: 9,
+      cellPadding: 7,
+      textColor: ESCURO,
+      lineColor: CARAMELO,
+      lineWidth: 0.3,
+    },
+    headStyles: {
+      fillColor: BORDO,
+      textColor: CREME,
+      fontStyle: "bold",
+      font: F_SANS,
+      fontSize: 9,
+      lineColor: BORDO,
+      lineWidth: 0,
+    },
+    bodyStyles: {
+      fillColor: CREME_CLARO,
+    },
+    alternateRowStyles: {
+      fillColor: CREME,
+    },
     columnStyles: {
+      0: { textColor: BORDO, fontStyle: "bold" },
       1: { halign: "center" },
       2: { halign: "right" },
-      3: { halign: "right" },
+      3: { halign: "right", fontStyle: "bold" },
       4: { halign: "right" },
-      5: { halign: "right" },
+      5: { halign: "right", textColor: CARAMELO, fontStyle: "bold" },
+    },
+    // margem negativa em vermelho
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && hookData.column.index === 5) {
+        const item = data.itens[hookData.row.index];
+        if (item?.margemComprador != null && item.margemComprador < 0) {
+          hookData.cell.styles.textColor = VERMELHO;
+        }
+      }
     },
     margin: { left: margin, right: margin },
   });
 
-  let y = (doc as any).lastAutoTable.finalY + 20;
+  let y = (doc as any).lastAutoTable.finalY + 24;
 
-  // Condições + Totais
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(40, 40, 40);
+  // ==== CONDIÇÕES COMERCIAIS ====
+  doc.setFont(F_DISPLAY, "bold");
+  doc.setTextColor(...BORDO);
+  doc.setFontSize(14);
   doc.text("Condições comerciais", margin, y);
-  y += 14;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
 
-  const cond = [
-    `Prazo de pagamento: ${data.prazoDias} dias${data.prazoDias === 0 ? " (à vista)" : ""}`,
-    `Frete / entrega: ${data.frete > 0 ? brl(data.frete) : "a combinar"}`,
-    `Validade da proposta: ${data.validadeDias} dias (até ${fmtDate(validade)})`,
+  // linha fina caramelo sob o título
+  doc.setDrawColor(...CARAMELO);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y + 4, margin + 160, y + 4);
+
+  y += 22;
+
+  const cond: Array<[string, string]> = [
+    ["Prazo de pagamento", `${data.prazoDias} dias${data.prazoDias === 0 ? " (à vista)" : ""}`],
+    ["Formas de pagamento", "Pix  •  Boleto"],
+    ["Frete / entrega", data.frete > 0 ? brl(data.frete) : "a combinar"],
+    ["Validade da proposta", `${data.validadeDias} dias (até ${fmtDate(validade)})`],
   ];
-  cond.forEach((l) => {
-    doc.text(l, margin, y);
-    y += 14;
+
+  doc.setFontSize(10);
+  cond.forEach(([label, val]) => {
+    doc.setFont(F_SANS, "bold");
+    doc.setTextColor(...CARAMELO);
+    doc.text(label, margin, y);
+    doc.setFont(F_SANS, "normal");
+    doc.setTextColor(...ESCURO);
+    doc.text(val, margin + 160, y);
+    y += 16;
   });
 
-  y += 8;
-  // Total box
-  doc.setFillColor(...PRIMARY);
-  doc.rect(pageW - margin - 220, y, 220, 50, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.text("Subtotal itens:", pageW - margin - 210, y + 18);
-  doc.text(brl(subtotal), pageW - margin - 10, y + 18, { align: "right" });
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.text("TOTAL:", pageW - margin - 210, y + 40);
-  doc.text(brl(total), pageW - margin - 10, y + 40, { align: "right" });
+  // ==== TOTAL BOX (bordô com cantos arredondados) ====
+  const totalBoxW = 240;
+  const totalBoxH = 76;
+  const totalBoxX = pageW - margin - totalBoxW;
+  const totalBoxY = y - 92;
 
-  // Rodapé
-  const footerY = doc.internal.pageSize.getHeight() - 60;
-  doc.setDrawColor(...PRIMARY);
+  doc.setFillColor(...BORDO);
+  doc.roundedRect(totalBoxX, totalBoxY, totalBoxW, totalBoxH, 10, 10, "F");
+
+  // detalhe pink no topo do box
+  doc.setFillColor(...PINK);
+  doc.roundedRect(totalBoxX, totalBoxY, totalBoxW, 4, 10, 10, "F");
+  doc.setFillColor(...BORDO);
+  doc.rect(totalBoxX, totalBoxY + 2, totalBoxW, 6, "F");
+
+  doc.setTextColor(...CREME);
+  doc.setFont(F_SANS, "normal");
+  doc.setFontSize(9);
+  doc.text("Subtotal itens", totalBoxX + 16, totalBoxY + 24);
+  doc.text(brl(subtotal), totalBoxX + totalBoxW - 16, totalBoxY + 24, { align: "right" });
+
+  doc.setFontSize(9);
+  doc.text("Frete", totalBoxX + 16, totalBoxY + 40);
+  doc.text(data.frete > 0 ? brl(data.frete) : "—", totalBoxX + totalBoxW - 16, totalBoxY + 40, { align: "right" });
+
+  // linha divisória
+  doc.setDrawColor(...PINK);
   doc.setLineWidth(0.5);
+  doc.line(totalBoxX + 12, totalBoxY + 48, totalBoxX + totalBoxW - 12, totalBoxY + 48);
+
+  doc.setFont(F_DISPLAY, "bold");
+  doc.setFontSize(11);
+  doc.text("TOTAL", totalBoxX + 16, totalBoxY + 66);
+  doc.setFontSize(16);
+  doc.text(brl(total), totalBoxX + totalBoxW - 16, totalBoxY + 66, { align: "right" });
+
+  y = Math.max(y, totalBoxY + totalBoxH) + 30;
+
+  // ==== RODAPÉ ====
+  const footerY = pageH - 70;
+
+  // linha decorativa pink
+  doc.setDrawColor(...PINK);
+  doc.setLineWidth(1);
   doc.line(margin, footerY, pageW - margin, footerY);
-  doc.setTextColor(80, 80, 80);
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
+
+  // frase de encerramento (Grandest Script fallback: itálico serif)
+  doc.setFont(F_DISPLAY, "italic");
+  doc.setTextColor(...BORDO);
+  doc.setFontSize(18);
+  doc.text("Obrigado pela preferência!", pageW / 2, footerY + 24, { align: "center" });
+
+  // contato no rodapé
+  doc.setFont(F_SANS, "normal");
+  doc.setTextColor(...CARAMELO);
+  doc.setFontSize(9);
   doc.text(
-    "Obrigado pela preferência! Dúvidas, estamos à disposição.",
+    "comidayamor2020@gmail.com  •  +55 51 99643-7080",
     pageW / 2,
-    footerY + 18,
-    { align: "center" },
-  );
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text(
-    "Comida y Amor  •  Contato: [telefone / e-mail]  •  [endereço]",
-    pageW / 2,
-    footerY + 34,
+    footerY + 42,
     { align: "center" },
   );
 
