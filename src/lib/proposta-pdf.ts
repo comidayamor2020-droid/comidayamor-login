@@ -77,7 +77,7 @@ export function gerarNumeroProposta(d = new Date()) {
   return `${y}${m}${dd}-${hh}${mm}`;
 }
 
-export function gerarPropostaPDF(data: PropostaPDFData) {
+export async function gerarPropostaPDF(data: PropostaPDFData) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -104,31 +104,20 @@ export function gerarPropostaPDF(data: PropostaPDFData) {
 
   desenharFundoPagina();
 
-  // ==== CABEÇALHO ====
-  // Monograma / logo textual (círculo bordô com "cyA")
-  const logoX = margin + 26;
-  const logoY = 62;
-  doc.setFillColor(...BORDO);
-  doc.circle(logoX, logoY, 26, "F");
-  doc.setDrawColor(...PINK);
-  doc.setLineWidth(1);
-  doc.circle(logoX, logoY, 30, "S");
-  doc.setTextColor(...CREME);
-  doc.setFont(F_DISPLAY, "italic");
-  doc.setFontSize(20);
-  doc.text("cyA", logoX, logoY + 7, { align: "center" });
+  // ==== CABEÇALHO — LOGO OFICIAL ====
+  const logo = await loadLogoDataUrl();
+  if (logo) {
+    const logoH = 60;
+    const logoW = (logo.w / logo.h) * logoH;
+    doc.addImage(logo.dataUrl, "PNG", margin, 30, logoW, logoH);
+  } else {
+    // Fallback textual
+    doc.setFont(F_DISPLAY, "bold");
+    doc.setTextColor(...BORDO);
+    doc.setFontSize(24);
+    doc.text("comida yamor", margin, 68);
+  }
 
-  // Nome da empresa
-  doc.setFont(F_DISPLAY, "bold");
-  doc.setTextColor(...BORDO);
-  doc.setFontSize(24);
-  doc.text("Comida y Amor", margin + 66, 58);
-
-  // Subtítulo caramelo
-  doc.setFont(F_SANS, "normal");
-  doc.setTextColor(...CARAMELO);
-  doc.setFontSize(9);
-  doc.text("Confeitaria artesanal", margin + 68, 74);
 
   // Bloco de contato (direita)
   doc.setFont(F_SANS, "normal");
