@@ -26,6 +26,7 @@ export type PropostaPDFData = {
   itens: PropostaItemPDF[];
   prazoDias: number;
   frete: number;
+  tipoVenda?: "b2b" | "evento";
 };
 
 // Identidade visual Comida y Amor
