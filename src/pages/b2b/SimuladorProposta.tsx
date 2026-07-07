@@ -255,7 +255,7 @@ export default function SimuladorProposta() {
       });
       return;
     }
-    gerarPropostaPDF({
+    await gerarPropostaPDF({
       numero: gerarNumeroProposta(),
       emissao: new Date(),
       validadeDias: 7,
