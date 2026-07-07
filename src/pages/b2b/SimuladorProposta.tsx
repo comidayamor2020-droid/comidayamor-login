@@ -475,12 +475,17 @@ export default function SimuladorProposta() {
                       "—"
                     )}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {l.b2c != null ? brl(l.b2c) : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {l.margemComprador != null ? pct(l.margemComprador) : "—"}
-                  </TableCell>
+                  {tipoVenda === "b2b" && (
+                    <>
+                      <TableCell className="text-sm">
+                        {l.b2c != null ? brl(l.b2c) : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {l.margemComprador != null ? pct(l.margemComprador) : "—"}
+                      </TableCell>
+                    </>
+                  )}
+
                   <TableCell>
                     <Button
                       size="icon"
