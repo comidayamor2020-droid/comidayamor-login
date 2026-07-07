@@ -126,6 +126,7 @@ export default function SimuladorProposta() {
     contato: "",
     telefone: "",
   });
+  const [tipoVenda, setTipoVenda] = useState<"b2b" | "evento">("b2b");
 
   // Condições
   const [prazo, setPrazo] = useState<string>("30");
