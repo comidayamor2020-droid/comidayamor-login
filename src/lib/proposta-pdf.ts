@@ -174,9 +174,19 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   // ==== TABELA DE ITENS ====
   const isEvento = data.tipoVenda === "evento";
 
+  const descontoFrac = (i: PropostaItemPDF) =>
+    i.b2c != null && i.b2c > 0 ? (i.b2c - i.precoB2B) / i.b2c : null;
+
   const body = data.itens.map((i) =>
     isEvento
-      ? [i.nome, String(i.qtd), brl(i.precoB2B), brl(i.precoB2B * i.qtd)]
+      ? [
+          i.nome,
+          String(i.qtd),
+          i.b2c != null ? brl(i.b2c) : "—",
+          brl(i.precoB2B),
+          pct(descontoFrac(i)),
+          brl(i.precoB2B * i.qtd),
+        ]
       : [
           i.nome,
           String(i.qtd),
@@ -191,7 +201,7 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   const total = subtotal + data.frete;
 
   const head = isEvento
-    ? [["Produto", "Qtd", "Preço unit.", "Subtotal"]]
+    ? [["Produto", "Qtd", "Preço de tabela", "Preço evento", "Desconto", "Subtotal"]]
     : [[
         "Produto",
         "Qtd",
@@ -206,7 +216,9 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
         0: { textColor: BORDO, fontStyle: "bold" },
         1: { halign: "center" },
         2: { halign: "right" },
-        3: { halign: "right", fontStyle: "bold" },
+        3: { halign: "right" },
+        4: { halign: "right", textColor: CARAMELO, fontStyle: "bold" },
+        5: { halign: "right", fontStyle: "bold" },
       }
     : {
         0: { textColor: BORDO, fontStyle: "bold" },
