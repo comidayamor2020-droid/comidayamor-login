@@ -296,7 +296,7 @@ export default function SimuladorProposta() {
 
       {/* Cliente */}
       <Card className="mb-4 space-y-4 p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-lg font-semibold">Cliente</h2>
           <div className="flex gap-2">
             <Button
@@ -315,6 +315,32 @@ export default function SimuladorProposta() {
             </Button>
           </div>
         </div>
+
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-muted/30 p-3">
+          <Label className="text-sm font-medium">Tipo de venda</Label>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={tipoVenda === "b2b" ? "default" : "outline"}
+              onClick={() => setTipoVenda("b2b")}
+            >
+              B2B
+            </Button>
+            <Button
+              size="sm"
+              variant={tipoVenda === "evento" ? "default" : "outline"}
+              onClick={() => setTipoVenda("evento")}
+            >
+              Evento
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tipoVenda === "b2b"
+              ? "Cliente revendedor — inclui sugestão de revenda e margem do comprador."
+              : "Cliente de evento (consumo final) — sem sugestão de revenda."}
+          </p>
+        </div>
+
 
         {modoCliente === "cadastrado" ? (
           <div className="space-y-1.5">
