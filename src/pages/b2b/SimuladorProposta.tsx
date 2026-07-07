@@ -230,7 +230,7 @@ export default function SimuladorProposta() {
     };
   }, [linhas, freteTotal, margemAlvo]);
 
-  const handleGerarPDF = () => {
+  const handleGerarPDF = async () => {
     const itensValidos = linhas.filter((l) => l.ficha && l.q > 0 && l.pv > 0);
     if (itensValidos.length === 0) {
       toast({
