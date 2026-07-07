@@ -262,6 +262,7 @@ export default function SimuladorProposta() {
       cliente: clienteNome,
       prazoDias: diasCorridos,
       frete: freteTotal,
+      tipoVenda,
       itens: itensValidos.map((l) => ({
         nome: l.ficha!.nome,
         qtd: l.q,
