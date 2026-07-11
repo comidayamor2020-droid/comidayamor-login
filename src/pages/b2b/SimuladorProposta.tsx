@@ -245,7 +245,7 @@ export default function SimuladorProposta() {
         precisaRevisao,
       };
     });
-  }, [items, fichas, aliq]);
+  }, [items, fichas, aliq, tipoVenda, eventoMargens]);
 
   const total = useMemo(() => {
     const receita = linhas.reduce((s, l) => s + l.receita, 0);
