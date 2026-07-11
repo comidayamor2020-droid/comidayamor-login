@@ -91,16 +91,40 @@ function precoFaixa(custo: number, margemPct: number | null | undefined): number
   return custo / (1 - m);
 }
 
+// Margens padrão do modo B2B (fixas, aplicadas a todos os produtos que não têm override)
+export const MARGENS_B2B_PADRAO: [number, number, number] = [60, 50, 45];
+export const MARGEM_MINIMA_PCT = 45;
+
 function margensDaFicha(f: Ficha | undefined) {
   return [f?.margem_faixa_1, f?.margem_faixa_2, f?.margem_faixa_3].map(
     (v) => (v != null ? Number(v) : null),
   );
 }
 
-function precosPorFaixa(f: Ficha | undefined): Array<number | null> {
-  const custo = Number(f?.custo_unitario_calculado ?? 0);
-  return margensDaFicha(f).map((m) => precoFaixa(custo, m));
+// Margens efetivas por item, dependem do tipoVenda
+function margensEfetivas(
+  f: Ficha | undefined,
+  tipoVenda: "b2b" | "evento",
+  eventoMargens: [number, number, number],
+): [number, number, number] {
+  if (tipoVenda === "evento") return eventoMargens;
+  // B2B: usa override do produto (se houver) ou padrão
+  const overrides = margensDaFicha(f);
+  return [
+    overrides[0] ?? MARGENS_B2B_PADRAO[0],
+    overrides[1] ?? MARGENS_B2B_PADRAO[1],
+    overrides[2] ?? MARGENS_B2B_PADRAO[2],
+  ];
 }
+
+function precosPorFaixa(
+  f: Ficha | undefined,
+  margens: [number, number, number],
+): Array<number | null> {
+  const custo = Number(f?.custo_unitario_calculado ?? 0);
+  return margens.map((m) => precoFaixa(custo, m));
+}
+
 
 export default function SimuladorProposta() {
   const { data: fichas } = useQuery({
@@ -148,6 +172,19 @@ export default function SimuladorProposta() {
   const [clienteId, setClienteId] = useState<string>("");
   const [novoCliente, setNovoCliente] = useState({ nome: "", contato: "", telefone: "" });
   const [tipoVenda, setTipoVenda] = useState<"b2b" | "evento">("b2b");
+  // Margens editáveis apenas no modo Evento (por proposta, não altera padrão global)
+  const [eventoMargens, setEventoMargens] = useState<[string, string, string]>([
+    String(MARGENS_B2B_PADRAO[0]),
+    String(MARGENS_B2B_PADRAO[1]),
+    String(MARGENS_B2B_PADRAO[2]),
+  ]);
+  const eventoMargensNum: [number, number, number] = [
+    Number(eventoMargens[0]) || 0,
+    Number(eventoMargens[1]) || 0,
+    Number(eventoMargens[2]) || 0,
+  ];
+  const eventoMargensInvalidas = tipoVenda === "evento"
+    && eventoMargensNum.some((m) => m < MARGEM_MINIMA_PCT);
 
   // Condições
   const [prazo, setPrazo] = useState<string>("30");
@@ -173,7 +210,8 @@ export default function SimuladorProposta() {
       const ficha = fichas?.find((f) => f.id === it.fichaId);
       const custo = Number(ficha?.custo_unitario_calculado ?? 0);
       const q = Math.max(0, Number(it.qtd) || 0);
-      const precos = precosPorFaixa(ficha);
+      const margens = margensEfetivas(ficha, tipoVenda, eventoMargensNum);
+      const precos = precosPorFaixa(ficha, margens);
       const faixa = faixaDaQtd(q);
       const preco = faixa ? precos[faixa.idx] : null;
       const pv = preco ?? 0;
@@ -207,7 +245,7 @@ export default function SimuladorProposta() {
         precisaRevisao,
       };
     });
-  }, [items, fichas, aliq]);
+  }, [items, fichas, aliq, tipoVenda, eventoMargens]);
 
   const total = useMemo(() => {
     const receita = linhas.reduce((s, l) => s + l.receita, 0);
@@ -253,6 +291,14 @@ export default function SimuladorProposta() {
       toast({
         title: "Pedido mínimo",
         description: "Pedido mínimo de 15 unidades por produto.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (eventoMargensInvalidas) {
+      toast({
+        title: "Margem inválida",
+        description: "A margem mínima permitida é 45%.",
         variant: "destructive",
       });
       return;
@@ -350,6 +396,57 @@ export default function SimuladorProposta() {
               : "Cliente de evento (consumo final) — sem sugestão de revenda."}
           </p>
         </div>
+
+        {/* Margens editáveis apenas no modo Evento */}
+        {tipoVenda === "evento" && (
+          <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Margens desta proposta (Evento)</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEventoMargens([
+                  String(MARGENS_B2B_PADRAO[0]),
+                  String(MARGENS_B2B_PADRAO[1]),
+                  String(MARGENS_B2B_PADRAO[2]),
+                ])}
+              >
+                Restaurar padrão
+              </Button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {FAIXAS.map((f, idx) => {
+                const val = eventoMargens[idx];
+                const num = Number(val);
+                const abaixo = val !== "" && num < MARGEM_MINIMA_PCT;
+                return (
+                  <div key={f.idx} className="space-y-1">
+                    <Label className="text-xs">Faixa {idx + 1} — {f.label} (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="45"
+                      value={val}
+                      onChange={(e) => {
+                        const next = [...eventoMargens] as [string, string, string];
+                        next[idx] = e.target.value;
+                        setEventoMargens(next);
+                      }}
+                      className={abaixo ? "border-destructive" : ""}
+                    />
+                    {abaixo && (
+                      <p className="text-xs text-destructive">A margem mínima permitida é 45%.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Válido apenas para esta proposta. Não altera o padrão global nem o cadastro do produto.
+            </p>
+          </div>
+        )}
+
 
         {modoCliente === "cadastrado" ? (
           <div className="space-y-1.5">
@@ -478,9 +575,9 @@ export default function SimuladorProposta() {
                           <div className="mt-1 text-base font-semibold">
                             {p != null ? brl(p) : "—"}
                           </div>
-                          {p == null && (
+                          {p == null && tipoVenda === "evento" && (
                             <p className="text-[11px] text-destructive">
-                              Configure a margem no cadastro.
+                              Ajuste a margem acima.
                             </p>
                           )}
                         </div>
