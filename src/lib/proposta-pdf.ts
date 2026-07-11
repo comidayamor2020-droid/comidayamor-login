@@ -217,71 +217,117 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
       margin: { left: margin, right: margin },
     });
   } else {
-    // B2B — mini-tabela de 3 faixas por produto
-    // Colunas: Produto | Qtd pedida | Faixa | Preço unit. (B2B) | Margem da revenda | Subtotal
-    type Row = any[];
-    const body: Row[] = [];
-    // Guarda quais linhas do body correspondem à faixa selecionada (para destaque)
-    const selectedRows = new Set<number>();
-    // Guarda quais linhas têm margem revenda negativa (para vermelho)
-    const negativeMarginRows = new Set<number>();
+    // B2B — bloco por produto: cabeçalho + mini-tabela de 3 faixas + rodapé de subtotal
+    const QTD_MINIMA = 15;
+    let cursorY = clienteY + 60;
 
-    data.itens.forEach((i) => {
+    data.itens.forEach((i, itemIdx) => {
       const faixas = i.faixas ?? [
         { label: "—", preco: i.precoB2B, margemRevenda: i.margemComprador },
       ];
       const selIdx = i.faixaSelecionadaIdx ?? 0;
-      faixas.forEach((f, idx) => {
-        const rowIndex = body.length;
-        if (idx === selIdx) selectedRows.add(rowIndex);
-        if (f.margemRevenda != null && f.margemRevenda < 0) negativeMarginRows.add(rowIndex);
-        const row: Row = [];
-        if (idx === 0) {
-          row.push({ content: i.nome, rowSpan: faixas.length, styles: { valign: "middle", textColor: BORDO, fontStyle: "bold" } });
-          row.push({ content: String(i.qtd), rowSpan: faixas.length, styles: { valign: "middle", halign: "center" } });
+      const subtotalProduto = i.precoB2B * i.qtd;
+
+      // Quebra de página se pouco espaço
+      const alturaEstimada = 24 + 22 + faixas.length * 22 + 24 + 12;
+      if (cursorY + alturaEstimada > pageH - 90) {
+        doc.addPage();
+        desenharFundoPagina();
+        cursorY = 40;
+      }
+
+      // Cabeçalho do produto
+      doc.setFillColor(...CREME_CLARO);
+      doc.setDrawColor(...CARAMELO);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(margin, cursorY, pageW - margin * 2, 26, 4, 4, "FD");
+
+      doc.setFont(F_DISPLAY, "bold");
+      doc.setTextColor(...BORDO);
+      doc.setFontSize(11);
+      doc.text(i.nome, margin + 10, cursorY + 17);
+
+      doc.setFont(F_SANS, "normal");
+      doc.setFontSize(8);
+      const rightMetaX = pageW - margin - 10;
+      const meta = [
+        `Qtd pedida: ${i.qtd} un`,
+        `Qtd mínima: ${QTD_MINIMA} un`,
+        `Sugerido revenda: ${i.b2c != null ? brl(i.b2c) : "—"}`,
+      ];
+      // três blocos alinhados à direita
+      let mx = rightMetaX;
+      for (let k = meta.length - 1; k >= 0; k--) {
+        doc.setTextColor(...ESCURO);
+        doc.text(meta[k], mx, cursorY + 17, { align: "right" });
+        mx -= doc.getTextWidth(meta[k]) + 18;
+        if (k > 0) {
+          doc.setDrawColor(...PINK);
+          doc.setLineWidth(0.6);
+          doc.line(mx + 9, cursorY + 8, mx + 9, cursorY + 20);
         }
-        row.push(f.label);
-        row.push(f.preco != null ? brl(f.preco) : "—");
-        row.push(pct(f.margemRevenda));
-        if (idx === 0) {
-          row.push({ content: brl(i.precoB2B * i.qtd), rowSpan: faixas.length, styles: { valign: "middle", halign: "right", fontStyle: "bold" } });
+      }
+
+      cursorY += 30;
+
+      // Mini-tabela de faixas
+      const body = faixas.map((f, idx) => {
+        const row: any[] = [
+          { content: f.label, styles: { halign: "center", fontStyle: "bold", textColor: CARAMELO } },
+          { content: f.preco != null ? brl(f.preco) : "—", styles: { halign: "right" } },
+          {
+            content: pct(f.margemRevenda),
+            styles: {
+              halign: "right",
+              textColor: f.margemRevenda != null && f.margemRevenda < 0 ? VERMELHO : ESCURO,
+            },
+          },
+        ];
+        if (idx === selIdx) {
+          row.forEach((c) => {
+            c.styles = { ...c.styles, fillColor: PINK, fontStyle: "bold", textColor: BORDO };
+          });
         }
-        body.push(row);
+        return row;
       });
+
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Faixa", "Preço unit. (B2B)", "Margem da revenda"]],
+        body,
+        styles: { font: F_SANS, fontSize: 9, cellPadding: 6, textColor: ESCURO, lineColor: CARAMELO, lineWidth: 0.3 },
+        headStyles: { fillColor: BORDO, textColor: CREME, fontStyle: "bold", font: F_SANS, fontSize: 9, lineColor: BORDO, lineWidth: 0 },
+        bodyStyles: { fillColor: CREME_CLARO },
+        columnStyles: {
+          0: { halign: "center" },
+          1: { halign: "right" },
+          2: { halign: "right" },
+        },
+        margin: { left: margin, right: margin },
+      });
+
+      cursorY = (doc as any).lastAutoTable.finalY + 4;
+
+      // Rodapé do bloco — subtotal do produto
+      doc.setFont(F_SANS, "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...CARAMELO);
+      const subLabel = `Subtotal (${i.qtd} un × ${brl(i.precoB2B)}):`;
+      const subValor = brl(subtotalProduto);
+      const subValorW = doc.getTextWidth(subValor);
+      doc.setFont(F_SANS, "bold");
+      doc.setTextColor(...BORDO);
+      doc.text(subValor, pageW - margin, cursorY + 12, { align: "right" });
+      doc.setFont(F_SANS, "normal");
+      doc.setTextColor(...CARAMELO);
+      doc.text(subLabel, pageW - margin - subValorW - 8, cursorY + 12, { align: "right" });
+
+      cursorY += 24;
+      if (itemIdx < data.itens.length - 1) cursorY += 6;
     });
 
-    const head = [["Produto", "Qtd pedida", "Faixa", "Preço unit. (B2B)", "Margem da revenda", "Subtotal"]];
-    autoTable(doc, {
-      startY: clienteY + 60,
-      head,
-      body,
-      styles: { font: F_SANS, fontSize: 9, cellPadding: 6, textColor: ESCURO, lineColor: CARAMELO, lineWidth: 0.3 },
-      headStyles: { fillColor: BORDO, textColor: CREME, fontStyle: "bold", font: F_SANS, fontSize: 9, lineColor: BORDO, lineWidth: 0 },
-      bodyStyles: { fillColor: CREME_CLARO },
-      columnStyles: {
-        0: {},
-        1: { halign: "center" },
-        2: { halign: "center", fontStyle: "bold", textColor: CARAMELO },
-        3: { halign: "right" },
-        4: { halign: "right" },
-        5: { halign: "right" },
-      },
-      didParseCell: (hookData) => {
-        if (hookData.section !== "body") return;
-        const rowIdx = hookData.row.index;
-        // destaque da faixa selecionada
-        if (selectedRows.has(rowIdx) && (hookData.column.index === 2 || hookData.column.index === 3 || hookData.column.index === 4)) {
-          hookData.cell.styles.fillColor = PINK;
-          hookData.cell.styles.fontStyle = "bold";
-          hookData.cell.styles.textColor = BORDO;
-        }
-        // margem negativa em vermelho na coluna de margem
-        if (hookData.column.index === 4 && negativeMarginRows.has(rowIdx)) {
-          hookData.cell.styles.textColor = VERMELHO;
-        }
-      },
-      margin: { left: margin, right: margin },
-    });
+    // Simula lastAutoTable.finalY para o fluxo seguinte
+    (doc as any).lastAutoTable = { finalY: cursorY };
   }
 
 
