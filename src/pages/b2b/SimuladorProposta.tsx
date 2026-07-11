@@ -91,16 +91,40 @@ function precoFaixa(custo: number, margemPct: number | null | undefined): number
   return custo / (1 - m);
 }
 
+// Margens padrão do modo B2B (fixas, aplicadas a todos os produtos que não têm override)
+export const MARGENS_B2B_PADRAO: [number, number, number] = [60, 50, 45];
+export const MARGEM_MINIMA_PCT = 45;
+
 function margensDaFicha(f: Ficha | undefined) {
   return [f?.margem_faixa_1, f?.margem_faixa_2, f?.margem_faixa_3].map(
     (v) => (v != null ? Number(v) : null),
   );
 }
 
-function precosPorFaixa(f: Ficha | undefined): Array<number | null> {
-  const custo = Number(f?.custo_unitario_calculado ?? 0);
-  return margensDaFicha(f).map((m) => precoFaixa(custo, m));
+// Margens efetivas por item, dependem do tipoVenda
+function margensEfetivas(
+  f: Ficha | undefined,
+  tipoVenda: "b2b" | "evento",
+  eventoMargens: [number, number, number],
+): [number, number, number] {
+  if (tipoVenda === "evento") return eventoMargens;
+  // B2B: usa override do produto (se houver) ou padrão
+  const overrides = margensDaFicha(f);
+  return [
+    overrides[0] ?? MARGENS_B2B_PADRAO[0],
+    overrides[1] ?? MARGENS_B2B_PADRAO[1],
+    overrides[2] ?? MARGENS_B2B_PADRAO[2],
+  ];
 }
+
+function precosPorFaixa(
+  f: Ficha | undefined,
+  margens: [number, number, number],
+): Array<number | null> {
+  const custo = Number(f?.custo_unitario_calculado ?? 0);
+  return margens.map((m) => precoFaixa(custo, m));
+}
+
 
 export default function SimuladorProposta() {
   const { data: fichas } = useQuery({
