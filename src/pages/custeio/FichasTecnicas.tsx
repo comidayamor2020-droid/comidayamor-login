@@ -368,6 +368,53 @@ export default function FichasTecnicas() {
 
         </div>
 
+        {/* Margens-alvo B2B por faixa de quantidade */}
+        <div className="mt-6 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <h3 className="mb-1 font-display text-base font-semibold">Margens-alvo B2B por faixa de quantidade</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Percentual de margem sobre o preço de venda B2B. Mínimo 45%. O preço unitário é calculado como
+            <span className="mx-1 font-mono">custo / (1 − margem)</span>.
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            {([
+              ["margem_faixa_1", "Faixa 1 — 15 a 29 un (%)"],
+              ["margem_faixa_2", "Faixa 2 — 30 a 59 un (%)"],
+              ["margem_faixa_3", "Faixa 3 — 60+ un (%)"],
+            ] as const).map(([key, label]) => {
+              const val = form[key];
+              const num = Number(val);
+              const abaixo = val !== "" && num < MARGEM_MINIMA_PCT;
+              const custo = breakdown.custoUnitario;
+              const preco = val !== "" && num < 100 && custo > 0
+                ? custo / (1 - num / 100)
+                : null;
+              return (
+                <div key={key} className="space-y-1.5">
+                  <Label>{label}</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="45"
+                    value={val}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    placeholder="Ex.: 55"
+                    className={abaixo ? "border-destructive" : ""}
+                  />
+                  {abaixo && (
+                    <p className="text-xs text-destructive">Mínimo 45%.</p>
+                  )}
+                  {preco != null && !abaixo && (
+                    <p className="text-xs text-muted-foreground">
+                      Preço B2B calc.: <strong>{formatBRL(preco)}</strong>
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+
         {/* Componentes */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
