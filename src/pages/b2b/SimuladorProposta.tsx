@@ -76,7 +76,7 @@ const pct = (n: number) =>
 const newItem = (): Item => ({
   key: crypto.randomUUID(),
   fichaId: "",
-  qtd: "15",
+  qtd: "30",
 });
 
 function faixaDaQtd(q: number) {
