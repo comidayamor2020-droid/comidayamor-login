@@ -295,6 +295,14 @@ export default function SimuladorProposta() {
       });
       return;
     }
+    if (eventoMargensInvalidas) {
+      toast({
+        title: "Margem inválida",
+        description: "A margem mínima permitida é 45%.",
+        variant: "destructive",
+      });
+      return;
+    }
     const clienteNome =
       modoCliente === "cadastrado"
         ? (() => {
