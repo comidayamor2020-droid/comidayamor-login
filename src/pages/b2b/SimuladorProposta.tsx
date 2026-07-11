@@ -397,6 +397,57 @@ export default function SimuladorProposta() {
           </p>
         </div>
 
+        {/* Margens editáveis apenas no modo Evento */}
+        {tipoVenda === "evento" && (
+          <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Margens desta proposta (Evento)</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEventoMargens([
+                  String(MARGENS_B2B_PADRAO[0]),
+                  String(MARGENS_B2B_PADRAO[1]),
+                  String(MARGENS_B2B_PADRAO[2]),
+                ])}
+              >
+                Restaurar padrão
+              </Button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {FAIXAS.map((f, idx) => {
+                const val = eventoMargens[idx];
+                const num = Number(val);
+                const abaixo = val !== "" && num < MARGEM_MINIMA_PCT;
+                return (
+                  <div key={f.idx} className="space-y-1">
+                    <Label className="text-xs">Faixa {idx + 1} — {f.label} (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="45"
+                      value={val}
+                      onChange={(e) => {
+                        const next = [...eventoMargens] as [string, string, string];
+                        next[idx] = e.target.value;
+                        setEventoMargens(next);
+                      }}
+                      className={abaixo ? "border-destructive" : ""}
+                    />
+                    {abaixo && (
+                      <p className="text-xs text-destructive">A margem mínima permitida é 45%.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Válido apenas para esta proposta. Não altera o padrão global nem o cadastro do produto.
+            </p>
+          </div>
+        )}
+
+
         {modoCliente === "cadastrado" ? (
           <div className="space-y-1.5">
             <Label>Selecione o cliente B2B</Label>
