@@ -801,6 +801,9 @@ export type Database = {
           energia_kwh: number | null
           horas_trabalho: number | null
           id: string
+          margem_faixa_1: number | null
+          margem_faixa_2: number | null
+          margem_faixa_3: number | null
           nome: string
           precisa_revisao: boolean
           preco_venda_b2c: number | null
@@ -816,6 +819,9 @@ export type Database = {
           energia_kwh?: number | null
           horas_trabalho?: number | null
           id?: string
+          margem_faixa_1?: number | null
+          margem_faixa_2?: number | null
+          margem_faixa_3?: number | null
           nome: string
           precisa_revisao?: boolean
           preco_venda_b2c?: number | null
@@ -831,6 +837,9 @@ export type Database = {
           energia_kwh?: number | null
           horas_trabalho?: number | null
           id?: string
+          margem_faixa_1?: number | null
+          margem_faixa_2?: number | null
+          margem_faixa_3?: number | null
           nome?: string
           precisa_revisao?: boolean
           preco_venda_b2c?: number | null

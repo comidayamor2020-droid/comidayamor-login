@@ -32,7 +32,12 @@ const EMPTY_FICHA = {
   energia_kwh: "",
   embalagem_custo: "",
   preco_venda_b2c: "",
+  margem_faixa_1: "",
+  margem_faixa_2: "",
+  margem_faixa_3: "",
 };
+
+export const MARGEM_MINIMA_PCT = 45;
 
 export default function FichasTecnicas() {
   const qc = useQueryClient();
@@ -164,6 +169,9 @@ export default function FichasTecnicas() {
       energia_kwh: f.energia_kwh != null ? String(f.energia_kwh) : "",
       embalagem_custo: f.embalagem_custo != null ? String(f.embalagem_custo) : "",
       preco_venda_b2c: (f as any).preco_venda_b2c != null ? String((f as any).preco_venda_b2c) : "",
+      margem_faixa_1: (f as any).margem_faixa_1 != null ? String((f as any).margem_faixa_1) : "",
+      margem_faixa_2: (f as any).margem_faixa_2 != null ? String((f as any).margem_faixa_2) : "",
+      margem_faixa_3: (f as any).margem_faixa_3 != null ? String((f as any).margem_faixa_3) : "",
     });
     const { data } = await supabase
       .from("ficha_componentes" as any).select("*").eq("ficha_id", f.id);
@@ -210,6 +218,18 @@ export default function FichasTecnicas() {
         toast({ title: "Informe a quantidade de cada componente", variant: "destructive" }); return;
       }
     }
+    // valida margens-alvo (piso 45%)
+    const margens: Array<[string, string]> = [
+      ["margem_faixa_1", form.margem_faixa_1],
+      ["margem_faixa_2", form.margem_faixa_2],
+      ["margem_faixa_3", form.margem_faixa_3],
+    ];
+    for (const [_, val] of margens) {
+      if (val !== "" && Number(val) < MARGEM_MINIMA_PCT) {
+        toast({ title: "Margem inválida", description: "A margem mínima permitida é 45%.", variant: "destructive" });
+        return;
+      }
+    }
     setSaving(true);
 
     const payload = {
@@ -221,6 +241,9 @@ export default function FichasTecnicas() {
       energia_kwh: form.energia_kwh ? Number(form.energia_kwh) : null,
       embalagem_custo: Number(form.embalagem_custo || 0),
       preco_venda_b2c: form.preco_venda_b2c ? Number(form.preco_venda_b2c) : null,
+      margem_faixa_1: form.margem_faixa_1 ? Number(form.margem_faixa_1) : null,
+      margem_faixa_2: form.margem_faixa_2 ? Number(form.margem_faixa_2) : null,
+      margem_faixa_3: form.margem_faixa_3 ? Number(form.margem_faixa_3) : null,
       precisa_revisao: breakdown.precisaRevisao,
       custo_unitario_calculado: breakdown.custoUnitario || null,
     };
@@ -344,6 +367,53 @@ export default function FichasTecnicas() {
           </div>
 
         </div>
+
+        {/* Margens-alvo B2B por faixa de quantidade */}
+        <div className="mt-6 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <h3 className="mb-1 font-display text-base font-semibold">Margens-alvo B2B por faixa de quantidade</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Percentual de margem sobre o preço de venda B2B. Mínimo 45%. O preço unitário é calculado como
+            <span className="mx-1 font-mono">custo / (1 − margem)</span>.
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            {([
+              ["margem_faixa_1", "Faixa 1 — 15 a 29 un (%)"],
+              ["margem_faixa_2", "Faixa 2 — 30 a 59 un (%)"],
+              ["margem_faixa_3", "Faixa 3 — 60+ un (%)"],
+            ] as const).map(([key, label]) => {
+              const val = form[key];
+              const num = Number(val);
+              const abaixo = val !== "" && num < MARGEM_MINIMA_PCT;
+              const custo = breakdown.custoUnitario;
+              const preco = val !== "" && num < 100 && custo > 0
+                ? custo / (1 - num / 100)
+                : null;
+              return (
+                <div key={key} className="space-y-1.5">
+                  <Label>{label}</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="45"
+                    value={val}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    placeholder="Ex.: 55"
+                    className={abaixo ? "border-destructive" : ""}
+                  />
+                  {abaixo && (
+                    <p className="text-xs text-destructive">Mínimo 45%.</p>
+                  )}
+                  {preco != null && !abaixo && (
+                    <p className="text-xs text-muted-foreground">
+                      Preço B2B calc.: <strong>{formatBRL(preco)}</strong>
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
 
         {/* Componentes */}
         <div className="mt-6">

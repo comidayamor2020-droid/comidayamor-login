@@ -7,8 +7,8 @@ import {
   AlertCircle,
   Plus,
   Trash2,
+  FileDown,
 } from "lucide-react";
-import { FileDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { gerarPropostaPDF, gerarNumeroProposta } from "@/lib/proposta-pdf";
@@ -22,14 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 
 type Ficha = {
@@ -38,6 +30,9 @@ type Ficha = {
   custo_unitario_calculado: number | null;
   precisa_revisao: boolean | null;
   preco_venda_b2c: number | null;
+  margem_faixa_1: number | null;
+  margem_faixa_2: number | null;
+  margem_faixa_3: number | null;
 };
 
 type Cliente = {
@@ -58,8 +53,16 @@ type Item = {
   key: string;
   fichaId: string;
   qtd: string;
-  preco: string;
 };
+
+// Faixas de quantidade (padrão global)
+export const FAIXAS = [
+  { idx: 0, min: 15, max: 29, label: "15–29 un" },
+  { idx: 1, min: 30, max: 59, label: "30–59 un" },
+  { idx: 2, min: 60, max: Infinity, label: "60+ un" },
+] as const;
+
+export const QTD_MINIMA = 15;
 
 const brl = (n: number) =>
   isFinite(n)
@@ -73,9 +76,31 @@ const pct = (n: number) =>
 const newItem = (): Item => ({
   key: crypto.randomUUID(),
   fichaId: "",
-  qtd: "1",
-  preco: "",
+  qtd: "15",
 });
+
+function faixaDaQtd(q: number) {
+  return FAIXAS.find((f) => q >= f.min && q <= f.max) ?? null;
+}
+
+function precoFaixa(custo: number, margemPct: number | null | undefined): number | null {
+  if (custo <= 0) return null;
+  if (margemPct == null || !isFinite(Number(margemPct))) return null;
+  const m = Number(margemPct) / 100;
+  if (m >= 1) return null;
+  return custo / (1 - m);
+}
+
+function margensDaFicha(f: Ficha | undefined) {
+  return [f?.margem_faixa_1, f?.margem_faixa_2, f?.margem_faixa_3].map(
+    (v) => (v != null ? Number(v) : null),
+  );
+}
+
+function precosPorFaixa(f: Ficha | undefined): Array<number | null> {
+  const custo = Number(f?.custo_unitario_calculado ?? 0);
+  return margensDaFicha(f).map((m) => precoFaixa(custo, m));
+}
 
 export default function SimuladorProposta() {
   const { data: fichas } = useQuery({
@@ -83,7 +108,9 @@ export default function SimuladorProposta() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fichas_tecnicas" as any)
-        .select("id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo")
+        .select(
+          "id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo, margem_faixa_1, margem_faixa_2, margem_faixa_3",
+        )
         .eq("tipo", "produto_final")
         .order("nome");
       if (error) throw error;
@@ -117,15 +144,9 @@ export default function SimuladorProposta() {
   });
 
   // Cliente
-  const [modoCliente, setModoCliente] = useState<"cadastrado" | "novo">(
-    "cadastrado",
-  );
+  const [modoCliente, setModoCliente] = useState<"cadastrado" | "novo">("cadastrado");
   const [clienteId, setClienteId] = useState<string>("");
-  const [novoCliente, setNovoCliente] = useState({
-    nome: "",
-    contato: "",
-    telefone: "",
-  });
+  const [novoCliente, setNovoCliente] = useState({ nome: "", contato: "", telefone: "" });
   const [tipoVenda, setTipoVenda] = useState<"b2b" | "evento">("b2b");
 
   // Condições
@@ -141,12 +162,8 @@ export default function SimuladorProposta() {
 
   const aliq = Number(params?.aliquota_imposto ?? 0);
   const margemAlvo = Number(params?.margem_alvo ?? 0);
-  const cdi = Number(params?.cdi_anual ?? 0);
-  const diasCorridos = Math.max(0, Number(prazo) || 0);
-  const taxaDia = Math.pow(1 + cdi, 1 / 252) - 1;
-  const diasUteis = Math.round(diasCorridos * (252 / 365));
-  const fator = Math.pow(1 + taxaDia, diasUteis);
   const freteTotal = Math.max(0, Number(frete) || 0);
+  const diasCorridos = Math.max(0, Number(prazo) || 0);
 
   const custoIncompletoGeral =
     !params?.custo_hora_mao_obra || Number(params?.custo_hora_mao_obra) <= 0;
@@ -156,24 +173,19 @@ export default function SimuladorProposta() {
       const ficha = fichas?.find((f) => f.id === it.fichaId);
       const custo = Number(ficha?.custo_unitario_calculado ?? 0);
       const q = Math.max(0, Number(it.qtd) || 0);
-      const pv = Math.max(0, Number(it.preco) || 0);
-      const denom = 1 - aliq - margemAlvo;
-      const precoMin = denom > 0 ? custo / denom : Infinity;
-      const vp = pv / fator;
-      const custoPrazoUnit = pv - vp;
-      const precoMinAjustado = precoMin + custoPrazoUnit;
-      const margemReal = vp > 0 ? (vp - custo - vp * aliq) / vp : -Infinity;
-
-      let semaforo: "verde" | "amarelo" | "vermelho" = "vermelho";
-      if (!ficha || pv <= 0) semaforo = "vermelho";
-      else if (vp < custo + vp * aliq) semaforo = "vermelho";
-      else if (pv >= precoMinAjustado) semaforo = "verde";
-      else semaforo = "amarelo";
+      const precos = precosPorFaixa(ficha);
+      const faixa = faixaDaQtd(q);
+      const preco = faixa ? precos[faixa.idx] : null;
+      const pv = preco ?? 0;
 
       const b2c = ficha?.preco_venda_b2c != null ? Number(ficha.preco_venda_b2c) : null;
-      const margemComprador =
-        b2c && b2c > 0 && pv > 0 ? (b2c - pv) / b2c : null;
+      const margemRevenda = b2c && b2c > 0 && pv > 0 ? (b2c - pv) / b2c : null;
 
+      const abaixoMin = q > 0 && q < QTD_MINIMA;
+      const faixaSemPreco = q >= QTD_MINIMA && preco == null;
+      const receita = pv * q;
+      const impostoTotal = pv * aliq * q;
+      const custoTotal = custo * q;
       const precisaRevisao = !!ficha?.precisa_revisao;
 
       return {
@@ -182,32 +194,27 @@ export default function SimuladorProposta() {
         custo,
         q,
         pv,
-        vp,
-        custoPrazoUnit,
-        precoMin,
-        precoMinAjustado,
-        margemReal,
-        semaforo,
+        preco,
+        faixa,
+        precos,
         b2c,
-        margemComprador,
+        margemRevenda,
+        abaixoMin,
+        faixaSemPreco,
+        receita,
+        custoTotal,
+        impostoTotal,
         precisaRevisao,
-        // totais por linha
-        receita: pv * q,
-        custoTotal: custo * q,
-        impostoTotal: vp * aliq * q,
-        vpTotal: vp * q,
       };
     });
-  }, [items, fichas, aliq, margemAlvo, fator]);
+  }, [items, fichas, aliq]);
 
   const total = useMemo(() => {
     const receita = linhas.reduce((s, l) => s + l.receita, 0);
     const custoTotal = linhas.reduce((s, l) => s + l.custoTotal, 0) + freteTotal;
     const impostoTotal = linhas.reduce((s, l) => s + l.impostoTotal, 0);
-    const vpTotal = linhas.reduce((s, l) => s + l.vpTotal, 0);
-    const custoPrazoTotal = receita - vpTotal;
-    const lucro = vpTotal - custoTotal - impostoTotal;
-    const margemReal = vpTotal > 0 ? lucro / vpTotal : -Infinity;
+    const lucro = receita - custoTotal - impostoTotal;
+    const margemReal = receita > 0 ? lucro / receita : -Infinity;
 
     let semaforo: "verde" | "amarelo" | "vermelho" = "vermelho";
     if (receita <= 0) semaforo = "vermelho";
@@ -216,26 +223,36 @@ export default function SimuladorProposta() {
     else semaforo = "amarelo";
 
     const algumRevisao = linhas.some((l) => l.precisaRevisao);
+    const algumAbaixoMin = linhas.some((l) => l.abaixoMin);
+    const algumSemPreco = linhas.some((l) => l.faixaSemPreco);
 
     return {
       receita,
       custoTotal,
       impostoTotal,
-      vpTotal,
-      custoPrazoTotal,
       lucro,
       margemReal,
       semaforo,
       algumRevisao,
+      algumAbaixoMin,
+      algumSemPreco,
     };
   }, [linhas, freteTotal, margemAlvo]);
 
   const handleGerarPDF = async () => {
-    const itensValidos = linhas.filter((l) => l.ficha && l.q > 0 && l.pv > 0);
+    const itensValidos = linhas.filter((l) => l.ficha && l.q >= QTD_MINIMA && l.preco != null);
     if (itensValidos.length === 0) {
       toast({
         title: "Nenhum item válido",
-        description: "Adicione ao menos um produto com quantidade e preço B2B.",
+        description: "Adicione ao menos um produto com pedido mínimo de 15 unidades e margens configuradas.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (linhas.some((l) => l.abaixoMin)) {
+      toast({
+        title: "Pedido mínimo",
+        description: "Pedido mínimo de 15 unidades por produto.",
         variant: "destructive",
       });
       return;
@@ -268,7 +285,17 @@ export default function SimuladorProposta() {
         qtd: l.q,
         precoB2B: l.pv,
         b2c: l.b2c,
-        margemComprador: l.margemComprador,
+        margemComprador: l.margemRevenda,
+        faixaSelecionadaIdx: l.faixa!.idx,
+        faixas: FAIXAS.map((f, idx) => {
+          const p = l.precos[idx];
+          const mrev = l.b2c && l.b2c > 0 && p != null && p > 0 ? (l.b2c - p) / l.b2c : null;
+          return {
+            label: f.label,
+            preco: p,
+            margemRevenda: mrev,
+          };
+        }),
       })),
     });
   };
@@ -279,8 +306,7 @@ export default function SimuladorProposta() {
         Simulador de Proposta B2B
       </h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Monte uma proposta com vários itens, defina prazo e frete, e veja a
-        margem consolidada + margem do comprador por item.
+        Preço unitário calculado automaticamente pela margem-alvo de cada faixa de quantidade.
       </p>
 
       {(custoIncompletoGeral || total.algumRevisao) && (
@@ -299,18 +325,10 @@ export default function SimuladorProposta() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-lg font-semibold">Cliente</h2>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={modoCliente === "cadastrado" ? "default" : "outline"}
-              onClick={() => setModoCliente("cadastrado")}
-            >
+            <Button size="sm" variant={modoCliente === "cadastrado" ? "default" : "outline"} onClick={() => setModoCliente("cadastrado")}>
               Cadastrado
             </Button>
-            <Button
-              size="sm"
-              variant={modoCliente === "novo" ? "default" : "outline"}
-              onClick={() => setModoCliente("novo")}
-            >
+            <Button size="sm" variant={modoCliente === "novo" ? "default" : "outline"} onClick={() => setModoCliente("novo")}>
               Novo
             </Button>
           </div>
@@ -319,18 +337,10 @@ export default function SimuladorProposta() {
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-muted/30 p-3">
           <Label className="text-sm font-medium">Tipo de venda</Label>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={tipoVenda === "b2b" ? "default" : "outline"}
-              onClick={() => setTipoVenda("b2b")}
-            >
+            <Button size="sm" variant={tipoVenda === "b2b" ? "default" : "outline"} onClick={() => setTipoVenda("b2b")}>
               B2B
             </Button>
-            <Button
-              size="sm"
-              variant={tipoVenda === "evento" ? "default" : "outline"}
-              onClick={() => setTipoVenda("evento")}
-            >
+            <Button size="sm" variant={tipoVenda === "evento" ? "default" : "outline"} onClick={() => setTipoVenda("evento")}>
               Evento
             </Button>
           </div>
@@ -340,7 +350,6 @@ export default function SimuladorProposta() {
               : "Cliente de evento (consumo final) — sem sugestão de revenda."}
           </p>
         </div>
-
 
         {modoCliente === "cadastrado" ? (
           <div className="space-y-1.5">
@@ -362,30 +371,15 @@ export default function SimuladorProposta() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1.5">
               <Label>Nome / Empresa</Label>
-              <Input
-                value={novoCliente.nome}
-                onChange={(e) =>
-                  setNovoCliente({ ...novoCliente, nome: e.target.value })
-                }
-              />
+              <Input value={novoCliente.nome} onChange={(e) => setNovoCliente({ ...novoCliente, nome: e.target.value })} />
             </div>
             <div className="space-y-1.5">
               <Label>Contato</Label>
-              <Input
-                value={novoCliente.contato}
-                onChange={(e) =>
-                  setNovoCliente({ ...novoCliente, contato: e.target.value })
-                }
-              />
+              <Input value={novoCliente.contato} onChange={(e) => setNovoCliente({ ...novoCliente, contato: e.target.value })} />
             </div>
             <div className="space-y-1.5">
               <Label>Telefone / WhatsApp</Label>
-              <Input
-                value={novoCliente.telefone}
-                onChange={(e) =>
-                  setNovoCliente({ ...novoCliente, telefone: e.target.value })
-                }
-              />
+              <Input value={novoCliente.telefone} onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })} />
             </div>
           </div>
         )}
@@ -400,106 +394,116 @@ export default function SimuladorProposta() {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[220px]">Produto</TableHead>
-                <TableHead className="w-24">Qtd</TableHead>
-                <TableHead className="w-32">Preço B2B (R$)</TableHead>
-                <TableHead className="w-28">Custo un.</TableHead>
-                <TableHead className="w-28">Margem real</TableHead>
-                <TableHead className="w-16">Status</TableHead>
-                {tipoVenda === "b2b" && (
-                  <>
-                    <TableHead className="w-28">B2C sugerido</TableHead>
-                    <TableHead className="w-32">Margem da revenda</TableHead>
-                  </>
-                )}
-                <TableHead className="w-10" />
-              </TableRow>
+        <div className="space-y-4">
+          {linhas.map((l) => (
+            <div key={l.item.key} className="rounded-lg border border-border/60 bg-muted/20 p-4">
+              <div className="grid gap-3 md:grid-cols-12">
+                <div className="md:col-span-6">
+                  <Label className="text-xs">Produto</Label>
+                  <Select
+                    value={l.item.fichaId}
+                    onValueChange={(v) => updateItem(l.item.key, { fichaId: v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {fichas?.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            </TableHeader>
-            <TableBody>
-              {linhas.map((l) => (
-                <TableRow key={l.item.key}>
-                  <TableCell>
-                    <Select
-                      value={l.item.fichaId}
-                      onValueChange={(v) => updateItem(l.item.key, { fichaId: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fichas?.map((f) => (
-                          <SelectItem key={f.id} value={f.id}>
-                            {f.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={l.item.qtd}
-                      onChange={(e) =>
-                        updateItem(l.item.key, { qtd: e.target.value })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={l.item.preco}
-                      onChange={(e) =>
-                        updateItem(l.item.key, { preco: e.target.value })
-                      }
-                      placeholder="0,00"
-                    />
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {l.ficha ? brl(l.custo) : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">
-                    {l.ficha && l.pv > 0 ? pct(l.margemReal) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {l.ficha && l.pv > 0 ? (
-                      <SemaforoChip tipo={l.semaforo} />
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  {tipoVenda === "b2b" && (
-                    <>
-                      <TableCell className="text-sm">
-                        {l.b2c != null ? brl(l.b2c) : "—"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {l.margemComprador != null ? pct(l.margemComprador) : "—"}
-                      </TableCell>
-                    </>
+                <div className="md:col-span-2">
+                  <Label className="text-xs">Quantidade</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={l.item.qtd}
+                    onChange={(e) => updateItem(l.item.key, { qtd: e.target.value })}
+                    className={l.abaixoMin ? "border-destructive" : ""}
+                  />
+                  {l.abaixoMin && (
+                    <p className="mt-1 text-xs text-destructive">Mínimo 15 un.</p>
                   )}
+                </div>
 
-                  <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => removeItem(l.item.key)}
-                      disabled={items.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                <div className="md:col-span-3">
+                  <Label className="text-xs">Subtotal</Label>
+                  <div className="flex h-10 items-center rounded-md border bg-background px-3 text-sm font-semibold">
+                    {l.preco != null && l.q >= QTD_MINIMA ? brl(l.receita) : "—"}
+                  </div>
+                </div>
+
+                <div className="flex items-end justify-end md:col-span-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeItem(l.item.key)}
+                    disabled={items.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Faixas do produto */}
+              {l.ficha && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    Faixas de preço B2B (preço unitário calculado)
+                  </p>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {FAIXAS.map((f) => {
+                      const p = l.precos[f.idx];
+                      const selecionada = l.faixa?.idx === f.idx;
+                      return (
+                        <div
+                          key={f.idx}
+                          className={`rounded-md border p-3 text-sm ${
+                            selecionada
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border/60 bg-background"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {f.label}
+                            </span>
+                            {selecionada && (
+                              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                                Selecionada
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 text-base font-semibold">
+                            {p != null ? brl(p) : "—"}
+                          </div>
+                          {p == null && (
+                            <p className="text-[11px] text-destructive">
+                              Configure a margem no cadastro.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {tipoVenda === "b2b" && l.preco != null && l.faixa && (
+                    <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
+                      <div>
+                        <span className="text-muted-foreground">Sugerido revenda: </span>
+                        <strong>{l.b2c != null ? brl(l.b2c) : "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Margem da revenda (faixa selecionada): </span>
+                        <strong>{l.margemRevenda != null ? pct(l.margemRevenda) : "—"}</strong>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -509,25 +513,12 @@ export default function SimuladorProposta() {
           <h2 className="font-display text-lg font-semibold">Condições</h2>
           <div className="space-y-1.5">
             <Label>Prazo de pagamento (dias)</Label>
-            <Input
-              type="number"
-              min="0"
-              value={prazo}
-              onChange={(e) => setPrazo(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              0 = à vista. Taxa/dia útil: {pct(taxaDia)} ({diasUteis} dias úteis)
-            </p>
+            <Input type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+            <p className="text-xs text-muted-foreground">0 = à vista.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Frete / entrega — total (R$)</Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={frete}
-              onChange={(e) => setFrete(e.target.value)}
-            />
+            <Input type="number" min="0" step="0.01" value={frete} onChange={(e) => setFrete(e.target.value)} />
           </div>
         </Card>
 
@@ -542,22 +533,9 @@ export default function SimuladorProposta() {
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <Linha label="Receita bruta" value={brl(total.receita)} />
-            <Linha
-              label="Custo total (+ frete)"
-              value={brl(total.custoTotal)}
-            />
-            <Linha label="Imposto (sobre VP)" value={brl(total.impostoTotal)} />
-            <Linha
-              label="Custo do prazo"
-              value={brl(total.custoPrazoTotal)}
-              hint={`${diasCorridos} dias`}
-            />
-            <Linha label="Valor presente" value={brl(total.vpTotal)} />
-            <Linha
-              label="Lucro estimado"
-              value={brl(total.lucro)}
-              strong
-            />
+            <Linha label="Custo total (+ frete)" value={brl(total.custoTotal)} />
+            <Linha label="Imposto estimado" value={brl(total.impostoTotal)} />
+            <Linha label="Lucro estimado" value={brl(total.lucro)} strong />
             <Linha
               label="Margem real consolidada"
               value={pct(total.margemReal)}
@@ -565,6 +543,17 @@ export default function SimuladorProposta() {
               strong
             />
           </div>
+
+          {total.algumAbaixoMin && (
+            <p className="text-xs text-destructive">
+              Existem itens abaixo do pedido mínimo de 15 unidades.
+            </p>
+          )}
+          {total.algumSemPreco && (
+            <p className="text-xs text-destructive">
+              Há produtos sem margem configurada para a faixa selecionada.
+            </p>
+          )}
 
           <div className="flex justify-end border-t pt-4">
             <Button onClick={handleGerarPDF}>
@@ -597,21 +586,6 @@ function Linha({
   );
 }
 
-function SemaforoChip({ tipo }: { tipo: "verde" | "amarelo" | "vermelho" }) {
-  const map = {
-    verde: { c: "bg-green-100 text-green-800 border-green-300", t: "🟢" },
-    amarelo: { c: "bg-yellow-100 text-yellow-800 border-yellow-300", t: "🟡" },
-    vermelho: { c: "bg-red-100 text-red-800 border-red-300", t: "🔴" },
-  }[tipo];
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${map.c}`}
-    >
-      {map.t}
-    </span>
-  );
-}
-
 function SemaforoBox({
   tipo,
   margemReal,
@@ -627,9 +601,7 @@ function SemaforoBox({
         <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>
           <p className="font-semibold">🟢 Proposta saudável</p>
-          <p>
-            Margem real {pct(margemReal)} ≥ alvo {pct(margemAlvo)}.
-          </p>
+          <p>Margem real {pct(margemReal)} ≥ alvo {pct(margemAlvo)}.</p>
         </div>
       </div>
     );
@@ -640,9 +612,7 @@ function SemaforoBox({
         <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>
           <p className="font-semibold">🟡 Lucra, mas abaixo da meta</p>
-          <p>
-            Margem real {pct(margemReal)} abaixo do alvo {pct(margemAlvo)}.
-          </p>
+          <p>Margem real {pct(margemReal)} abaixo do alvo {pct(margemAlvo)}.</p>
         </div>
       </div>
     );
@@ -652,7 +622,7 @@ function SemaforoBox({
       <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
       <div>
         <p className="font-semibold">🔴 PREJUÍZO — não feche neste preço</p>
-        <p>Receita não cobre custo + imposto + prazo.</p>
+        <p>Receita não cobre custo + imposto.</p>
       </div>
     </div>
   );
