@@ -208,7 +208,7 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
         "Preço unit. (B2B)",
         "Subtotal",
         "Sugerido revenda",
-        "Margem do comprador",
+        "Margem da revenda",
       ]];
 
   const columnStyles: Record<number, any> = isEvento
