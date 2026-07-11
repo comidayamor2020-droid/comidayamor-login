@@ -218,6 +218,18 @@ export default function FichasTecnicas() {
         toast({ title: "Informe a quantidade de cada componente", variant: "destructive" }); return;
       }
     }
+    // valida margens-alvo (piso 45%)
+    const margens: Array<[string, string]> = [
+      ["margem_faixa_1", form.margem_faixa_1],
+      ["margem_faixa_2", form.margem_faixa_2],
+      ["margem_faixa_3", form.margem_faixa_3],
+    ];
+    for (const [_, val] of margens) {
+      if (val !== "" && Number(val) < MARGEM_MINIMA_PCT) {
+        toast({ title: "Margem inválida", description: "A margem mínima permitida é 45%.", variant: "destructive" });
+        return;
+      }
+    }
     setSaving(true);
 
     const payload = {
@@ -229,6 +241,9 @@ export default function FichasTecnicas() {
       energia_kwh: form.energia_kwh ? Number(form.energia_kwh) : null,
       embalagem_custo: Number(form.embalagem_custo || 0),
       preco_venda_b2c: form.preco_venda_b2c ? Number(form.preco_venda_b2c) : null,
+      margem_faixa_1: form.margem_faixa_1 ? Number(form.margem_faixa_1) : null,
+      margem_faixa_2: form.margem_faixa_2 ? Number(form.margem_faixa_2) : null,
+      margem_faixa_3: form.margem_faixa_3 ? Number(form.margem_faixa_3) : null,
       precisa_revisao: breakdown.precisaRevisao,
       custo_unitario_calculado: breakdown.custoUnitario || null,
     };
