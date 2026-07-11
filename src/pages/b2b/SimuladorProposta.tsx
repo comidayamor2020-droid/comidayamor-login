@@ -413,7 +413,7 @@ export default function SimuladorProposta() {
                 {tipoVenda === "b2b" && (
                   <>
                     <TableHead className="w-28">B2C sugerido</TableHead>
-                    <TableHead className="w-32">Margem comprador</TableHead>
+                    <TableHead className="w-32">Margem da revenda</TableHead>
                   </>
                 )}
                 <TableHead className="w-10" />
