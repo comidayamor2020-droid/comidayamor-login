@@ -33,12 +33,20 @@ const pct = (n: number | null) =>
     ? `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`
     : "—";
 
+export type PropostaFaixaPDF = {
+  label: string;
+  preco: number | null;
+  margemRevenda: number | null;
+};
+
 export type PropostaItemPDF = {
   nome: string;
   qtd: number;
   precoB2B: number;
   b2c: number | null;
   margemComprador: number | null;
+  faixaSelecionadaIdx?: number;
+  faixas?: PropostaFaixaPDF[];
 };
 
 export type PropostaPDFData = {
