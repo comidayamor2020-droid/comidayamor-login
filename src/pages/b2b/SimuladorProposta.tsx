@@ -172,6 +172,19 @@ export default function SimuladorProposta() {
   const [clienteId, setClienteId] = useState<string>("");
   const [novoCliente, setNovoCliente] = useState({ nome: "", contato: "", telefone: "" });
   const [tipoVenda, setTipoVenda] = useState<"b2b" | "evento">("b2b");
+  // Margens editáveis apenas no modo Evento (por proposta, não altera padrão global)
+  const [eventoMargens, setEventoMargens] = useState<[string, string, string]>([
+    String(MARGENS_B2B_PADRAO[0]),
+    String(MARGENS_B2B_PADRAO[1]),
+    String(MARGENS_B2B_PADRAO[2]),
+  ]);
+  const eventoMargensNum: [number, number, number] = [
+    Number(eventoMargens[0]) || 0,
+    Number(eventoMargens[1]) || 0,
+    Number(eventoMargens[2]) || 0,
+  ];
+  const eventoMargensInvalidas = tipoVenda === "evento"
+    && eventoMargensNum.some((m) => m < MARGEM_MINIMA_PCT);
 
   // Condições
   const [prazo, setPrazo] = useState<string>("30");
