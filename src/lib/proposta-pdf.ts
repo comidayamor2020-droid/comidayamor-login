@@ -228,13 +228,14 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
       const selIdx = i.faixaSelecionadaIdx ?? 0;
       const subtotalProduto = i.precoB2B * i.qtd;
 
-      // Quebra de página se pouco espaço
+      // Quebra de página se pouco espaço (respeita apenas a margem inferior; rodapé é in-flow)
       const alturaEstimada = 24 + 22 + faixas.length * 22 + 24 + 12;
-      if (cursorY + alturaEstimada > pageH - 90) {
+      if (cursorY + alturaEstimada > pageH - 40) {
         doc.addPage();
         desenharFundoPagina();
         cursorY = 40;
       }
+
 
       // Cabeçalho do produto
       doc.setFillColor(...CREME_CLARO);
@@ -334,18 +335,35 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
 
   let y = (doc as any).lastAutoTable.finalY + 24;
 
-  // ==== CONDIÇÕES COMERCIAIS ====
+  // Helper: garante espaço no restante da página, senão adiciona nova página
+  const ensureSpace = (needed: number) => {
+    if (y + needed > pageH - 40) {
+      doc.addPage();
+      desenharFundoPagina();
+      y = 40;
+    }
+  };
+
+  // ==== CONDIÇÕES COMERCIAIS + TOTAL BOX (lado a lado, in-flow) ====
+  const condLinhas = 4;
+  const condBlockH = 22 + condLinhas * 16 + 8; // título + linhas
+  const totalBoxW = 240;
+  const totalBoxH = 76;
+  const blocoH = Math.max(condBlockH, totalBoxH);
+
+  ensureSpace(blocoH + 12);
+
+  const bandaTopo = y;
+
+  // Condições (esquerda)
   doc.setFont(F_DISPLAY, "bold");
   doc.setTextColor(...BORDO);
   doc.setFontSize(14);
-  doc.text("Condições comerciais", margin, y);
+  doc.text("Condições comerciais", margin, bandaTopo);
 
-  // linha fina caramelo sob o título
   doc.setDrawColor(...CARAMELO);
   doc.setLineWidth(0.5);
-  doc.line(margin, y + 4, margin + 160, y + 4);
-
-  y += 22;
+  doc.line(margin, bandaTopo + 4, margin + 160, bandaTopo + 4);
 
   const cond: Array<[string, string]> = [
     ["Prazo de pagamento", `${data.prazoDias} dias${data.prazoDias === 0 ? " (à vista)" : ""}`],
@@ -355,26 +373,23 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   ];
 
   doc.setFontSize(10);
+  let condY = bandaTopo + 22;
   cond.forEach(([label, val]) => {
     doc.setFont(F_SANS, "bold");
     doc.setTextColor(...CARAMELO);
-    doc.text(label, margin, y);
+    doc.text(label, margin, condY);
     doc.setFont(F_SANS, "normal");
     doc.setTextColor(...ESCURO);
-    doc.text(val, margin + 160, y);
-    y += 16;
+    doc.text(val, margin + 160, condY);
+    condY += 16;
   });
 
-  // ==== TOTAL BOX (bordô com cantos arredondados) ====
-  const totalBoxW = 240;
-  const totalBoxH = 76;
+  // TOTAL BOX (direita, mesma banda)
   const totalBoxX = pageW - margin - totalBoxW;
-  const totalBoxY = y - 92;
+  const totalBoxY = bandaTopo;
 
   doc.setFillColor(...BORDO);
   doc.roundedRect(totalBoxX, totalBoxY, totalBoxW, totalBoxH, 10, 10, "F");
-
-  // detalhe pink no topo do box
   doc.setFillColor(...PINK);
   doc.roundedRect(totalBoxX, totalBoxY, totalBoxW, 4, 10, 10, "F");
   doc.setFillColor(...BORDO);
@@ -386,11 +401,9 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.text("Subtotal itens", totalBoxX + 16, totalBoxY + 24);
   doc.text(brl(subtotal), totalBoxX + totalBoxW - 16, totalBoxY + 24, { align: "right" });
 
-  doc.setFontSize(9);
   doc.text("Frete", totalBoxX + 16, totalBoxY + 40);
   doc.text(data.frete > 0 ? brl(data.frete) : "—", totalBoxX + totalBoxW - 16, totalBoxY + 40, { align: "right" });
 
-  // linha divisória
   doc.setDrawColor(...PINK);
   doc.setLineWidth(0.5);
   doc.line(totalBoxX + 12, totalBoxY + 48, totalBoxX + totalBoxW - 12, totalBoxY + 48);
@@ -401,32 +414,31 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.setFontSize(16);
   doc.text(brl(total), totalBoxX + totalBoxW - 16, totalBoxY + 66, { align: "right" });
 
-  y = Math.max(y, totalBoxY + totalBoxH) + 30;
+  y = bandaTopo + blocoH + 40;
 
-  // ==== RODAPÉ ====
-  const footerY = pageH - 70;
+  // ==== RODAPÉ (in-flow, empurrado pelo conteúdo) ====
+  const FOOTER_H = 60;
+  ensureSpace(FOOTER_H);
 
-  // linha decorativa pink
   doc.setDrawColor(...PINK);
   doc.setLineWidth(1);
-  doc.line(margin, footerY, pageW - margin, footerY);
+  doc.line(margin, y, pageW - margin, y);
 
-  // frase de encerramento (Grandest Script fallback: itálico serif)
   doc.setFont(F_DISPLAY, "italic");
   doc.setTextColor(...BORDO);
   doc.setFontSize(18);
-  doc.text("Obrigado pela preferência!", pageW / 2, footerY + 24, { align: "center" });
+  doc.text("Obrigado pela preferência!", pageW / 2, y + 24, { align: "center" });
 
-  // contato no rodapé
   doc.setFont(F_SANS, "normal");
   doc.setTextColor(...CARAMELO);
   doc.setFontSize(9);
   doc.text(
     "comidayamor2020@gmail.com  •  +55 51 99643-7080",
     pageW / 2,
-    footerY + 42,
+    y + 42,
     { align: "center" },
   );
 
   doc.save(`proposta-${data.numero}.pdf`);
 }
+
