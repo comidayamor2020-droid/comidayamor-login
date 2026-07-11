@@ -32,7 +32,12 @@ const EMPTY_FICHA = {
   energia_kwh: "",
   embalagem_custo: "",
   preco_venda_b2c: "",
+  margem_faixa_1: "",
+  margem_faixa_2: "",
+  margem_faixa_3: "",
 };
+
+export const MARGEM_MINIMA_PCT = 45;
 
 export default function FichasTecnicas() {
   const qc = useQueryClient();
@@ -164,6 +169,9 @@ export default function FichasTecnicas() {
       energia_kwh: f.energia_kwh != null ? String(f.energia_kwh) : "",
       embalagem_custo: f.embalagem_custo != null ? String(f.embalagem_custo) : "",
       preco_venda_b2c: (f as any).preco_venda_b2c != null ? String((f as any).preco_venda_b2c) : "",
+      margem_faixa_1: (f as any).margem_faixa_1 != null ? String((f as any).margem_faixa_1) : "",
+      margem_faixa_2: (f as any).margem_faixa_2 != null ? String((f as any).margem_faixa_2) : "",
+      margem_faixa_3: (f as any).margem_faixa_3 != null ? String((f as any).margem_faixa_3) : "",
     });
     const { data } = await supabase
       .from("ficha_componentes" as any).select("*").eq("ficha_id", f.id);
