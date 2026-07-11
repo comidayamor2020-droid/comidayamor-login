@@ -575,9 +575,9 @@ export default function SimuladorProposta() {
                           <div className="mt-1 text-base font-semibold">
                             {p != null ? brl(p) : "—"}
                           </div>
-                          {p == null && (
+                          {p == null && tipoVenda === "evento" && (
                             <p className="text-[11px] text-destructive">
-                              Configure a margem no cadastro.
+                              Ajuste a margem acima.
                             </p>
                           )}
                         </div>
