@@ -228,13 +228,14 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
       const selIdx = i.faixaSelecionadaIdx ?? 0;
       const subtotalProduto = i.precoB2B * i.qtd;
 
-      // Quebra de página se pouco espaço
+      // Quebra de página se pouco espaço (respeita apenas a margem inferior; rodapé é in-flow)
       const alturaEstimada = 24 + 22 + faixas.length * 22 + 24 + 12;
-      if (cursorY + alturaEstimada > pageH - 90) {
+      if (cursorY + alturaEstimada > pageH - 40) {
         doc.addPage();
         desenharFundoPagina();
         cursorY = 40;
       }
+
 
       // Cabeçalho do produto
       doc.setFillColor(...CREME_CLARO);
