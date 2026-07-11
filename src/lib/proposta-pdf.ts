@@ -185,97 +185,105 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   const descontoFrac = (i: PropostaItemPDF) =>
     i.b2c != null && i.b2c > 0 ? (i.b2c - i.precoB2B) / i.b2c : null;
 
-  const body = data.itens.map((i) =>
-    isEvento
-      ? [
-          i.nome,
-          String(i.qtd),
-          i.b2c != null ? brl(i.b2c) : "—",
-          brl(i.precoB2B),
-          pct(descontoFrac(i)),
-          brl(i.precoB2B * i.qtd),
-        ]
-      : [
-          i.nome,
-          String(i.qtd),
-          brl(i.precoB2B),
-          brl(i.precoB2B * i.qtd),
-          i.b2c != null ? brl(i.b2c) : "—",
-          pct(i.margemComprador),
-        ],
-  );
-
   const subtotal = data.itens.reduce((s, i) => s + i.precoB2B * i.qtd, 0);
   const total = subtotal + data.frete;
 
-  const head = isEvento
-    ? [["Produto", "Qtd", "Preço venda loja", "Preço evento", "Desconto", "Subtotal"]]
-    : [[
-        "Produto",
-        "Qtd",
-        "Preço unit. (B2B)",
-        "Subtotal",
-        "Sugerido revenda",
-        "Margem da revenda",
-      ]];
-
-  const columnStyles: Record<number, any> = isEvento
-    ? {
+  if (isEvento) {
+    const body = data.itens.map((i) => [
+      i.nome,
+      String(i.qtd),
+      i.b2c != null ? brl(i.b2c) : "—",
+      brl(i.precoB2B),
+      pct(descontoFrac(i)),
+      brl(i.precoB2B * i.qtd),
+    ]);
+    const head = [["Produto", "Qtd", "Preço venda loja", "Preço evento", "Desconto", "Subtotal"]];
+    autoTable(doc, {
+      startY: clienteY + 60,
+      head,
+      body,
+      styles: { font: F_SANS, fontSize: 9, cellPadding: 7, textColor: ESCURO, lineColor: CARAMELO, lineWidth: 0.3 },
+      headStyles: { fillColor: BORDO, textColor: CREME, fontStyle: "bold", font: F_SANS, fontSize: 9, lineColor: BORDO, lineWidth: 0 },
+      bodyStyles: { fillColor: CREME_CLARO },
+      alternateRowStyles: { fillColor: CREME },
+      columnStyles: {
         0: { textColor: BORDO, fontStyle: "bold" },
         1: { halign: "center" },
         2: { halign: "right" },
         3: { halign: "right" },
         4: { halign: "right", textColor: CARAMELO, fontStyle: "bold" },
         5: { halign: "right", fontStyle: "bold" },
-      }
-    : {
-        0: { textColor: BORDO, fontStyle: "bold" },
-        1: { halign: "center" },
-        2: { halign: "right" },
-        3: { halign: "right", fontStyle: "bold" },
-        4: { halign: "right" },
-        5: { halign: "right", textColor: CARAMELO, fontStyle: "bold" },
-      };
+      },
+      margin: { left: margin, right: margin },
+    });
+  } else {
+    // B2B — mini-tabela de 3 faixas por produto
+    // Colunas: Produto | Qtd pedida | Faixa | Preço unit. (B2B) | Margem da revenda | Subtotal
+    type Row = any[];
+    const body: Row[] = [];
+    // Guarda quais linhas do body correspondem à faixa selecionada (para destaque)
+    const selectedRows = new Set<number>();
+    // Guarda quais linhas têm margem revenda negativa (para vermelho)
+    const negativeMarginRows = new Set<number>();
 
-  autoTable(doc, {
-    startY: clienteY + 60,
-    head,
-    body,
-    styles: {
-      font: F_SANS,
-      fontSize: 9,
-      cellPadding: 7,
-      textColor: ESCURO,
-      lineColor: CARAMELO,
-      lineWidth: 0.3,
-    },
-    headStyles: {
-      fillColor: BORDO,
-      textColor: CREME,
-      fontStyle: "bold",
-      font: F_SANS,
-      fontSize: 9,
-      lineColor: BORDO,
-      lineWidth: 0,
-    },
-    bodyStyles: { fillColor: CREME_CLARO },
-    alternateRowStyles: { fillColor: CREME },
-    columnStyles,
-    // margem negativa em vermelho (apenas B2B)
-    didParseCell: (hookData) => {
-      if (
-        !isEvento &&
-        hookData.section === "body" &&
-        hookData.column.index === 5
-      ) {
-        const item = data.itens[hookData.row.index];
-        if (item?.margemComprador != null && item.margemComprador < 0) {
+    data.itens.forEach((i) => {
+      const faixas = i.faixas ?? [
+        { label: "—", preco: i.precoB2B, margemRevenda: i.margemComprador },
+      ];
+      const selIdx = i.faixaSelecionadaIdx ?? 0;
+      faixas.forEach((f, idx) => {
+        const rowIndex = body.length;
+        if (idx === selIdx) selectedRows.add(rowIndex);
+        if (f.margemRevenda != null && f.margemRevenda < 0) negativeMarginRows.add(rowIndex);
+        const row: Row = [];
+        if (idx === 0) {
+          row.push({ content: i.nome, rowSpan: faixas.length, styles: { valign: "middle", textColor: BORDO, fontStyle: "bold" } });
+          row.push({ content: String(i.qtd), rowSpan: faixas.length, styles: { valign: "middle", halign: "center" } });
+        }
+        row.push(f.label);
+        row.push(f.preco != null ? brl(f.preco) : "—");
+        row.push(pct(f.margemRevenda));
+        if (idx === 0) {
+          row.push({ content: brl(i.precoB2B * i.qtd), rowSpan: faixas.length, styles: { valign: "middle", halign: "right", fontStyle: "bold" } });
+        }
+        body.push(row);
+      });
+    });
+
+    const head = [["Produto", "Qtd pedida", "Faixa", "Preço unit. (B2B)", "Margem da revenda", "Subtotal"]];
+    autoTable(doc, {
+      startY: clienteY + 60,
+      head,
+      body,
+      styles: { font: F_SANS, fontSize: 9, cellPadding: 6, textColor: ESCURO, lineColor: CARAMELO, lineWidth: 0.3 },
+      headStyles: { fillColor: BORDO, textColor: CREME, fontStyle: "bold", font: F_SANS, fontSize: 9, lineColor: BORDO, lineWidth: 0 },
+      bodyStyles: { fillColor: CREME_CLARO },
+      columnStyles: {
+        0: {},
+        1: { halign: "center" },
+        2: { halign: "center", fontStyle: "bold", textColor: CARAMELO },
+        3: { halign: "right" },
+        4: { halign: "right" },
+        5: { halign: "right" },
+      },
+      didParseCell: (hookData) => {
+        if (hookData.section !== "body") return;
+        const rowIdx = hookData.row.index;
+        // destaque da faixa selecionada
+        if (selectedRows.has(rowIdx) && (hookData.column.index === 2 || hookData.column.index === 3 || hookData.column.index === 4)) {
+          hookData.cell.styles.fillColor = PINK;
+          hookData.cell.styles.fontStyle = "bold";
+          hookData.cell.styles.textColor = BORDO;
+        }
+        // margem negativa em vermelho na coluna de margem
+        if (hookData.column.index === 4 && negativeMarginRows.has(rowIdx)) {
           hookData.cell.styles.textColor = VERMELHO;
         }
-      }
-    },
-    margin: { left: margin, right: margin },
-  });
+      },
+      margin: { left: margin, right: margin },
+    });
+  }
+
 
 
   let y = (doc as any).lastAutoTable.finalY + 24;
