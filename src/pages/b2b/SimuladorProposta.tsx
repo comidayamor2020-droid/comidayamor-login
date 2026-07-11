@@ -210,7 +210,8 @@ export default function SimuladorProposta() {
       const ficha = fichas?.find((f) => f.id === it.fichaId);
       const custo = Number(ficha?.custo_unitario_calculado ?? 0);
       const q = Math.max(0, Number(it.qtd) || 0);
-      const precos = precosPorFaixa(ficha);
+      const margens = margensEfetivas(ficha, tipoVenda, eventoMargensNum);
+      const precos = precosPorFaixa(ficha, margens);
       const faixa = faixaDaQtd(q);
       const preco = faixa ? precos[faixa.idx] : null;
       const pv = preco ?? 0;
