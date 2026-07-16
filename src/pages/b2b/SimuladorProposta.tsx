@@ -746,7 +746,7 @@ export default function SimuladorProposta() {
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <Linha label="Receita bruta" value={brl(total.receita)} />
-            <Linha label="Custo total (+ frete)" value={brl(total.custoTotal)} />
+            <Linha label="Custo total" value={brl(total.custoTotal)} />
             <Linha label="Imposto estimado" value={brl(total.impostoTotal)} />
             <Linha label="Lucro estimado" value={brl(total.lucro)} strong />
             <Linha
