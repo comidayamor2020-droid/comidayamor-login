@@ -690,15 +690,49 @@ export default function SimuladorProposta() {
         <Card className="space-y-4 p-6 md:col-span-1">
           <h2 className="font-display text-lg font-semibold">Condições</h2>
           <div className="space-y-1.5">
-            <Label>Prazo de pagamento (dias)</Label>
-            <Input type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
-            <p className="text-xs text-muted-foreground">0 = à vista.</p>
+            <Label>Prazo de pagamento</Label>
+            <Select
+              value={prazoPagamento}
+              onValueChange={(v) => {
+                setPrazoTocado(true);
+                setPrazoPagamento(v as PrazoPagamento);
+              }}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PRAZOS_PAGAMENTO.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label>Frete / entrega — total (R$)</Label>
-            <Input type="number" min="0" step="0.01" value={frete} onChange={(e) => setFrete(e.target.value)} />
+          <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/30 p-3 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Pedido mínimo</span>
+              <strong>{brl(cfgMin)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Frete grátis acima de</span>
+              <strong>{brl(cfgFreteGratis)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Frete calculado</span>
+              <strong className={freteGratis ? "text-green-700" : ""}>
+                {tipoVenda === "evento" ? "—" : freteGratis ? "Grátis" : brl(cfgValorFrete)}
+              </strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Prazo de entrega</span>
+              <strong>{cfgPrazoEntrega} dias úteis</strong>
+            </div>
           </div>
+          {abaixoMinimo && (
+            <div className="rounded-md border border-[#F20531] bg-[#F20531]/10 p-3 text-xs font-semibold text-[#F20531]">
+              Pedido abaixo do mínimo de {brl(cfgMin)}
+            </div>
+          )}
         </Card>
+
 
         <Card className="space-y-4 p-6 md:col-span-2">
           <h2 className="font-display text-lg font-semibold">Resumo da proposta</h2>
