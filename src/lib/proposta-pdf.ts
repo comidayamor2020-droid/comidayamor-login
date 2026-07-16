@@ -89,8 +89,8 @@ const F_SANS = "helvetica";
  */
 export async function gerarNumeroProposta(): Promise<string> {
   try {
-    const { data, error } = await supabase.rpc("next_numero_proposta" as never);
-    if (!error && typeof data === "string" && data.startsWith("CYA-")) return data;
+    const { data, error } = await (supabase.rpc as any)("next_numero_proposta");
+    if (!error && typeof data === "string" && (data as string).startsWith("CYA-")) return data as string;
   } catch {
     // ignore
   }
