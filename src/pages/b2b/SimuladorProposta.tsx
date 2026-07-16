@@ -294,8 +294,24 @@ export default function SimuladorProposta() {
     });
   }, [items, fichas, aliq, tipoVenda, eventoMargens]);
 
+  // Cálculo de frete e mínimo baseado em config_comercial
+  const cfgMin = Number(configComercial?.pedido_minimo ?? 250);
+  const cfgFreteGratis = Number(configComercial?.frete_gratis_acima ?? 400);
+  const cfgValorFrete = Number(configComercial?.valor_frete ?? 25);
+  const cfgPrazoEntrega = Number(configComercial?.prazo_entrega_dias ?? 3);
+
+  const subtotalReceita = useMemo(
+    () => linhas.reduce((s, l) => s + l.receita, 0),
+    [linhas],
+  );
+  const freteGratis = tipoVenda !== "evento" && subtotalReceita >= cfgFreteGratis;
+  const freteTotal =
+    tipoVenda === "evento" ? 0 : freteGratis ? 0 : cfgValorFrete;
+  const abaixoMinimo =
+    tipoVenda !== "evento" && subtotalReceita > 0 && subtotalReceita < cfgMin;
+
   const total = useMemo(() => {
-    const receita = linhas.reduce((s, l) => s + l.receita, 0);
+    const receita = subtotalReceita;
     const custoTotal = linhas.reduce((s, l) => s + l.custoTotal, 0) + freteTotal;
     const impostoTotal = linhas.reduce((s, l) => s + l.impostoTotal, 0);
     const lucro = receita - custoTotal - impostoTotal;
@@ -322,7 +338,8 @@ export default function SimuladorProposta() {
       algumAbaixoMin,
       algumSemPreco,
     };
-  }, [linhas, freteTotal, margemAlvo]);
+  }, [linhas, subtotalReceita, freteTotal, margemAlvo]);
+
 
   const handleGerarPDF = async () => {
     const itensValidos = linhas.filter((l) => l.ficha && l.q >= QTD_MINIMA && l.preco != null);
