@@ -227,9 +227,16 @@ export default function SimuladorProposta() {
   const eventoMargensInvalidas = tipoVenda === "evento"
     && eventoMargensNum.some((m) => m < MARGEM_MINIMA_PCT);
 
-  // Condições
-  const [prazo, setPrazo] = useState<string>("30");
-  const [frete, setFrete] = useState<string>("0");
+  // Condições — prazo de pagamento como opção pré-definida
+  const defaultPrazo: PrazoPagamento =
+    tipoVenda === "evento" ? "50% antecipado + 50% na entrega" : "Na entrega (Pix)";
+  const [prazoPagamento, setPrazoPagamento] = useState<PrazoPagamento>(defaultPrazo);
+  // Ao alternar B2B/Evento, se o usuário não personalizou, aplica o novo padrão
+  const [prazoTocado, setPrazoTocado] = useState(false);
+  if (!prazoTocado && prazoPagamento !== defaultPrazo) {
+    // apenas efeito colateral leve na render seguinte
+    setTimeout(() => setPrazoPagamento(defaultPrazo), 0);
+  }
 
   // Itens
   const [items, setItems] = useState<Item[]>([newItem()]);
@@ -240,8 +247,7 @@ export default function SimuladorProposta() {
 
   const aliq = Number(params?.aliquota_imposto ?? 0);
   const margemAlvo = Number(params?.margem_alvo ?? 0);
-  const freteTotal = Math.max(0, Number(frete) || 0);
-  const diasCorridos = Math.max(0, Number(prazo) || 0);
+
 
   const custoIncompletoGeral =
     !params?.custo_hora_mao_obra || Number(params?.custo_hora_mao_obra) <= 0;
