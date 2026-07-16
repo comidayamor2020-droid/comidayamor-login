@@ -239,6 +239,21 @@ export default function FichasTecnicas() {
         return;
       }
     }
+    // Campos obrigatórios do produto final (rótulo comercial)
+    if (form.tipo === "produto_final") {
+      if (!form.validade_dias || Number(form.validade_dias) <= 0) {
+        toast({ title: "Validade obrigatória", description: "Informe a validade em dias.", variant: "destructive" });
+        return;
+      }
+      if (!form.conservacao) {
+        toast({ title: "Conservação obrigatória", variant: "destructive" });
+        return;
+      }
+      if (!form.claims.trim()) {
+        toast({ title: "Claims obrigatório", description: "Informe os claims do produto.", variant: "destructive" });
+        return;
+      }
+    }
     setSaving(true);
 
     const payload = {
