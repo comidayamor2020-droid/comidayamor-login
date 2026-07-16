@@ -480,6 +480,33 @@ export type Database = {
           },
         ]
       }
+      config_comercial: {
+        Row: {
+          frete_gratis_acima: number
+          id: number
+          pedido_minimo: number
+          prazo_entrega_dias: number
+          updated_at: string
+          valor_frete: number
+        }
+        Insert: {
+          frete_gratis_acima?: number
+          id?: number
+          pedido_minimo?: number
+          prazo_entrega_dias?: number
+          updated_at?: string
+          valor_frete?: number
+        }
+        Update: {
+          frete_gratis_acima?: number
+          id?: number
+          pedido_minimo?: number
+          prazo_entrega_dias?: number
+          updated_at?: string
+          valor_frete?: number
+        }
+        Relationships: []
+      }
       contas_pagar: {
         Row: {
           categoria: string | null
@@ -795,6 +822,9 @@ export type Database = {
       }
       fichas_tecnicas: {
         Row: {
+          alergenicos: string | null
+          claims: string | null
+          conservacao: string | null
           created_at: string
           custo_unitario_calculado: number | null
           embalagem_custo: number
@@ -811,8 +841,12 @@ export type Database = {
           rendimento_unidade: string | null
           tipo: string
           updated_at: string
+          validade_dias: number | null
         }
         Insert: {
+          alergenicos?: string | null
+          claims?: string | null
+          conservacao?: string | null
           created_at?: string
           custo_unitario_calculado?: number | null
           embalagem_custo?: number
@@ -829,8 +863,12 @@ export type Database = {
           rendimento_unidade?: string | null
           tipo: string
           updated_at?: string
+          validade_dias?: number | null
         }
         Update: {
+          alergenicos?: string | null
+          claims?: string | null
+          conservacao?: string | null
           created_at?: string
           custo_unitario_calculado?: number | null
           embalagem_custo?: number
@@ -847,6 +885,7 @@ export type Database = {
           rendimento_unidade?: string | null
           tipo?: string
           updated_at?: string
+          validade_dias?: number | null
         }
         Relationships: []
       }
@@ -1824,6 +1863,24 @@ export type Database = {
         }
         Relationships: []
       }
+      propostas_numeros: {
+        Row: {
+          ano: number
+          ultimo_sequencial: number
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          ultimo_sequencial?: number
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          ultimo_sequencial?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recompensas_fidelidade: {
         Row: {
           cliente_id: string
@@ -2197,6 +2254,7 @@ export type Database = {
           recompensa_desbloqueada: boolean
         }[]
       }
+      next_numero_proposta: { Args: never; Returns: string }
       registrar_compra_cliente: {
         Args: { cliente_uuid: string; valor_compra: number }
         Returns: {
