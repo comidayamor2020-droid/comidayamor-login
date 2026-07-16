@@ -312,7 +312,8 @@ export default function SimuladorProposta() {
 
   const total = useMemo(() => {
     const receita = subtotalReceita;
-    const custoTotal = linhas.reduce((s, l) => s + l.custoTotal, 0) + freteTotal;
+    // Frete é custo do comprador, não entra no custo do vendedor para cálculo de margem
+    const custoTotal = linhas.reduce((s, l) => s + l.custoTotal, 0);
     const impostoTotal = linhas.reduce((s, l) => s + l.impostoTotal, 0);
     const lucro = receita - custoTotal - impostoTotal;
     const margemReal = receita > 0 ? lucro / receita : -Infinity;
