@@ -367,6 +367,14 @@ export default function SimuladorProposta() {
       });
       return;
     }
+    if (abaixoMinimo) {
+      toast({
+        title: "Pedido abaixo do mínimo",
+        description: `Pedido abaixo do mínimo de ${brl(cfgMin)}.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const clienteNome =
       modoCliente === "cadastrado"
         ? (() => {
@@ -382,13 +390,17 @@ export default function SimuladorProposta() {
       });
       return;
     }
+    const numero = await gerarNumeroProposta();
     await gerarPropostaPDF({
-      numero: gerarNumeroProposta(),
+      numero,
       emissao: new Date(),
       validadeDias: 7,
       cliente: clienteNome,
-      prazoDias: diasCorridos,
+      prazoPagamento,
       frete: freteTotal,
+      freteGratis,
+      pedidoMinimo: tipoVenda === "evento" ? undefined : cfgMin,
+      prazoEntregaDias: tipoVenda === "evento" ? undefined : cfgPrazoEntrega,
       tipoVenda,
       itens: itensValidos.map((l) => ({
         nome: l.ficha!.nome,
@@ -397,6 +409,10 @@ export default function SimuladorProposta() {
         b2c: l.b2c,
         margemComprador: l.margemRevenda,
         faixaSelecionadaIdx: l.faixa!.idx,
+        claims: l.ficha?.claims ?? null,
+        validadeDias: l.ficha?.validade_dias ?? null,
+        conservacao: l.ficha?.conservacao ?? null,
+        alergenicos: l.ficha?.alergenicos ?? null,
         faixas: FAIXAS.map((f, idx) => {
           const p = l.precos[idx];
           const mrev = l.b2c && l.b2c > 0 && p != null && p > 0 ? (l.b2c - p) / l.b2c : null;
@@ -408,6 +424,7 @@ export default function SimuladorProposta() {
         }),
       })),
     });
+
   };
 
   return (
