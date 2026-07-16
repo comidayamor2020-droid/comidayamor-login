@@ -156,12 +156,30 @@ export default function SimuladorProposta() {
       const { data, error } = await supabase
         .from("fichas_tecnicas" as any)
         .select(
-          "id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo, margem_faixa_1, margem_faixa_2, margem_faixa_3",
+          "id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo, margem_faixa_1, margem_faixa_2, margem_faixa_3, validade_dias, conservacao, alergenicos, claims",
         )
         .eq("tipo", "produto_final")
         .order("nome");
       if (error) throw error;
       return (data as unknown as Ficha[]) ?? [];
+    },
+  });
+
+  const { data: configComercial } = useQuery({
+    queryKey: ["config_comercial"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("config_comercial")
+        .select("pedido_minimo, frete_gratis_acima, valor_frete, prazo_entrega_dias")
+        .eq("id", 1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as ConfigComercial | null) ?? {
+        pedido_minimo: 250,
+        frete_gratis_acima: 400,
+        valor_frete: 25,
+        prazo_entrega_dias: 3,
+      };
     },
   });
 
