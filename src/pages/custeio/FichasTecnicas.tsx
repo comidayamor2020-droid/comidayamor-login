@@ -35,7 +35,12 @@ const EMPTY_FICHA = {
   margem_faixa_1: "",
   margem_faixa_2: "",
   margem_faixa_3: "",
+  validade_dias: "",
+  conservacao: "Temperatura ambiente" as "Temperatura ambiente" | "Refrigerado" | "Congelado",
+  alergenicos: "",
+  claims: "Sem glúten • Sem açúcar • Sem lactose",
 };
+
 
 export const MARGEM_MINIMA_PCT = 45;
 
