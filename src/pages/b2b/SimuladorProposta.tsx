@@ -33,6 +33,10 @@ type Ficha = {
   margem_faixa_1: number | null;
   margem_faixa_2: number | null;
   margem_faixa_3: number | null;
+  validade_dias?: number | null;
+  conservacao?: string | null;
+  alergenicos?: string | null;
+  claims?: string | null;
 };
 
 type Cliente = {
@@ -48,6 +52,23 @@ type Params = {
   cdi_anual: number;
   custo_hora_mao_obra: number | null;
 };
+
+type ConfigComercial = {
+  pedido_minimo: number;
+  frete_gratis_acima: number;
+  valor_frete: number;
+  prazo_entrega_dias: number;
+};
+
+const PRAZOS_PAGAMENTO = [
+  "50% antecipado + 50% na entrega",
+  "Na entrega (Pix)",
+  "7 dias",
+  "14 dias",
+  "30 dias",
+] as const;
+type PrazoPagamento = (typeof PRAZOS_PAGAMENTO)[number];
+
 
 type Item = {
   key: string;
@@ -83,12 +104,14 @@ function faixaDaQtd(q: number) {
   return FAIXAS.find((f) => q >= f.min && q <= f.max) ?? null;
 }
 
+const round2 = (n: number) => Math.round((Number.isFinite(n) ? n : 0) * 100) / 100;
+
 function precoFaixa(custo: number, margemPct: number | null | undefined): number | null {
   if (custo <= 0) return null;
   if (margemPct == null || !isFinite(Number(margemPct))) return null;
   const m = Number(margemPct) / 100;
   if (m >= 1) return null;
-  return custo / (1 - m);
+  return round2(custo / (1 - m));
 }
 
 // Margens padrão do modo B2B (fixas, aplicadas a todos os produtos que não têm override)
@@ -133,12 +156,30 @@ export default function SimuladorProposta() {
       const { data, error } = await supabase
         .from("fichas_tecnicas" as any)
         .select(
-          "id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo, margem_faixa_1, margem_faixa_2, margem_faixa_3",
+          "id, nome, custo_unitario_calculado, precisa_revisao, preco_venda_b2c, tipo, margem_faixa_1, margem_faixa_2, margem_faixa_3, validade_dias, conservacao, alergenicos, claims",
         )
         .eq("tipo", "produto_final")
         .order("nome");
       if (error) throw error;
       return (data as unknown as Ficha[]) ?? [];
+    },
+  });
+
+  const { data: configComercial } = useQuery({
+    queryKey: ["config_comercial"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("config_comercial")
+        .select("pedido_minimo, frete_gratis_acima, valor_frete, prazo_entrega_dias")
+        .eq("id", 1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as ConfigComercial | null) ?? {
+        pedido_minimo: 250,
+        frete_gratis_acima: 400,
+        valor_frete: 25,
+        prazo_entrega_dias: 3,
+      };
     },
   });
 
@@ -186,9 +227,16 @@ export default function SimuladorProposta() {
   const eventoMargensInvalidas = tipoVenda === "evento"
     && eventoMargensNum.some((m) => m < MARGEM_MINIMA_PCT);
 
-  // Condições
-  const [prazo, setPrazo] = useState<string>("30");
-  const [frete, setFrete] = useState<string>("0");
+  // Condições — prazo de pagamento como opção pré-definida
+  const defaultPrazo: PrazoPagamento =
+    tipoVenda === "evento" ? "50% antecipado + 50% na entrega" : "Na entrega (Pix)";
+  const [prazoPagamento, setPrazoPagamento] = useState<PrazoPagamento>(defaultPrazo);
+  // Ao alternar B2B/Evento, se o usuário não personalizou, aplica o novo padrão
+  const [prazoTocado, setPrazoTocado] = useState(false);
+  if (!prazoTocado && prazoPagamento !== defaultPrazo) {
+    // apenas efeito colateral leve na render seguinte
+    setTimeout(() => setPrazoPagamento(defaultPrazo), 0);
+  }
 
   // Itens
   const [items, setItems] = useState<Item[]>([newItem()]);
@@ -199,8 +247,7 @@ export default function SimuladorProposta() {
 
   const aliq = Number(params?.aliquota_imposto ?? 0);
   const margemAlvo = Number(params?.margem_alvo ?? 0);
-  const freteTotal = Math.max(0, Number(frete) || 0);
-  const diasCorridos = Math.max(0, Number(prazo) || 0);
+
 
   const custoIncompletoGeral =
     !params?.custo_hora_mao_obra || Number(params?.custo_hora_mao_obra) <= 0;
@@ -247,8 +294,24 @@ export default function SimuladorProposta() {
     });
   }, [items, fichas, aliq, tipoVenda, eventoMargens]);
 
+  // Cálculo de frete e mínimo baseado em config_comercial
+  const cfgMin = Number(configComercial?.pedido_minimo ?? 250);
+  const cfgFreteGratis = Number(configComercial?.frete_gratis_acima ?? 400);
+  const cfgValorFrete = Number(configComercial?.valor_frete ?? 25);
+  const cfgPrazoEntrega = Number(configComercial?.prazo_entrega_dias ?? 3);
+
+  const subtotalReceita = useMemo(
+    () => linhas.reduce((s, l) => s + l.receita, 0),
+    [linhas],
+  );
+  const freteGratis = tipoVenda !== "evento" && subtotalReceita >= cfgFreteGratis;
+  const freteTotal =
+    tipoVenda === "evento" ? 0 : freteGratis ? 0 : cfgValorFrete;
+  const abaixoMinimo =
+    tipoVenda !== "evento" && subtotalReceita > 0 && subtotalReceita < cfgMin;
+
   const total = useMemo(() => {
-    const receita = linhas.reduce((s, l) => s + l.receita, 0);
+    const receita = subtotalReceita;
     const custoTotal = linhas.reduce((s, l) => s + l.custoTotal, 0) + freteTotal;
     const impostoTotal = linhas.reduce((s, l) => s + l.impostoTotal, 0);
     const lucro = receita - custoTotal - impostoTotal;
@@ -275,7 +338,8 @@ export default function SimuladorProposta() {
       algumAbaixoMin,
       algumSemPreco,
     };
-  }, [linhas, freteTotal, margemAlvo]);
+  }, [linhas, subtotalReceita, freteTotal, margemAlvo]);
+
 
   const handleGerarPDF = async () => {
     const itensValidos = linhas.filter((l) => l.ficha && l.q >= QTD_MINIMA && l.preco != null);
@@ -303,6 +367,14 @@ export default function SimuladorProposta() {
       });
       return;
     }
+    if (abaixoMinimo) {
+      toast({
+        title: "Pedido abaixo do mínimo",
+        description: `Pedido abaixo do mínimo de ${brl(cfgMin)}.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const clienteNome =
       modoCliente === "cadastrado"
         ? (() => {
@@ -318,13 +390,17 @@ export default function SimuladorProposta() {
       });
       return;
     }
+    const numero = await gerarNumeroProposta();
     await gerarPropostaPDF({
-      numero: gerarNumeroProposta(),
+      numero,
       emissao: new Date(),
       validadeDias: 7,
       cliente: clienteNome,
-      prazoDias: diasCorridos,
+      prazoPagamento,
       frete: freteTotal,
+      freteGratis,
+      pedidoMinimo: tipoVenda === "evento" ? undefined : cfgMin,
+      prazoEntregaDias: tipoVenda === "evento" ? undefined : cfgPrazoEntrega,
       tipoVenda,
       itens: itensValidos.map((l) => ({
         nome: l.ficha!.nome,
@@ -333,6 +409,10 @@ export default function SimuladorProposta() {
         b2c: l.b2c,
         margemComprador: l.margemRevenda,
         faixaSelecionadaIdx: l.faixa!.idx,
+        claims: l.ficha?.claims ?? null,
+        validadeDias: l.ficha?.validade_dias ?? null,
+        conservacao: l.ficha?.conservacao ?? null,
+        alergenicos: l.ficha?.alergenicos ?? null,
         faixas: FAIXAS.map((f, idx) => {
           const p = l.precos[idx];
           const mrev = l.b2c && l.b2c > 0 && p != null && p > 0 ? (l.b2c - p) / l.b2c : null;
@@ -344,6 +424,7 @@ export default function SimuladorProposta() {
         }),
       })),
     });
+
   };
 
   return (
@@ -609,15 +690,49 @@ export default function SimuladorProposta() {
         <Card className="space-y-4 p-6 md:col-span-1">
           <h2 className="font-display text-lg font-semibold">Condições</h2>
           <div className="space-y-1.5">
-            <Label>Prazo de pagamento (dias)</Label>
-            <Input type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
-            <p className="text-xs text-muted-foreground">0 = à vista.</p>
+            <Label>Prazo de pagamento</Label>
+            <Select
+              value={prazoPagamento}
+              onValueChange={(v) => {
+                setPrazoTocado(true);
+                setPrazoPagamento(v as PrazoPagamento);
+              }}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PRAZOS_PAGAMENTO.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label>Frete / entrega — total (R$)</Label>
-            <Input type="number" min="0" step="0.01" value={frete} onChange={(e) => setFrete(e.target.value)} />
+          <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/30 p-3 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Pedido mínimo</span>
+              <strong>{brl(cfgMin)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Frete grátis acima de</span>
+              <strong>{brl(cfgFreteGratis)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Frete calculado</span>
+              <strong className={freteGratis ? "text-green-700" : ""}>
+                {tipoVenda === "evento" ? "—" : freteGratis ? "Grátis" : brl(cfgValorFrete)}
+              </strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Prazo de entrega</span>
+              <strong>{cfgPrazoEntrega} dias úteis</strong>
+            </div>
           </div>
+          {abaixoMinimo && (
+            <div className="rounded-md border border-[#F20531] bg-[#F20531]/10 p-3 text-xs font-semibold text-[#F20531]">
+              Pedido abaixo do mínimo de {brl(cfgMin)}
+            </div>
+          )}
         </Card>
+
 
         <Card className="space-y-4 p-6 md:col-span-2">
           <h2 className="font-display text-lg font-semibold">Resumo da proposta</h2>
@@ -653,9 +768,10 @@ export default function SimuladorProposta() {
           )}
 
           <div className="flex justify-end border-t pt-4">
-            <Button onClick={handleGerarPDF}>
+            <Button onClick={handleGerarPDF} disabled={abaixoMinimo}>
               <FileDown className="mr-2 h-4 w-4" /> Gerar PDF da proposta
             </Button>
+
           </div>
         </Card>
       </div>

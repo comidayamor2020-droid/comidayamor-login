@@ -7,15 +7,16 @@ const ClientesB2B = lazy(() => import("./ClientesB2B"));
 const MeusPedidos = lazy(() => import("./MeusPedidos"));
 const Producao = lazy(() => import("./Producao"));
 const SimuladorProposta = lazy(() => import("./b2b/SimuladorProposta"));
+const ConfigComercial = lazy(() => import("./b2b/ConfigComercial"));
 
-type TabKey = "clientes" | "pedidos" | "producao" | "simulador";
+type TabKey = "clientes" | "pedidos" | "producao" | "simulador" | "config";
 
 interface TabDef {
   key: TabKey;
   label: string;
   route: string;
   Component: React.ComponentType;
-  roles?: AppRole[]; // se definido, restringe além do canAccess
+  roles?: AppRole[];
 }
 
 const ALL_TABS: TabDef[] = [
@@ -29,7 +30,15 @@ const ALL_TABS: TabDef[] = [
     Component: SimuladorProposta,
     roles: ["admin", "gestao", "gerente_operacional"],
   },
+  {
+    key: "config",
+    label: "Configurações",
+    route: "/central-b2b",
+    Component: ConfigComercial,
+    roles: ["admin", "gestao"],
+  },
 ];
+
 
 export default function CentralB2B() {
   const { profile } = useAuth();
