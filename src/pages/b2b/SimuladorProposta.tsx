@@ -33,6 +33,10 @@ type Ficha = {
   margem_faixa_1: number | null;
   margem_faixa_2: number | null;
   margem_faixa_3: number | null;
+  validade_dias?: number | null;
+  conservacao?: string | null;
+  alergenicos?: string | null;
+  claims?: string | null;
 };
 
 type Cliente = {
@@ -48,6 +52,23 @@ type Params = {
   cdi_anual: number;
   custo_hora_mao_obra: number | null;
 };
+
+type ConfigComercial = {
+  pedido_minimo: number;
+  frete_gratis_acima: number;
+  valor_frete: number;
+  prazo_entrega_dias: number;
+};
+
+const PRAZOS_PAGAMENTO = [
+  "50% antecipado + 50% na entrega",
+  "Na entrega (Pix)",
+  "7 dias",
+  "14 dias",
+  "30 dias",
+] as const;
+type PrazoPagamento = (typeof PRAZOS_PAGAMENTO)[number];
+
 
 type Item = {
   key: string;
