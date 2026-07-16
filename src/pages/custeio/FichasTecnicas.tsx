@@ -428,6 +428,58 @@ export default function FichasTecnicas() {
           </div>
         </div>
 
+        {/* Informações do produto (rótulo comercial) */}
+        <div className="mt-6 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <h3 className="mb-1 font-display text-base font-semibold">Informações do produto</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Exibidas no PDF da proposta comercial (validade, conservação, claims e alergênicos).
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Validade (dias) *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={form.validade_dias}
+                onChange={(e) => setForm({ ...form, validade_dias: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Conservação *</Label>
+              <Select
+                value={form.conservacao}
+                onValueChange={(v: any) => setForm({ ...form, conservacao: v })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Temperatura ambiente">Temperatura ambiente</SelectItem>
+                  <SelectItem value="Refrigerado">Refrigerado</SelectItem>
+                  <SelectItem value="Congelado">Congelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Claims *</Label>
+              <Input
+                value={form.claims}
+                onChange={(e) => setForm({ ...form, claims: e.target.value })}
+                placeholder="Sem glúten • Sem açúcar • Sem lactose"
+              />
+            </div>
+            <div className="space-y-1.5 md:col-span-3">
+              <Label>Alergênicos (opcional)</Label>
+              <Input
+                value={form.alergenicos}
+                onChange={(e) => setForm({ ...form, alergenicos: e.target.value })}
+                placeholder="Ex.: Contém castanhas. Pode conter traços de amendoim."
+              />
+            </div>
+          </div>
+        </div>
+
+
+
 
         {/* Componentes */}
         <div className="mt-6">
