@@ -104,12 +104,14 @@ function faixaDaQtd(q: number) {
   return FAIXAS.find((f) => q >= f.min && q <= f.max) ?? null;
 }
 
+const round2 = (n: number) => Math.round((Number.isFinite(n) ? n : 0) * 100) / 100;
+
 function precoFaixa(custo: number, margemPct: number | null | undefined): number | null {
   if (custo <= 0) return null;
   if (margemPct == null || !isFinite(Number(margemPct))) return null;
   const m = Number(margemPct) / 100;
   if (m >= 1) return null;
-  return custo / (1 - m);
+  return round2(custo / (1 - m));
 }
 
 // Margens padrão do modo B2B (fixas, aplicadas a todos os produtos que não têm override)
