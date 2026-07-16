@@ -768,9 +768,10 @@ export default function SimuladorProposta() {
           )}
 
           <div className="flex justify-end border-t pt-4">
-            <Button onClick={handleGerarPDF}>
+            <Button onClick={handleGerarPDF} disabled={abaixoMinimo}>
               <FileDown className="mr-2 h-4 w-4" /> Gerar PDF da proposta
             </Button>
+
           </div>
         </Card>
       </div>
