@@ -253,9 +253,14 @@ export default function FichasTecnicas() {
       margem_faixa_1: form.margem_faixa_1 ? Number(form.margem_faixa_1) : null,
       margem_faixa_2: form.margem_faixa_2 ? Number(form.margem_faixa_2) : null,
       margem_faixa_3: form.margem_faixa_3 ? Number(form.margem_faixa_3) : null,
+      validade_dias: form.validade_dias ? Number(form.validade_dias) : null,
+      conservacao: form.conservacao || null,
+      alergenicos: form.alergenicos.trim() || null,
+      claims: form.claims.trim() || null,
       precisa_revisao: breakdown.precisaRevisao,
       custo_unitario_calculado: breakdown.custoUnitario || null,
     };
+
 
     let fichaId = editing;
     if (editing) {
