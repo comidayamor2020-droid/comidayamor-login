@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoUrl from "@/assets/logo-comidayamor.png";
+import { supabase } from "@/integrations/supabase/client";
 
 async function loadLogoDataUrl(): Promise<{ dataUrl: string; w: number; h: number } | null> {
   try {
@@ -23,6 +24,9 @@ async function loadLogoDataUrl(): Promise<{ dataUrl: string; w: number; h: numbe
     return null;
   }
 }
+
+// Arredondamento monetário: 2 casas decimais
+export const round2 = (n: number) => Math.round((Number.isFinite(n) ? n : 0) * 100) / 100;
 
 const brl = (n: number) =>
   isFinite(n)
@@ -47,6 +51,10 @@ export type PropostaItemPDF = {
   margemComprador: number | null;
   faixaSelecionadaIdx?: number;
   faixas?: PropostaFaixaPDF[];
+  claims?: string | null;
+  validadeDias?: number | null;
+  conservacao?: string | null;
+  alergenicos?: string | null;
 };
 
 export type PropostaPDFData = {
@@ -55,34 +63,49 @@ export type PropostaPDFData = {
   validadeDias: number;
   cliente: string;
   itens: PropostaItemPDF[];
-  prazoDias: number;
+  prazoPagamento: string;
   frete: number;
+  freteGratis?: boolean;
+  pedidoMinimo?: number;
+  prazoEntregaDias?: number;
   tipoVenda?: "b2b" | "evento";
 };
 
 // Identidade visual Comida y Amor
-const BORDO: [number, number, number] = [162, 36, 47];      // #A2242F
-const CREME: [number, number, number] = [239, 227, 211];    // #EFE3D3
-const CARAMELO: [number, number, number] = [167, 97, 65];   // #A76141
-const PINK: [number, number, number] = [239, 192, 203];     // #EFC0CB
-const VERMELHO: [number, number, number] = [242, 5, 49];    // #F20531
-const ESCURO: [number, number, number] = [46, 20, 22];      // texto principal
+const BORDO: [number, number, number] = [162, 36, 47];
+const CREME: [number, number, number] = [239, 227, 211];
+const CARAMELO: [number, number, number] = [167, 97, 65];
+const PINK: [number, number, number] = [239, 192, 203];
+const VERMELHO: [number, number, number] = [242, 5, 49];
+const ESCURO: [number, number, number] = [46, 20, 22];
 const CREME_CLARO: [number, number, number] = [247, 240, 228];
 
-// Fontes: jsPDF built-ins como fallback
-// - "times" (serif) aproxima Playfair Display para títulos
-// - "helvetica" aproxima Montserrat Alternates para corpo
-// - italic é usado como fallback do Grandest Script
 const F_DISPLAY = "times";
 const F_SANS = "helvetica";
 
-export function gerarNumeroProposta(d = new Date()) {
+/**
+ * Reserva um novo número sequencial no formato CYA-YYYY-NNN.
+ * Fallback local (baseado em timestamp) caso a chamada RPC falhe.
+ */
+export async function gerarNumeroProposta(): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc("next_numero_proposta" as never);
+    if (!error && typeof data === "string" && data.startsWith("CYA-")) return data;
+  } catch {
+    // ignore
+  }
+  const d = new Date();
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${y}${m}${dd}-${hh}${mm}`;
+  const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
+  return `CYA-${y}-${seq}`;
+}
+
+function itemMetaLine(i: PropostaItemPDF): string {
+  const partes: string[] = [];
+  if (i.claims && i.claims.trim()) partes.push(i.claims.trim());
+  if (i.validadeDias != null && i.validadeDias > 0) partes.push(`Validade: ${i.validadeDias} dias`);
+  if (i.conservacao && i.conservacao.trim()) partes.push(i.conservacao.trim());
+  return partes.join("  |  ");
 }
 
 export async function gerarPropostaPDF(data: PropostaPDFData) {
@@ -95,39 +118,30 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   const validade = new Date(data.emissao);
   validade.setDate(validade.getDate() + data.validadeDias);
 
-  // Função para desenhar o fundo creme + rodapé decorativo em cada página
   const desenharFundoPagina = () => {
-    // Fundo creme
     doc.setFillColor(...CREME);
     doc.rect(0, 0, pageW, pageH, "F");
-
-    // Faixa fina pink na borda superior
     doc.setFillColor(...PINK);
     doc.rect(0, 0, pageW, 6, "F");
-
-    // Faixa fina bordô abaixo
     doc.setFillColor(...BORDO);
     doc.rect(0, 6, pageW, 2, "F");
   };
 
   desenharFundoPagina();
 
-  // ==== CABEÇALHO — LOGO OFICIAL ====
+  // ==== CABEÇALHO ====
   const logo = await loadLogoDataUrl();
   if (logo) {
     const logoH = 60;
     const logoW = (logo.w / logo.h) * logoH;
     doc.addImage(logo.dataUrl, "PNG", margin, 30, logoW, logoH);
   } else {
-    // Fallback textual
     doc.setFont(F_DISPLAY, "bold");
     doc.setTextColor(...BORDO);
     doc.setFontSize(24);
     doc.text("comida yamor", margin, 68);
   }
 
-
-  // Bloco de contato (direita)
   doc.setFont(F_SANS, "normal");
   doc.setFontSize(9);
   doc.setTextColor(...ESCURO);
@@ -142,18 +156,16 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.text("comidayamor2020@gmail.com", rightX, 78, { align: "right" });
   doc.text("+55 51 99643-7080", rightX, 90, { align: "right" });
 
-  // Linha divisória pink
   doc.setDrawColor(...PINK);
   doc.setLineWidth(1.2);
   doc.line(margin, 105, pageW - margin, 105);
 
-  // ==== TÍTULO PROPOSTA ====
+  // ==== TÍTULO ====
   doc.setFont(F_DISPLAY, "bold");
   doc.setTextColor(...BORDO);
   doc.setFontSize(28);
   doc.text("Proposta Comercial", margin, 145);
 
-  // Meta da proposta (direita, sob o título)
   doc.setFont(F_DISPLAY, "italic");
   doc.setTextColor(...CARAMELO);
   doc.setFontSize(11);
@@ -179,24 +191,28 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.setTextColor(...BORDO);
   doc.text(data.cliente || "—", margin + 14, clienteY + 34);
 
-  // ==== TABELA DE ITENS ====
+  // ==== ITENS ====
   const isEvento = data.tipoVenda === "evento";
 
   const descontoFrac = (i: PropostaItemPDF) =>
-    i.b2c != null && i.b2c > 0 ? (i.b2c - i.precoB2B) / i.b2c : null;
+    i.b2c != null && i.b2c > 0 ? (i.b2c - round2(i.precoB2B)) / i.b2c : null;
 
-  const subtotal = data.itens.reduce((s, i) => s + i.precoB2B * i.qtd, 0);
-  const total = subtotal + data.frete;
+  // Subtotais sempre com preços arredondados
+  const subtotal = data.itens.reduce((s, i) => s + round2(i.precoB2B) * i.qtd, 0);
+  const total = subtotal + (data.frete || 0);
 
   if (isEvento) {
-    const body = data.itens.map((i) => [
-      i.nome,
-      String(i.qtd),
-      i.b2c != null ? brl(i.b2c) : "—",
-      brl(i.precoB2B),
-      pct(descontoFrac(i)),
-      brl(i.precoB2B * i.qtd),
-    ]);
+    const body = data.itens.map((i) => {
+      const p = round2(i.precoB2B);
+      return [
+        i.nome,
+        String(i.qtd),
+        i.b2c != null ? brl(i.b2c) : "—",
+        brl(p),
+        pct(descontoFrac(i)),
+        brl(p * i.qtd),
+      ];
+    });
     const head = [["Produto", "Qtd", "Preço venda loja", "Preço evento", "Desconto", "Subtotal"]];
     autoTable(doc, {
       startY: clienteY + 60,
@@ -217,36 +233,42 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
       margin: { left: margin, right: margin },
     });
   } else {
-    // B2B — bloco por produto: cabeçalho + mini-tabela de 3 faixas + rodapé de subtotal
     const QTD_MINIMA = 15;
     let cursorY = clienteY + 60;
 
     data.itens.forEach((i, itemIdx) => {
-      const faixas = i.faixas ?? [
-        { label: "—", preco: i.precoB2B, margemRevenda: i.margemComprador },
-      ];
+      const precoUnit = round2(i.precoB2B);
+      const faixas = (i.faixas ?? [{ label: "—", preco: precoUnit, margemRevenda: i.margemComprador }])
+        .map((f) => ({ ...f, preco: f.preco != null ? round2(f.preco) : null }));
       const selIdx = i.faixaSelecionadaIdx ?? 0;
-      const subtotalProduto = i.precoB2B * i.qtd;
+      const subtotalProduto = precoUnit * i.qtd;
+      const metaLine = itemMetaLine(i);
+      const headerH = metaLine ? 42 : 26;
 
-      // Quebra de página se pouco espaço (respeita apenas a margem inferior; rodapé é in-flow)
-      const alturaEstimada = 24 + 22 + faixas.length * 22 + 24 + 12;
+      const alturaEstimada = headerH + 22 + faixas.length * 22 + 24 + 12;
       if (cursorY + alturaEstimada > pageH - 40) {
         doc.addPage();
         desenharFundoPagina();
         cursorY = 40;
       }
 
-
       // Cabeçalho do produto
       doc.setFillColor(...CREME_CLARO);
       doc.setDrawColor(...CARAMELO);
       doc.setLineWidth(0.4);
-      doc.roundedRect(margin, cursorY, pageW - margin * 2, 26, 4, 4, "FD");
+      doc.roundedRect(margin, cursorY, pageW - margin * 2, headerH, 4, 4, "FD");
 
       doc.setFont(F_DISPLAY, "bold");
       doc.setTextColor(...BORDO);
       doc.setFontSize(11);
       doc.text(i.nome, margin + 10, cursorY + 17);
+
+      if (metaLine) {
+        doc.setFont(F_SANS, "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...CARAMELO);
+        doc.text(metaLine, margin + 10, cursorY + 32);
+      }
 
       doc.setFont(F_SANS, "normal");
       doc.setFontSize(8);
@@ -256,7 +278,6 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
         `Qtd mínima: ${QTD_MINIMA} un`,
         `Sugerido revenda: ${i.b2c != null ? brl(i.b2c) : "—"}`,
       ];
-      // três blocos alinhados à direita
       let mx = rightMetaX;
       for (let k = meta.length - 1; k >= 0; k--) {
         doc.setTextColor(...ESCURO);
@@ -269,9 +290,8 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
         }
       }
 
-      cursorY += 30;
+      cursorY += headerH + 4;
 
-      // Mini-tabela de faixas
       const body = faixas.map((f, idx) => {
         const row: any[] = [
           { content: f.label, styles: { halign: "center", fontStyle: "bold", textColor: CARAMELO } },
@@ -309,11 +329,10 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
 
       cursorY = (doc as any).lastAutoTable.finalY + 4;
 
-      // Rodapé do bloco — subtotal do produto
       doc.setFont(F_SANS, "normal");
       doc.setFontSize(9);
       doc.setTextColor(...CARAMELO);
-      const subLabel = `Subtotal (${i.qtd} un × ${brl(i.precoB2B)}):`;
+      const subLabel = `Subtotal (${i.qtd} un × ${brl(precoUnit)}):`;
       const subValor = brl(subtotalProduto);
       const subValorW = doc.getTextWidth(subValor);
       doc.setFont(F_SANS, "bold");
@@ -327,15 +346,11 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
       if (itemIdx < data.itens.length - 1) cursorY += 6;
     });
 
-    // Simula lastAutoTable.finalY para o fluxo seguinte
     (doc as any).lastAutoTable = { finalY: cursorY };
   }
 
-
-
   let y = (doc as any).lastAutoTable.finalY + 24;
 
-  // Helper: garante espaço no restante da página, senão adiciona nova página
   const ensureSpace = (needed: number) => {
     if (y + needed > pageH - 40) {
       doc.addPage();
@@ -344,9 +359,51 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
     }
   };
 
-  // ==== CONDIÇÕES COMERCIAIS + TOTAL BOX (lado a lado, in-flow) ====
-  const condLinhas = 4;
-  const condBlockH = 22 + condLinhas * 16 + 8; // título + linhas
+  // ==== NOTA DE ALERGÊNICOS (agregada, se houver) ====
+  const alergenicos = data.itens
+    .filter((i) => i.alergenicos && i.alergenicos.trim())
+    .map((i) => `${i.nome}: ${i.alergenicos!.trim()}`);
+  if (alergenicos.length > 0) {
+    const linhas = alergenicos.length;
+    const blocoH = 22 + linhas * 12 + 10;
+    ensureSpace(blocoH + 12);
+    doc.setFillColor(...CREME_CLARO);
+    doc.setDrawColor(...CARAMELO);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(margin, y, pageW - margin * 2, blocoH, 6, 6, "FD");
+    doc.setFont(F_SANS, "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...BORDO);
+    doc.text("Alergênicos", margin + 12, y + 16);
+    doc.setFont(F_SANS, "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...ESCURO);
+    alergenicos.forEach((linha, idx) => {
+      doc.text(linha, margin + 12, y + 30 + idx * 12);
+    });
+    y += blocoH + 14;
+  }
+
+  // ==== CONDIÇÕES + TOTAL ====
+  const cond: Array<[string, string]> = [
+    ["Prazo de pagamento", data.prazoPagamento || "A combinar"],
+    ["Formas de pagamento", "Pix  •  Boleto"],
+    [
+      "Frete / entrega",
+      data.freteGratis ? "Grátis" : data.frete > 0 ? brl(data.frete) : "A combinar",
+    ],
+    ["Pedido mínimo", data.pedidoMinimo != null ? brl(data.pedidoMinimo) : "—"],
+    [
+      "Prazo de entrega",
+      data.prazoEntregaDias != null
+        ? `até ${data.prazoEntregaDias} dias úteis após confirmação`
+        : "A combinar",
+    ],
+    ["Validade da proposta", `${data.validadeDias} dias (até ${fmtDate(validade)})`],
+  ];
+
+  const condLinhas = cond.length;
+  const condBlockH = 22 + condLinhas * 16 + 8;
   const totalBoxW = 240;
   const totalBoxH = 76;
   const blocoH = Math.max(condBlockH, totalBoxH);
@@ -355,7 +412,6 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
 
   const bandaTopo = y;
 
-  // Condições (esquerda)
   doc.setFont(F_DISPLAY, "bold");
   doc.setTextColor(...BORDO);
   doc.setFontSize(14);
@@ -364,13 +420,6 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.setDrawColor(...CARAMELO);
   doc.setLineWidth(0.5);
   doc.line(margin, bandaTopo + 4, margin + 160, bandaTopo + 4);
-
-  const cond: Array<[string, string]> = [
-    ["Prazo de pagamento", `${data.prazoDias} dias${data.prazoDias === 0 ? " (à vista)" : ""}`],
-    ["Formas de pagamento", "Pix  •  Boleto"],
-    ["Frete / entrega", data.frete > 0 ? brl(data.frete) : "a combinar"],
-    ["Validade da proposta", `${data.validadeDias} dias (até ${fmtDate(validade)})`],
-  ];
 
   doc.setFontSize(10);
   let condY = bandaTopo + 22;
@@ -384,7 +433,7 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
     condY += 16;
   });
 
-  // TOTAL BOX (direita, mesma banda)
+  // Total box
   const totalBoxX = pageW - margin - totalBoxW;
   const totalBoxY = bandaTopo;
 
@@ -402,7 +451,8 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.text(brl(subtotal), totalBoxX + totalBoxW - 16, totalBoxY + 24, { align: "right" });
 
   doc.text("Frete", totalBoxX + 16, totalBoxY + 40);
-  doc.text(data.frete > 0 ? brl(data.frete) : "—", totalBoxX + totalBoxW - 16, totalBoxY + 40, { align: "right" });
+  const freteTxt = data.freteGratis ? "Grátis" : data.frete > 0 ? brl(data.frete) : "—";
+  doc.text(freteTxt, totalBoxX + totalBoxW - 16, totalBoxY + 40, { align: "right" });
 
   doc.setDrawColor(...PINK);
   doc.setLineWidth(0.5);
@@ -414,9 +464,33 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
   doc.setFontSize(16);
   doc.text(brl(total), totalBoxX + totalBoxW - 16, totalBoxY + 66, { align: "right" });
 
-  y = bandaTopo + blocoH + 40;
+  y = bandaTopo + blocoH + 20;
 
-  // ==== RODAPÉ (in-flow, empurrado pelo conteúdo) ====
+  // ==== BLOCO DE ACEITE ====
+  const aceiteH = 66;
+  ensureSpace(aceiteH + 20);
+  doc.setFillColor(...CREME_CLARO);
+  doc.setDrawColor(...CARAMELO);
+  doc.setLineWidth(0.8);
+  doc.roundedRect(margin, y, pageW - margin * 2, aceiteH, 8, 8, "FD");
+  doc.setFont(F_SANS, "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BORDO);
+  doc.text("Aceite", margin + 14, y + 18);
+
+  doc.setFont(F_SANS, "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...ESCURO);
+  const aceiteTxt =
+    `Para confirmar este pedido, responda por WhatsApp ou e-mail com "DE ACORDO" ` +
+    `mencionando o nº ${data.numero}. A confirmação por escrito formaliza o pedido ` +
+    `nas condições desta proposta.`;
+  const wrapped = doc.splitTextToSize(aceiteTxt, pageW - margin * 2 - 28);
+  doc.text(wrapped, margin + 14, y + 34);
+
+  y += aceiteH + 20;
+
+  // ==== RODAPÉ ====
   const FOOTER_H = 60;
   ensureSpace(FOOTER_H);
 
@@ -441,4 +515,3 @@ export async function gerarPropostaPDF(data: PropostaPDFData) {
 
   doc.save(`proposta-${data.numero}.pdf`);
 }
-
