@@ -177,6 +177,10 @@ export default function FichasTecnicas() {
       margem_faixa_1: (f as any).margem_faixa_1 != null ? String((f as any).margem_faixa_1) : "",
       margem_faixa_2: (f as any).margem_faixa_2 != null ? String((f as any).margem_faixa_2) : "",
       margem_faixa_3: (f as any).margem_faixa_3 != null ? String((f as any).margem_faixa_3) : "",
+      validade_dias: (f as any).validade_dias != null ? String((f as any).validade_dias) : "",
+      conservacao: ((f as any).conservacao ?? "Temperatura ambiente") as "Temperatura ambiente" | "Refrigerado" | "Congelado",
+      alergenicos: (f as any).alergenicos ?? "",
+      claims: (f as any).claims ?? "Sem glúten • Sem açúcar • Sem lactose",
     });
     const { data } = await supabase
       .from("ficha_componentes" as any).select("*").eq("ficha_id", f.id);
