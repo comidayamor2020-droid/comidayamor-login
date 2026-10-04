@@ -13,7 +13,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, Plus, X, AlertTriangle } from "lucide-react";
+import { Pencil, Trash2, Plus, X, AlertTriangle, Download } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { exportarFichasExcel } from "@/lib/export-fichas";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/format";
@@ -46,6 +48,8 @@ export const MARGEM_MINIMA_PCT = 45;
 
 export default function FichasTecnicas() {
   const qc = useQueryClient();
+  const { profile } = useAuth();
+  const isCEO = profile?.role === "admin" || profile?.role === "gestao";
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FICHA);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "intermediario" | "produto_final">("todos");
@@ -627,6 +631,15 @@ export default function FichasTecnicas() {
         <Button size="sm" variant={filtroTipo === "todos" ? "default" : "outline"} onClick={() => setFiltroTipo("todos")}>Todos</Button>
         <Button size="sm" variant={filtroTipo === "intermediario" ? "default" : "outline"} onClick={() => setFiltroTipo("intermediario")}>Intermediário</Button>
         <Button size="sm" variant={filtroTipo === "produto_final" ? "default" : "outline"} onClick={() => setFiltroTipo("produto_final")}>Produto final</Button>
+        {isCEO && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => exportarFichasExcel({ fichas: fichasComCusto as any, componentesPorFicha, insumosById })}
+          >
+            <Download className="mr-1 h-4 w-4" /> Exportar fichas (Excel)
+          </Button>
+        )}
         <span className="ml-auto text-xs text-muted-foreground">
           Insumos ficam em <a href="/custeio/insumos" className="underline">Insumos</a>
         </span>
